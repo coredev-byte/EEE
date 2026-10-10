@@ -1,0 +1,15 @@
+{
+  "status": "development-temporary",
+  "implementation": "src/audio.ts — Web Audio synthesis; toggle in settings",
+  "finalAssetsSupplied": false,
+  "replacementSlots": {
+    "step": "steps-stone.ogg",
+    "attack": "sword-swing.ogg",
+    "hit": "weapon-impact.ogg",
+    "magic": "arcane-cast.ogg",
+    "death": "enemy-death.ogg",
+    "interact": "object-interaction.ogg",
+    "ambient": "pedralta-night.ogg"
+  },
+  "note": "These names are replacement slots, not claims that final audio files exist. Browser interaction unlocks audio."
+}

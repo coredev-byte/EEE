@@ -1,0 +1,42 @@
+{
+  "frame": {
+    "width": 96,
+    "height": 112,
+    "pivot": [
+      48,
+      108
+    ]
+  },
+  "hero": {
+    "rows": [
+      "front",
+      "right",
+      "back",
+      "left"
+    ],
+    "columns": [
+      "idle",
+      "idle2",
+      "walk1",
+      "walk2",
+      "walk3",
+      "walk4",
+      "windup",
+      "attack",
+      "recover",
+      "hurt",
+      "cast",
+      "dead"
+    ]
+  },
+  "palette": "63 material colors plus transparency; shared across exported art",
+  "sources": [
+    "source-1.png",
+    "source-2.png",
+    "source-3.png",
+    "source-4.png",
+    "source-5.png",
+    "source-6.png"
+  ],
+  "processing": "nearest-neighbor; chromakey; selective crop; no drawn replacement art"
+}

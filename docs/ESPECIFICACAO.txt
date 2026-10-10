@@ -1,0 +1,654 @@
+DISTRITO ZERO — ESPECIFICAÇÃO MESTRA DE DESENVOLVIMENTO
+
+Você é o desenvolvedor principal de um RPG de ação em pixel art, com responsabilidade por arquitetura de jogos, programação de gameplay, renderização 2D, animação, combate, direção de arte técnica e otimização.
+
+Seu objetivo é construir Distrito Zero, um RPG sombrio de fantasia urbana, usando as duas imagens anexadas como referências visuais obrigatórias.
+
+Não quero uma página demonstrativa, um mockup, uma imagem estática ou um protótipo que apenas pareça um jogo. Quero um jogo real, executável, jogável, com movimentação, combate, inimigos, animações, cenário, interface e sistemas conectados.
+
+1. REGRA PRINCIPAL: FIDELIDADE VISUAL
+
+As imagens anexadas são a referência visual principal. Não substitua sua linguagem visual por pixel art genérica.
+
+A primeira imagem define:
+
+* Aparência e proporções do personagem.
+* Densidade e distribuição dos pixels.
+* Silhueta, cabelo, roupas, acessórios, armas e equipamentos.
+* Contraste entre sombras e luzes.
+* Detalhamento de materiais.
+* Representação do personagem de frente, costas e laterais.
+* Linguagem visual dos sprites.
+
+A segunda imagem define:
+
+* Perspectiva isométrica do cenário.
+* Escala do personagem em relação ao ambiente.
+* Densidade dos detalhes no chão, construções, vegetação e objetos.
+* Iluminação noturna e atmosfera.
+* Cores predominantemente escuras, azuis e violetas, com iluminação quente em laranja e amarelo.
+* HUD, barras, minimapa, ícones, habilidades, itens rápidos e indicadores de combate.
+* Composição geral da tela.
+
+A prioridade é reproduzir a linguagem visual das referências, e não apenas incluir seus elementos.
+
+Não faça uma versão simplificada, infantilizada, excessivamente geométrica, cartunesca, lisa ou com aparência de arte genérica produzida por IA.
+
+Proibições visuais
+
+Não use:
+
+* Personagens feitos de retângulos, cubos ou formas geométricas improvisadas.
+* Bonecos genéricos com cabeças grandes e corpos sem anatomia.
+* Sprites sem contorno visual consistente.
+* Pixel art borrada, com antialiasing ou pixels interpolados.
+* Texturas aleatórias usadas para disfarçar a falta de detalhes.
+* Cenários vazios ou com padrões repetidos de maneira óbvia.
+* Efeitos de combate representados apenas por círculos ou linhas simples.
+* Ícones provisórios, emojis ou quadrados coloridos no lugar dos ícones definitivos.
+* Interfaces genéricas de jogos web.
+* Elementos 3D realistas misturados com sprites 2D.
+* Animações que movimentam o personagem inteiro como uma imagem rígida, sem articulação.
+
+Não tente compensar arte ruim com iluminação, filtros ou pós-processamento. A qualidade precisa existir nos próprios sprites e nos elementos do cenário.
+
+2. ESPECIFICAÇÃO TÉCNICA DO PIXEL ART
+
+Use como ponto de partida a especificação visual recebida: pixel art de alta densidade, referência de 92 px e paleta controlada de 64 cores.
+
+Antes de fixar as dimensões finais, examine as imagens e defina uma resolução interna que preserve os detalhes necessários.
+
+Importante: 92 px não deve ser interpretado automaticamente como largura, altura ou tamanho universal de todos os sprites. Determine as dimensões apropriadas para cada elemento.
+
+A imagem do personagem também apresenta marcações de referência de 16 px de largura por 32 px de altura. Considere isso como uma possível referência de escala lógica, mas não reduza o personagem a 16 × 32 pixels se isso eliminar os detalhes, as proporções ou a aparência da imagem. Teste a escala e documente a decisão técnica.
+
+Requisitos obrigatórios:
+
+* Renderização pixel-perfect.
+* Escala inteira sempre que possível.
+* Filtro nearest-neighbor para ampliação.
+* Ausência de interpolação bilinear.
+* Resolução lógica independente da resolução física da tela.
+* Paleta coerente e controlada, com até 64 cores por conjunto de arte quando apropriado.
+* Sombras construídas com clusters de pixels bem definidos.
+* Contornos seletivos, sem bordas pretas uniformes em tudo.
+* Variação de cores para diferenciar pele, cabelo, tecido, metal, couro, pedra, vegetação e efeitos mágicos.
+* Detalhes suficientes para preservar a leitura do personagem mesmo durante o combate.
+* Pixels consistentes entre personagem, armas, cenário, efeitos e interface.
+
+Não confunda pixel art detalhada com simplesmente colocar muitos pixels na tela. O posicionamento dos pixels, os agrupamentos, as silhuetas e o contraste são essenciais.
+
+3. PRIMEIRA ENTREGA: ANALISAR O PROJETO E DEFINIR A ARQUITETURA
+
+Antes de começar a programar:
+
+1. Inspecione os arquivos e a estrutura do projeto existente.
+2. Identifique a linguagem, o motor, as dependências e o sistema de execução.
+3. Se o projeto estiver vazio, escolha uma tecnologia adequada para um RPG 2D isométrico com pixel art detalhada.
+4. Se já houver uma base funcional, preserve o que estiver correto e evite reescrever tudo sem necessidade.
+5. Apresente uma arquitetura curta, com os principais sistemas e arquivos.
+6. Implemente o jogo diretamente no projeto.
+
+Prefira uma arquitetura baseada em componentes e sistemas separados para jogador, inimigos, animações, combate, habilidades, inventário, cenário, interface e missões.
+
+Não construa toda a lógica em um único arquivo.
+
+Não crie uma arquitetura gigantesca antes de ter um personagem funcionando na tela. Implemente a estrutura necessária, valide cada etapa e continue até completar os sistemas previstos.
+
+4. PERSONAGEM PRINCIPAL
+
+Crie o protagonista usando a primeira imagem como referência obrigatória.
+
+O personagem precisa ter:
+
+* Cabelo escuro e volumoso, com mechas individualizadas.
+* Lenço vermelho ao redor do pescoço.
+* Casaco escuro com dobras, costuras, acessórios e detalhes metálicos.
+* Cinto e bolsas de couro.
+* Calças escuras com detalhes e equipamentos.
+* Botas robustas.
+* Arma carregada nas costas ou equipada de forma coerente.
+* Silhueta legível e proporções semelhantes às da referência.
+
+Não transforme esses elementos em manchas coloridas. Cada material precisa ser visualmente identificável.
+
+Sprites e orientações
+
+Implemente orientações para:
+
+* Frente.
+* Costas.
+* Lado direito.
+* Lado esquerdo.
+
+As quatro direções precisam ser representações coerentes do mesmo personagem. Não basta espelhar indiscriminadamente um sprite frontal para produzir as laterais.
+
+Use a folha de referência para definir proporções e aparência. Preserve os detalhes importantes em cada orientação.
+
+Animações obrigatórias
+
+Implemente, no mínimo:
+
+* Idle.
+* Caminhada nas quatro direções.
+* Corrida, se fizer parte da movimentação definida.
+* Ataque básico.
+* Preparação e recuperação do ataque.
+* Recebimento de dano.
+* Morte.
+* Uso de habilidade.
+* Interação com objetos.
+
+As animações devem alterar braços, pernas, tronco, cabelo, roupas, armas e acessórios conforme a ação.
+
+Não simule caminhada apenas deslocando o sprite verticalmente. Não use a mesma imagem para todas as ações.
+
+Crie spritesheets ou conjuntos de frames organizados, com pivôs, hitboxes e durações consistentes.
+
+Se não houver sprites suficientes para uma animação, produza os frames necessários em vez de inventar movimentos por meio de deformações ou deslocamentos arbitrários.
+
+5. CÂMERA E MOVIMENTAÇÃO
+
+Reproduza a perspectiva da segunda imagem: visão isométrica em terceira pessoa, com o personagem visto de cima e o ambiente ocupando a maior parte da tela.
+
+A câmera deve:
+
+* Manter o jogador próximo ao centro da área de jogo.
+* Acompanhar a movimentação suavemente.
+* Preservar a perspectiva e a escala.
+* Mostrar uma área suficientemente ampla para explorar e lutar.
+* Evitar tremores, mudanças abruptas de escala e movimentos desnecessários.
+
+O mundo deve utilizar coordenadas de jogo consistentes com a projeção isométrica.
+
+Implemente:
+
+* Movimento responsivo.
+* Colisões reais com paredes, objetos e obstáculos.
+* Navegação coerente com a perspectiva.
+* Profundidade visual entre personagens e cenário.
+* Ordenação de renderização baseada na posição no mundo, para que personagens passem corretamente à frente ou atrás de objetos.
+
+O personagem não pode atravessar paredes, deslizar de maneira incorreta ou parecer flutuar sobre o cenário.
+
+Não confunda uma câmera isométrica com uma câmera lateral ou uma visão top-down totalmente vertical.
+
+6. CENÁRIO
+
+Crie uma área jogável inspirada no ambiente da segunda imagem: uma vila noturna, antiga e parcialmente tomada pela vegetação, com atmosfera de fantasia urbana sombria.
+
+O mapa precisa conter:
+
+* Ruas de pedra irregular.
+* Muros de pedra e construções antigas.
+* Vegetação em diferentes tamanhos.
+* Grama e pequenas plantas entre as pedras.
+* Barris, caixas, bancos, cercas e outros objetos.
+* Portões, passagens e entradas de ruínas.
+* Lanternas e fontes de iluminação.
+* Áreas escuras e zonas iluminadas.
+* Elementos de fundo que aumentem a profundidade do cenário.
+
+Cada elemento deve ser desenhado ou produzido na mesma linguagem de pixel art.
+
+O cenário não pode ser um chão plano com objetos espalhados aleatoriamente.
+
+Organize os elementos em camadas coerentes:
+
+1. Fundo e áreas distantes.
+2. Chão e caminhos.
+3. Objetos e construções.
+4. Elementos de primeiro plano.
+5. Personagens e inimigos.
+6. Efeitos de combate.
+7. Interface.
+
+Implemente iluminação com lanternas quentes, sombras e contrastes locais, sem borrar os pixels.
+
+Não aplique um filtro azul uniforme sobre tudo. O ambiente deve combinar sombras frias com focos quentes de luz, mantendo a leitura dos materiais.
+
+Crie um mapa explorável de verdade, maior que a área visível da tela, com obstáculos, caminhos e zonas distintas.
+
+7. COMBATE REAL
+
+Implemente combate funcional, não apenas efeitos visuais.
+
+O sistema precisa ter:
+
+* Ataque básico.
+* Alcance definido.
+* Tempo de preparação.
+* Tempo de recuperação.
+* Hitbox e detecção de acerto.
+* Dano calculado.
+* Pontos de vida.
+* Reação do alvo ao receber dano.
+* Morte e desaparecimento coerente do inimigo.
+* Indicadores de dano.
+* Tempo de recarga das habilidades.
+* Efeitos visuais associados aos ataques.
+
+O personagem precisa mirar ou orientar o ataque de maneira coerente com a direção do alvo.
+
+As animações, hitboxes, efeitos e aplicação do dano devem estar sincronizados.
+
+Um ataque não pode causar dano várias vezes por acidente durante o mesmo movimento.
+
+Efeitos de combate
+
+Crie efeitos em pixel art para:
+
+* Faíscas.
+* Impactos de armas.
+* Golpes físicos.
+* Projéteis.
+* Explosões mágicas.
+* Energia elemental.
+* Partículas de morte.
+
+Os efeitos devem possuir frames, cores, silhuetas e durações próprias.
+
+Não use círculos lisos, gradientes genéricos ou partículas padrão de bibliotecas como substitutos para os efeitos definitivos.
+
+8. INIMIGOS E IA
+
+Implemente pelo menos dois tipos de inimigos inspirados nos inimigos humanoides encapuzados e na criatura quadrúpede da segunda imagem.
+
+Cada inimigo precisa ter:
+
+* Sprite próprio.
+* Animações próprias.
+* Pontos de vida.
+* Barra de vida.
+* Área de detecção.
+* Comportamento de perseguição.
+* Ataque funcional.
+* Reação ao dano.
+* Morte.
+* Colisões.
+
+A IA deve possuir estados separados, como patrulha, percepção, perseguição, ataque, recuperação e morte.
+
+Os inimigos precisam reagir à posição do jogador, respeitar alcances e evitar atacar continuamente sem intervalo.
+
+Não utilize cápsulas, cubos ou formas geométricas como representação definitiva dos inimigos. Formas simples podem ser usadas temporariamente para depuração, mas não devem aparecer no resultado final.
+
+9. CLASSES E HABILIDADES
+
+Distrito Zero deve ter quatro classes jogáveis:
+
+* Guerreiro.
+* Arcanista.
+* Assassino.
+* Atirador.
+
+Cada classe precisa possuir identidade visual e mecânica própria.
+
+Guerreiro:
+
+* Combate próximo.
+* Ataques físicos.
+* Habilidades de impacto e resistência.
+
+Arcanista:
+
+* Ataques mágicos.
+* Projéteis de energia.
+* Efeitos elementais.
+
+Assassino:
+
+* Mobilidade.
+* Ataques rápidos.
+* Habilidades de aproximação e evasão.
+
+Atirador:
+
+* Ataques à distância.
+* Projéteis.
+* Habilidades de precisão.
+
+Implemente uma estrutura que permita adicionar novas habilidades sem reescrever todo o sistema de combate.
+
+As habilidades precisam consumir recursos quando aplicável, respeitar recargas e produzir efeitos visuais e funcionais.
+
+Não crie quatro classes que apenas mudam a cor do mesmo ataque.
+
+10. HUD E INTERFACE
+
+Reproduza a estrutura visual da segunda imagem, respeitando a composição geral e a hierarquia dos elementos.
+
+HUD principal
+
+No canto superior esquerdo, apresente:
+
+* Retrato do personagem.
+* Nível.
+* HP.
+* MP.
+* XP.
+* Valores numéricos atuais e máximos.
+
+Use barras retangulares com bordas definidas, preenchimento consistente e cores semelhantes às da referência:
+
+* Vida em vermelho.
+* Mana em azul.
+* Experiência em amarelo ou laranja.
+
+Localização e missão
+
+Apresente:
+
+* Nome da região.
+* Nome da missão ativa.
+* Objetivo atual.
+* Indicador visual de missão.
+
+Os textos precisam corresponder ao estado real do jogo.
+
+Habilidades
+
+Implemente quatro espaços de habilidade associados a Q, W, E e R.
+
+Cada espaço precisa ter:
+
+* Ícone próprio.
+* Moldura.
+* Tecla correspondente.
+* Indicador de recarga.
+* Estado visual de habilidade disponível ou indisponível.
+
+Itens rápidos
+
+Implemente espaços para poções e outros itens, com:
+
+* Ícones detalhados.
+* Quantidades.
+* Atalhos.
+* Atualização após utilização.
+
+Minimapa
+
+O minimapa deve representar a região jogável e a posição do personagem.
+
+Inclua marcadores para:
+
+* Jogador.
+* Inimigos detectados.
+* NPCs.
+* Missões.
+* Baús.
+* Áreas especiais.
+
+Os marcadores devem corresponder às entidades reais do mapa.
+
+Painéis adicionais
+
+Implemente interfaces para:
+
+* Inventário.
+* Equipamentos.
+* Habilidades.
+* Configurações.
+* Missões.
+* Classes.
+
+Utilize painéis escuros, bordas finas, divisórias, tipografia legível e detalhes em azul frio, violeta e dourado.
+
+Não coloque todos esses painéis abertos sobre a área de jogo ao mesmo tempo. Organize-os em menus que possam ser abertos e fechados.
+
+Fidelidade da interface
+
+Os ícones devem ser desenhados ou produzidos como assets próprios em pixel art. Não use emojis, ícones genéricos de fontes ou placeholders na versão final.
+
+Os elementos precisam manter a mesma linguagem visual da referência, inclusive nas bordas, molduras, iluminação e escala.
+
+11. EQUIPAMENTOS E ARMAS
+
+Implemente um sistema de equipamentos com:
+
+* Armas.
+* Armaduras.
+* Acessórios.
+* Atributos.
+* Raridades.
+* Modificadores elementais.
+
+Os equipamentos devem afetar os atributos reais do personagem.
+
+A arma equipada precisa aparecer visualmente no personagem e nos ataques.
+
+As armas devem possuir variações visuais coerentes:
+
+* Comum.
+* Rara.
+* Elemental de fogo.
+* Elemental elétrica.
+* Rúnica.
+
+Não basta trocar a cor da mesma imagem. As variações precisam ter diferenças visuais perceptíveis, como silhueta, detalhes, partículas, brilho pixelado e ornamentação.
+
+O inventário deve exibir os equipamentos e permitir equipar, remover e comparar itens.
+
+12. PROGRESSÃO
+
+Implemente:
+
+* Experiência.
+* Níveis.
+* Atributos.
+* Evolução do personagem.
+* Habilidades desbloqueáveis.
+* Inventário.
+* Equipamentos.
+* Moedas.
+* Recompensas.
+* Missões.
+* Inimigos que concedem experiência.
+
+Os valores devem ser controlados pelo sistema do jogo. Não use números estáticos apenas para decorar a interface.
+
+O progresso deve persistir entre sessões por meio de um sistema de salvamento apropriado à tecnologia escolhida.
+
+13. PRIMEIRA MISSÃO JOGÁVEL
+
+Crie uma missão inicial chamada “O Eco de Kharn”.
+
+O jogador começa na região “Vila Pedralta — Setor Leste”.
+
+O objetivo inicial é encontrar a entrada das ruínas.
+
+Implemente:
+
+* Posição inicial.
+* Área explorável.
+* Inimigos no mapa.
+* Combate.
+* Indicador de missão.
+* Objetivo atualizado conforme o jogador progride.
+* Entrada das ruínas.
+* Condição de conclusão.
+
+O objetivo precisa estar conectado ao mundo. Não basta mostrar um texto na tela sem uma missão funcional.
+
+14. ÁUDIO E FEEDBACK
+
+Prepare suporte para:
+
+* Sons de passos.
+* Golpes.
+* Impactos.
+* Magia.
+* Dano recebido.
+* Morte de inimigos.
+* Interações.
+* Música ambiente.
+
+Se os arquivos de áudio definitivos não estiverem disponíveis, crie a estrutura para adicioná-los e utilize apenas recursos temporários claramente identificados durante o desenvolvimento.
+
+Não deixe sons provisórios ou efeitos genéricos passarem por conteúdo final.
+
+15. ORGANIZAÇÃO DOS ASSETS
+
+Organize os recursos em diretórios separados para:
+
+* Personagens.
+* Spritesheets.
+* Animações.
+* Inimigos.
+* Cenários.
+* Objetos.
+* Armas.
+* Equipamentos.
+* Efeitos.
+* Ícones.
+* Interface.
+* Áudio.
+
+Use nomes consistentes e documentação das spritesheets, incluindo quantidade de frames, direção, origem, escala e duração das animações.
+
+Separe os dados de personagens, habilidades, inimigos e itens da lógica que os executa.
+
+Não desenhe toda a arte por meio de retângulos e primitivas de programação. O resultado precisa usar assets de pixel art de verdade, construídos para essa direção visual.
+
+Se o ambiente disponibilizar ferramentas de criação de imagens ou edição de sprites, utilize-as para produzir os recursos necessários. Se não houver essas ferramentas, não finja que foram produzidas ilustrações que não existem. Crie uma estrutura de assets real, identifique claramente os elementos ainda necessários e não apresente placeholders como arte final.
+
+16. TESTES OBRIGATÓRIOS
+
+Teste continuamente:
+
+* Inicialização do jogo.
+* Movimentação em todas as direções.
+* Colisões.
+* Ordenação de profundidade.
+* Animações.
+* Ataques.
+* Aplicação de dano.
+* Morte dos inimigos.
+* Recargas.
+* Habilidades.
+* Inventário.
+* Equipamentos.
+* Missões.
+* Minimapa.
+* HUD.
+* Salvamento.
+* Redimensionamento da tela.
+
+Corrija erros de execução, referências ausentes, sprites desalinhados, animações travadas, colisões incorretas e inconsistências entre os dados do jogo e a interface.
+
+Quando possível, utilize testes automatizados para os sistemas de lógica e testes visuais para conferir o resultado renderizado.
+
+17. PROCESSO DE IMPLEMENTAÇÃO
+
+Trabalhe na seguinte ordem:
+
+FASE 1 — Base técnica:
+
+* Configuração do projeto.
+* Renderização pixel-perfect.
+* Câmera isométrica.
+* Carregamento dos assets.
+* Sistema de coordenadas e colisões.
+
+FASE 2 — Personagem:
+
+* Sprite principal.
+* Quatro orientações.
+* Idle.
+* Caminhada.
+* Ataque.
+* Teste de escala e qualidade.
+
+FASE 3 — Mundo:
+
+* Terreno.
+* Construções.
+* Vegetação.
+* Objetos.
+* Iluminação.
+* Ordenação de profundidade.
+
+FASE 4 — Combate:
+
+* Inimigos.
+* IA.
+* Ataques.
+* Hitboxes.
+* Dano.
+* Efeitos.
+
+FASE 5 — Interface:
+
+* HUD.
+* Habilidades.
+* Itens.
+* Minimapa.
+* Menus.
+
+FASE 6 — Sistemas de RPG:
+
+* Classes.
+* Inventário.
+* Equipamentos.
+* Experiência.
+* Progressão.
+* Missões.
+* Salvamento.
+
+FASE 7 — Polimento:
+
+* Animações adicionais.
+* Efeitos.
+* Áudio.
+* Otimização.
+* Testes.
+* Ajustes visuais.
+
+Cada fase deve resultar em uma versão executável. Não deixe o projeto inteiro para ser integrado no final.
+
+18. CRITÉRIO DE ACEITAÇÃO VISUAL
+
+Antes de considerar o projeto concluído, compare capturas de tela do jogo com as imagens anexadas.
+
+Avalie:
+
+1. A escala e as proporções do protagonista.
+2. A densidade dos pixels.
+3. A qualidade das sombras e dos contornos.
+4. A legibilidade das roupas e dos equipamentos.
+5. A perspectiva da câmera.
+6. A densidade e a composição do cenário.
+7. A iluminação.
+8. A composição do HUD.
+9. A qualidade dos ícones.
+10. A coerência entre personagem, cenário e efeitos.
+
+Se o personagem parecer um boneco geométrico, a implementação falhou.
+
+Se o cenário parecer um mapa genérico com texturas aleatórias, a implementação falhou.
+
+Se o HUD tiver a mesma organização, mas os ícones e a tipografia forem genéricos, a implementação está incompleta.
+
+Se o combate funcionar, mas os ataques não tiverem animações e efeitos próprios, a implementação está incompleta.
+
+Corrija os problemas encontrados antes de avançar para o polimento.
+
+19. REGRAS FINAIS
+
+* Não substitua as referências por uma interpretação visual genérica.
+* Não reduza a qualidade artística para acelerar a implementação.
+* Não crie funcionalidades falsas que apenas alterem números na interface.
+* Não deixe erros conhecidos sem documentar.
+* Não declare um sistema concluído sem implementá-lo e testá-lo.
+* Não reescreva componentes funcionais sem uma razão técnica.
+* Não interrompa o desenvolvimento após criar apenas uma cena ou um personagem.
+* Não esconda limitações técnicas: informe o que funciona e o que ainda depende de assets ou implementação.
+
+Comece inspecionando o projeto, definindo a arquitetura mínima e estabelecendo uma cena de validação visual.
+
+A primeira validação deve mostrar o personagem em pixel art, com a escala correta, quatro orientações, animação de caminhada e câmera isométrica sobre um pequeno trecho de cenário.
+
+Compare essa validação com as referências anexadas, corrija as diferenças mais importantes e só então amplie o conteúdo.
+
+O objetivo final é um RPG jogável com uma identidade visual muito próxima das referências, não uma demonstração genérica de RPG em pixel art.
