@@ -27,37 +27,40 @@ O Vite escuta na porta 5173. O jogo funciona inteiramente no navegador; não pre
 
 WASD controla o movimento; as teclas 1–4 ativam habilidades, e Z/X/V usam poções. As duas primeiras habilidades começam desbloqueadas. Subir de nível concede pontos para a árvore: três especializações por classe, ativas, passivas, melhorias e conexões híbridas. Abra K, selecione um nó, aprenda e equipe em 1–4. Os menus pausam o mundo. Clicar em um item o equipa; o × remove o equipamento daquele espaço.
 
-O diamante dourado no minimapa é a entrada das ruínas. Encontre a entrada, derrote três ameaças e interaja com o selo usando F. Baús podem ser abertos uma vez e concedem moedas, uma poção e equipamentos. As quatro classes podem ser trocadas no painel C, preservando progressão e equipamento. Morrer oferece um retorno à vila, com custo de 25 moedas.
+O diamante dourado no minimapa marca o objetivo atual. Encontre a entrada, derrote três ameaças e interaja com o selo usando F. Baús podem ser abertos uma vez e concedem moedas, uma poção e equipamentos. As quatro classes podem ser trocadas no painel C, preservando progressão e equipamento. Morrer oferece um retorno à vila, com custo de 25 moedas.
+
+Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Converse com Iria, derrote os vigias e afine os três marcos com F. Volte pelo selo ao sul e entregue as memórias à Guardiã de Pedralta. O diário (J) mostra ambos os capítulos; o minimapa revela áreas e indica passagens e objetivos. Região, encontros, baús e campanha são persistidos em save v3, com migração de v1/v2. Veja [a implementação das regiões](docs/REGIOES_IMPLEMENTACAO.md).
 
 ## Sistemas implementados
 
-- Mundo 28 × 28, projeção isométrica, câmera acompanhando o jogador, colisões com obstáculos e ordenação por posição dos pés.
+- Duas regiões de 28 × 28 conectadas por selo interativo: Vila Pedralta e Margem de Kharn. Terrenos, pontos de interesse, encontros e descoberta próprios; câmera e colisões compartilhadas, canal com passagens e ordenação por posição dos pés.
 - Sprites direcionais e frames próprios de idle, caminhada, preparação, ataque, recuperação, dano, magia e morte. Corrida acelera o ciclo de movimentação; interação usa os frames de gestos existentes.
-- Bandidos e lobos com patrulha, percepção, perseguição, ataque, recuperação, dano e morte.
+- Bandidos e lobos com patrulha, linha de visão, perseguição por A*, ataque, recuperação, dano, morte e retorno à origem. Seis encontros únicos em Kharn, além dos inimigos da vila.
 - Combate com alcance, cone, preparação, recuperação, proteção contra dano duplicado, invulnerabilidade temporária, projéteis e recargas.
 - Guerreiro, Arcanista, Assassino e Atirador, com atributos e habilidades distintos: cortes, projéteis, investidas, explosões, defesa e cura.
 - HUD ligada ao estado real, minimapa dinâmico, poções e seis painéis. Inventário em três colunas seguindo a referência: personagem e equipamentos, mochila com filtros e detalhes do item. Selecione um item e use E para equipar/usar, C para comparar ou R para descartar com confirmação. Os equipamentos modificam atributos e os efeitos elementais; a arma é desenhada nos próprios frames de animação.
 - Árvore com 180 nós principais, 36 melhorias, 12 conexões híbridas e 12 escolhas de Maestria. Nível máximo 60, 59 pontos por perfil de classe, quatro habilidades equipáveis e uma suprema. Builds, redistribuição por moeda e migração de saves antigos. Veja [as regras da árvore](docs/ARVORE_IMPLEMENTACAO.md).
 - XP, níveis, pontos de habilidade, moedas, baús e missão com recompensa única. Reaparecimento distante dos inimigos permite continuar a progressão.
-- Persistência versionada em localStorage: personagem, inventário, equipamentos, missão, inimigos derrotados e baús. Salvamento a cada oito segundos e nas transações importantes; dados inválidos são recusados.
+- Persistência v3 em localStorage: personagem, inventário, equipamentos, campanha, região atual, descoberta, posição/HP dos encontros e baús por região. Migração dos saves v1/v2. Salvamento a cada oito segundos e nas transações importantes; dados inválidos são recusados.
 - Efeitos com 48 frames de sprites: corte, projétil, explosão, impacto, cura e dissipação de morte.
 
 ## Arquitetura
 
-| Arquivo                        | Responsabilidade                                               |
-| ------------------------------ | -------------------------------------------------------------- |
-| `src/main.ts`                  | Inicialização e inspeção de estado somente leitura para testes |
-| `src/data.ts`                  | Classes, habilidades, itens e tempos de animação               |
-| `src/world.ts`                 | Composição da vila, projeção, terreno e colisões               |
-| `src/state.ts`                 | Entidades, atributos, equipamento e progressão                 |
-| `src/animation.ts`             | Frames, direção e orientação                                   |
-| `src/combat.ts`                | Preparação, acertos, recursos, projéteis e recompensas         |
-| `src/enemies.ts`               | Máquina de estados e navegação local dos inimigos              |
-| `src/game.ts`                  | Loop, coordenação, interação e missão                          |
-| `src/renderer.ts`              | Mundo, profundidade, sprites, iluminação, VFX e minimapa       |
-| `src/ui.ts`                    | HUD e painéis conectados ao estado                             |
-| `src/save.ts`                  | Serialização e validação de salvamentos                        |
-| `src/input.ts`, `src/audio.ts` | Entrada e mixer central de áudio                               |
+| Arquivo                               | Responsabilidade                                               |
+| ------------------------------------- | -------------------------------------------------------------- |
+| `src/main.ts`                         | Inicialização e inspeção de estado somente leitura para testes |
+| `src/data.ts`                         | Classes, habilidades, itens e tempos de animação               |
+| `src/world.ts`                        | Composição das regiões, projeção, terreno e colisões           |
+| `src/regions.ts`, `src/navigation.ts` | Campanha, conexões, progresso regional e rotas A*              |
+| `src/state.ts`                        | Entidades, atributos, equipamento e progressão                 |
+| `src/animation.ts`                    | Frames, direção e orientação                                   |
+| `src/combat.ts`                       | Preparação, acertos, recursos, projéteis e recompensas         |
+| `src/enemies.ts`                      | Máquina de estados, percepção, perseguição e retorno           |
+| `src/game.ts`                         | Loop, coordenação, interação e missão                          |
+| `src/renderer.ts`                     | Mundo, profundidade, sprites, iluminação, VFX e minimapa       |
+| `src/ui.ts`                           | HUD e painéis conectados ao estado                             |
+| `src/save.ts`                         | Serialização e validação de salvamentos                        |
+| `src/input.ts`, `src/audio.ts`        | Entrada e mixer central de áudio                               |
 
 ## Validar
 
@@ -75,8 +78,8 @@ A suíte de lógica cobre projeção, colisões, animação, dano, alcance, reco
 
 Leia [a documentação de arte](docs/ART.md) para atlas, pivôs e processamento. Os sprites foram produzidos com a ferramenta de imagens a partir das referências do usuário; não são os arquivos originais dessas referências, e não constituem uma reprodução exata pixel a pixel. A revisão humana de fidelidade visual ainda é necessária, sobretudo em silhuetas, materiais, detalhe do ambiente e continuidade de alguns frames gerados.
 
-O primeiro capítulo e seus sistemas funcionam. A expansão para interiores das ruínas, novos capítulos e inimigos adicionais não está incluída. O selo conclui a missão inicial, sem carregar um segundo mapa. A navegação inimiga usa desvio local de obstáculos, não uma malha global de caminhos. Os efeitos de iluminação são polígonos discretos e não uma simulação de sombras dinâmicas.
+A campanha tem dois capítulos e duas regiões finitas conectadas pelo selo. Não há mundo aberto contínuo, interiores ou terceiro capítulo. Kharn reutiliza os atlas existentes; Iria, bandidos e lobos não têm novos sprites exclusivos. A navegação usa A* com obstáculos estáticos; não inclui planejamento cooperativo entre criaturas. As construções antigas de Pedralta conservam colisões circulares, enquanto as grandes ruínas de Kharn usam footprints. Os efeitos de iluminação são polígonos discretos e não uma simulação de sombras dinâmicas.
 
 O áudio usa **53 arquivos locais sintetizados**, mixer por categorias, manutenção/cancelamento por dono, coleta agrupada e música em três camadas. Em M, ajuste os volumes e mute, salvos neste navegador. As gravações e a trilha definitivas continuam pendentes; [a documentação de áudio](docs/AUDIO_IMPLEMENTACAO.md) descreve o que funciona, o inventário e a produção necessária. A interface se adapta a telas menores, mas a jogabilidade desta entrega usa teclado e mouse, sem controles de toque. Não há sincronização de progresso entre dispositivos.
 
-A evolução estrutural está registrada em [docs/AUDITORIA_RPG.md](docs/AUDITORIA_RPG.md), com causas verificadas, sistemas preservados e critérios das próximas etapas. A primeira entrega estabelece coordenadas e pivôs compartilhados, ordem de profundidade incluindo efeitos, clique correto em tela cheia, minimapa separado e movimento com colisão em subpassos. O mundo conectado, a árvore ramificada, variantes visuais de equipamento, drops e áudio final permanecem no roteiro.
+A evolução estrutural está registrada em [docs/AUDITORIA_RPG.md](docs/AUDITORIA_RPG.md), com causas verificadas, sistemas preservados e critérios das próximas etapas. A primeira entrega estabelece coordenadas e pivôs compartilhados, ordem de profundidade incluindo efeitos, clique correto em tela cheia, minimapa separado e movimento com colisão em subpassos. Regiões conectadas, continuidade do capítulo II, árvore ramificada e mixer de áudio foram entregues em etapas posteriores. Variantes visuais ampliadas de equipamento, drops no chão e produção sonora final permanecem no roteiro.

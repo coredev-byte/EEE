@@ -245,6 +245,16 @@ test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", asyn
   await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
   expect((await state(page)).quest.stage).toBe(2);
   expect((await state(page)).player.inventory).toContain("runa");
+  const campaignBefore = (await state(page)).player.coins;
+  await page.keyboard.press("f");
+  await expect.poll(async () => (await state(page)).region).toBe("kharn");
+  expect((await state(page)).player.coins).toBe(campaignBefore);
+  await page.keyboard.press("f");
+  await expect.poll(async () => (await state(page)).region).toBe("pedralta");
+  expect((await state(page)).quest.rewardClaimed).toBe(true);
+  await page.reload();
+  await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
+  expect((await state(page)).region).toBe("pedralta");
 });
 test("HUD de recargas e poções, configurações e pausa", async ({ page }) => {
   await start(page);

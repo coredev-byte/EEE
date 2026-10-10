@@ -1,3 +1,10 @@
+import {
+  REGIONS,
+  ANCHORS,
+  freshExploration,
+  kharnEnemies,
+  type RegionId,
+} from "./regions";
 import { type AudioEvent, type AudioCue } from "./audio-catalog";
 import { syncPoints, learn, profile, equippedSkills } from "./skills";
 import { ACTOR_HEIGHT } from "./spatial";
@@ -26,6 +33,7 @@ import {
 import { World, distance, normalize, PORTAL, type Point } from "./world";
 export class Game {
   world = new World();
+  exploration = freshExploration();
   player: Player = createPlayer();
   enemies: Enemy[] = createEnemies();
   quest: Quest = { stage: 0, kills: 0, rewardClaimed: false };
@@ -85,14 +93,8 @@ export class Game {
     if (s) {
       this.player = s.player;
       this.quest = s.quest;
-      for (const p of this.world.props) p.opened = s.opened.includes(p.id);
-      for (const e of this.enemies)
-        if (s.killed.includes(e.id)) {
-          e.hp = 0;
-          e.rewarded = true;
-          e.state = "dead";
-          e.timer = 3;
-        }
+      this.exploration = s.exploration;
+      this.mountRegion(this.exploration.region);
     }
     this.renderer.snap(this.player);
     requestAnimationFrame((t) => this.tick(t));
@@ -206,9 +208,9 @@ export class Game {
     if (classId) {
       this.pickups = [];
       this.player = createPlayer(classId);
-      this.enemies = createEnemies();
+      this.exploration = freshExploration();
+      this.mountRegion("pedralta");
       this.quest = { stage: 0, kills: 0, rewardClaimed: false };
-      for (const p of this.world.props) p.opened = false;
       this.effects = [];
       this.projectiles = [];
       this.texts = [];
@@ -220,10 +222,7 @@ export class Game {
     this.audio.unlock();
     this.onStart();
     if (this.player.hp <= 0) this.onDeath();
-    else
-      this.notify(
-        "Pedralta guarda mais do que ruínas. Encontre a entrada a nordeste.",
-      );
+    else this.notify(this.objective());
     this.save();
   }
   key(k: string) {
@@ -258,14 +257,16 @@ export class Game {
     }
     this.audio.setListener(this.player);
     const region =
-      distance(this.player, PORTAL) < 5
+      this.world.region === "kharn"
         ? "ruins"
-        : this.world.tile(
-              Math.floor(this.player.x),
-              Math.floor(this.player.y),
-            ) >= 3
-          ? "forest"
-          : "village";
+        : distance(this.player, PORTAL) < 5
+          ? "ruins"
+          : this.world.tile(
+                Math.floor(this.player.x),
+                Math.floor(this.player.y),
+              ) >= 3
+            ? "forest"
+            : "village";
     const mood = !this.started
       ? "menu"
       : this.player.hp <= 0
@@ -296,6 +297,8 @@ export class Game {
   }
   update(dt: number) {
     const p = this.player;
+    const progress = this.exploration.regions[this.world.region];
+    progress.discovered = this.world.discover(p, progress.discovered);
     p.invulnerable = Math.max(0, p.invulnerable - dt);
     p.guard = Math.max(0, p.guard - dt);
     for (const id in p.skillCooldowns) {
@@ -373,7 +376,12 @@ export class Game {
       }
     }
     for (const e of this.enemies) {
-      if (e.hp <= 0 && e.timer > 90 && distance(p, e.home) > 8) {
+      if (
+        this.world.region === "pedralta" &&
+        e.hp <= 0 &&
+        e.timer > 90 &&
+        distance(p, e.home) > 8
+      ) {
         e.x = e.home.x;
         e.y = e.home.y;
         e.maxHp = (e.type === "wolf" ? 75 : 100) + Math.max(0, p.level - 1) * 8;
@@ -396,7 +404,11 @@ export class Game {
       this.saveTimer = 0;
       this.save();
     }
-    if (this.quest.stage === 0 && distance(p, PORTAL) < 2.5) {
+    if (
+      this.world.region === "pedralta" &&
+      this.quest.stage === 0 &&
+      distance(p, PORTAL) < 2.5
+    ) {
       this.quest.stage = 1;
       this.audioEvent("area.discover", { position: PORTAL });
       this.notify(
@@ -407,7 +419,16 @@ export class Game {
   }
   nearby() {
     return this.world.props
-      .filter((o) => !o.opened && ["portal", "chest", "npc"].includes(o.kind))
+      .filter(
+        (o) =>
+          !o.opened &&
+          [
+            "portal",
+            "chest",
+            "npc",
+            ...(this.world.region === "kharn" ? ["statue"] : []),
+          ].includes(o.kind),
+      )
       .sort((a, b) => distance(a, this.player) - distance(b, this.player))
       .find((o) => distance(o, this.player) < 1.5);
   }
@@ -421,17 +442,33 @@ export class Game {
     }
     this.player.action = "interact";
     this.player.animTime = 0;
+    if (this.world.region === "kharn" && o.kind === "statue") {
+      if (!this.exploration.campaign.accepted) {
+        this.notify("Converse primeiro com Iria junto ao aqueduto.");
+        return false;
+      }
+      const anchor = ANCHORS.find((a) => a.x === o.x && a.y === o.y)!;
+      if (this.exploration.campaign.attuned.includes(anchor.id)) {
+        this.notify(`${anchor.name} já está afinado.`);
+        return true;
+      }
+      if (this.enemies.some((e) => e.id === anchor.guardian && e.hp > 0)) {
+        this.notify(`Silencie o vigia que protege o ${anchor.name}.`);
+        this.audioEvent("skill.denied");
+        return false;
+      }
+      this.exploration.campaign.attuned.push(anchor.id);
+      this.audioEvent("quest.complete");
+      this.combat.effect("nova", o, "#b790e5", 2, 1);
+      this.save();
+      this.notify(`${anchor.name} afinado. ${this.objective()}`);
+      return true;
+    }
     if (o.kind === "npc") {
       this.dialogueOpen = true;
       this.dialogueStep = 0;
       this.onDialogue();
     }
-    if (o.kind === "npc")
-      this.notify(
-        this.quest.stage === 2
-          ? "Guardiã: Você trouxe o eco de volta. Pedralta se lembra."
-          : "Guardiã: Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo.",
-      );
     if (o.kind === "chest") {
       o.opened = true;
       this.player.challenges.chests++;
@@ -446,6 +483,12 @@ export class Game {
     }
     if (o.kind === "portal") {
       this.audioEvent("object.portal", { position: o });
+      if (this.world.region === "kharn") {
+        return this.changeRegion("pedralta");
+      }
+      if (this.quest.rewardClaimed) {
+        return this.changeRegion("kharn");
+      }
       if (this.quest.kills < 3) {
         this.quest.stage = 1;
         this.notify(
@@ -467,7 +510,7 @@ export class Game {
         if (levels) this.audioEvent("level.up");
         this.combat.effect("nova", o, "#b790e5", 3, 1.3);
         this.notify(
-          `O Eco de Kharn concluído! +200 XP, +250 moedas e Memória de Kharn.${levels ? " Você evoluiu!" : ""}`,
+          `O Eco de Kharn concluído! +200 XP, +250 moedas e Memória de Kharn. Pressione F no selo para entrar na Margem de Kharn.${levels ? " Você evoluiu!" : ""}`,
         );
       } else
         this.notify("O selo foi rompido. A primeira missão está concluída.");
@@ -551,6 +594,10 @@ export class Game {
   respawn() {
     this.audio.reset();
     this.pickups = [];
+    if (this.world.region !== "pedralta") {
+      this.captureRegion();
+      this.mountRegion("pedralta");
+    }
     this.player.x = 12;
     this.player.y = 12;
     this.player.hp = stats(this.player).maxHp;
@@ -576,8 +623,148 @@ export class Game {
     this.save();
     this.notify("Você desperta em Pedralta. O eco ainda espera. −25 moedas.");
   }
+  captureRegion() {
+    const r = this.exploration.regions[this.world.region];
+    r.opened = this.world.props.filter((p) => p.opened).map((p) => p.id);
+    r.killed = this.enemies.filter((e) => e.rewarded).map((e) => e.id);
+    r.encounters = this.enemies.map((e) => ({
+      id: e.id,
+      x: e.x,
+      y: e.y,
+      hp: e.hp,
+      maxHp: e.maxHp,
+      rewarded: e.rewarded,
+    }));
+  }
+  mountRegion(id: RegionId) {
+    this.exploration.region = id;
+    this.world.setRegion(id);
+    const progress = this.exploration.regions[id];
+    this.enemies = id === "pedralta" ? createEnemies() : kharnEnemies();
+    for (const p of this.world.props) p.opened = progress.opened.includes(p.id);
+    for (const e of this.enemies) {
+      const saved = progress.encounters.find((s) => s.id === e.id);
+      if (saved) Object.assign(e, saved);
+      else if (progress.killed.includes(e.id)) {
+        e.hp = 0;
+        e.rewarded = true;
+      }
+      const at = this.world.nearestFree(e, 0.23);
+      e.x = at.x;
+      e.y = at.y;
+      if (e.hp <= 0) {
+        e.state = "dead";
+        e.timer = 3;
+      }
+    }
+    this.renderer?.makeFloor();
+  }
+  changeRegion(id: RegionId) {
+    if (
+      id === this.world.region ||
+      !this.quest.rewardClaimed ||
+      this.player.hp <= 0
+    )
+      return false;
+    this.captureRegion();
+    this.combat.engine.cancelAudio();
+    this.audio.stopEffects();
+    this.mountRegion(id);
+    const at = this.world.nearestFree(REGIONS[id].arrival);
+    Object.assign(this.player, at, {
+      action: "idle",
+      animTime: 0,
+      attackTimer: 0,
+      guard: 0,
+      invulnerable: 2,
+      stealth: false,
+    });
+    this.effects = [];
+    this.projectiles = [];
+    this.texts = [];
+    this.pickups = [];
+    this.input.keys.clear();
+    this.combat = new Combat(this);
+    this.stepTimer = 0;
+    const first = !this.exploration.campaign.entered;
+    if (id === "kharn") this.exploration.campaign.entered = true;
+    const r = this.exploration.regions[id];
+    r.discovered = this.world.discover(this.player, r.discovered);
+    this.renderer.snap(this.player);
+    this.audio.setListener(this.player);
+    if (first && id === "kharn") this.audioEvent("area.discover");
+    this.save();
+    this.notify(`${REGIONS[id].name}. ${this.objective()}`);
+    return true;
+  }
+  objective() {
+    if (!this.quest.rewardClaimed)
+      return this.quest.stage === 0
+        ? "Encontre a entrada das ruínas"
+        : this.quest.kills >= 3
+          ? "Atravesse o selo de Kharn · F"
+          : `Silencie as ameaças da vila · ${Math.min(3, this.quest.kills)}/3`;
+    const c = this.exploration.campaign;
+    if (c.rewardClaimed)
+      return "Memórias reunidas. Explore as duas regiões e os baús restantes.";
+    if (c.attuned.length === 3)
+      return this.world.region === "kharn"
+        ? "Retorne pelo selo e entregue as memórias à Guardiã"
+        : "Fale com a Guardiã de Pedralta · F";
+    if (this.world.region === "pedralta")
+      return "Entre na Margem de Kharn pelo selo a nordeste · F";
+    if (!c.accepted) return "Converse com Iria junto ao aqueduto · F";
+    const next = ANCHORS.find((a) => !c.attuned.includes(a.id))!;
+    return `Silencie o vigia e afine o ${next.name} · ${c.attuned.length}/3`;
+  }
+  objectivePoint(): Point {
+    if (!this.quest.rewardClaimed) return PORTAL;
+    const c = this.exploration.campaign;
+    if (this.world.region === "pedralta")
+      return c.attuned.length === 3 && !c.rewardClaimed
+        ? { x: 10, y: 14 }
+        : PORTAL;
+    if (c.rewardClaimed || c.attuned.length === 3)
+      return REGIONS.kharn.connection;
+    if (!c.accepted) return { x: 6, y: 20 };
+    return (
+      ANCHORS.find((a) => !c.attuned.includes(a.id)) ?? REGIONS.kharn.connection
+    );
+  }
+  acceptCampaign() {
+    if (!this.quest.rewardClaimed) return false;
+    this.exploration.campaign.accepted = true;
+    this.audioEvent("quest.accept");
+    this.save();
+    return true;
+  }
+  claimCampaign() {
+    const c = this.exploration.campaign;
+    if (
+      this.world.region !== "pedralta" ||
+      c.attuned.length !== 3 ||
+      c.rewardClaimed
+    )
+      return false;
+    c.rewardClaimed = true;
+    this.player.coins += 180;
+    this.pickup("coins", 180);
+    if (!this.player.inventory.includes("amuleto")) {
+      this.player.inventory.push("amuleto");
+      this.pickup("amuleto");
+    }
+    if (gainXp(this.player, 300)) this.audioEvent("level.up");
+    this.audioEvent("quest.complete");
+    this.audio.cue("victory", 4);
+    this.save();
+    this.notify(
+      "As Memórias da Margem reunidas! +300 XP, +180 moedas e Olho de Kharn.",
+    );
+    return true;
+  }
   save() {
     try {
+      this.captureRegion();
       localStorage.setItem(
         SAVE_KEY,
         serialize(
@@ -585,6 +772,7 @@ export class Game {
           this.quest,
           this.world.props.filter((p) => p.opened).map((p) => p.id),
           this.enemies.filter((e) => e.rewarded).map((e) => e.id),
+          this.exploration,
         ),
       );
       this.saveStatus = "Progresso salvo";
@@ -599,6 +787,18 @@ export class Game {
   }
   snapshot() {
     return {
+      region: this.world.region,
+      exploration: structuredClone(this.exploration),
+      objective: this.objective(),
+      pointsOfInterest: this.world.props
+        .filter((o) => ["npc", "portal", "statue", "chest"].includes(o.kind))
+        .map((o) => ({
+          id: o.id,
+          kind: o.kind,
+          x: o.x,
+          y: o.y,
+          opened: !!o.opened,
+        })),
       started: this.started,
       paused: this.paused,
       player: structuredClone(this.player),

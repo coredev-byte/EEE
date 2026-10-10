@@ -39,6 +39,9 @@ export class Renderer {
     this.makeFloor();
   }
   makeFloor() {
+    this.floorOrigin = (this.world.size * TILE.width) / 2;
+    this.floor.width = (this.world.size + 1) * TILE.width;
+    this.floor.height = (this.world.size + 2) * TILE.height;
     const c = this.floor.getContext("2d")!;
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#070e15";
@@ -382,6 +385,18 @@ export class Renderer {
         s.y,
         o.scale,
       );
+      if (o.kind === "statue" && this.world.region === "kharn") {
+        const name =
+          o.x === 8
+            ? "MARCO DA VIGIA"
+            : o.x === 18
+              ? "MARCO DO CANAL"
+              : "MARCO DA MEMÓRIA";
+        c.font = "9px monospace";
+        c.textAlign = "center";
+        c.fillStyle = "#d1b88e";
+        c.fillText(name, s.x, s.y - FRAMES.prop.pivot.y * o.scale - 12);
+      }
       return;
     }
     const map: Partial<Record<Prop["kind"], number>> = {
@@ -416,7 +431,7 @@ export class Renderer {
       c.font = "10px monospace";
       c.textAlign = "center";
       c.fillText(
-        "GUARDIÃ DO ECO",
+        this.world.region === "kharn" ? "IRIA · CARTÓGRAFA" : "GUARDIÃ DO ECO",
         s.x,
         Math.round(s.y - ACTOR_HEIGHT.head * o.scale - 12),
       );

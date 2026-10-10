@@ -183,7 +183,7 @@ describe("Progressão e árvore real", () => {
     delete old.player.resource;
     delete old.player.challenges;
     const s = deserialize(JSON.stringify(old))!;
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(3);
     expect(s.player.trees.arcanista.bar).toEqual([
       "arcanista-base-0",
       "arcanista-base-1",

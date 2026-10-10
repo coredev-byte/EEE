@@ -1,3 +1,4 @@
+import { REGIONS, ANCHORS } from "./regions";
 import { type AudioSettings } from "./audio-catalog";
 import { effectFrame } from "./effect-art";
 import { Combat } from "./combat";
@@ -51,11 +52,11 @@ export class UI {
   constructor(readonly game: Game) {
     document.querySelector("#app")!.innerHTML = `
    <header class="topbar"><a class="wordmark" href="#" aria-label="Distrito Zero">DISTRITO <span>ZER<span class="zero">O</span></span></a><span class="edition">CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO I</span><nav aria-label="Menus do jogo"><button data-panel="quests">DIÁRIO <kbd>J</kbd></button><button data-panel="inventory">INVENTÁRIO <kbd>I</kbd></button><button data-panel="settings" aria-label="Configurações">SISTEMA <kbd>M</kbd></button></nav></header>
-   <main><div class="scene-label"><span><i class="live-dot"></i> VILA PEDRALTA</span><span>UM MUNDO EM RUÍNAS. SEU PRÓPRIO CAMINHO.</span></div>
+   <main><div class="scene-label"><span id="region-caption"><i class="live-dot"></i> VILA PEDRALTA</span><span>UM MUNDO EM RUÍNAS. SEU PRÓPRIO CAMINHO.</span></div>
    <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><div class="game-viewport"><canvas id="game" width="${VIEW.width}" height="${VIEW.height}" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
    <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas><span id="level">1</span></div><div class="bars"><div class="bar-row"><label>HP</label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label>MP</label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label>XP</label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div></section>
    <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
-   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div></section>
+   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div></section>
    <div class="loot-notifications" id="loot-notifications" role="status" aria-label="Itens coletados"></div><div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
    <div class="loading" id="loading"><div class="loading-rune"></div><span>DESPERTANDO PEDRALTA</span></div><div class="menu-layer" id="menu-layer"></div><div class="modal-layer" id="modal-layer" hidden></div>
    </div></section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
@@ -197,6 +198,14 @@ export class UI {
   }
   action(action: string) {
     const g = this.game;
+    if (action === "campaign-accept" || action === "campaign-claim") {
+      g.audioEvent("dialogue.choice");
+      if (action === "campaign-accept") g.acceptCampaign();
+      else g.claimCampaign();
+      g.dialogueStep = 1;
+      this.renderPanel();
+      return;
+    }
     if (action.startsWith("dialogue-")) {
       g.audioEvent(
         action === "dialogue-next" ? "dialogue.next" : "dialogue.choice",
@@ -385,12 +394,23 @@ export class UI {
           content;
     }
     if (this.panel === "dialogue") {
-      title = "Guardiã do Eco";
-      eyebrow = "PEDRALTA / DIÁLOGO";
-      content = `<div class="dialogue-panel"><p>${g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : g.quest.stage === 2 ? "Você trouxe o eco de volta. Pedralta se lembra." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
+      const c = g.exploration.campaign,
+        kharn = g.world.region === "kharn";
+      title = kharn ? "Iria, cartógrafa da Margem" : "Guardiã do Eco";
+      eyebrow = `${REGIONS[g.world.region].short} / DIÁLOGO`;
+      if (kharn) {
+        content = `<div class="dialogue-panel"><p>${c.rewardClaimed ? "As memórias atravessaram o selo. A Margem voltou a fazer parte de Pedralta." : c.attuned.length === 3 ? "Os três marcos respondem. Retorne pelo selo ao sul e entregue as memórias à Guardiã." : g.dialogueStep === 0 ? "O selo não era uma prisão: era uma ponte esquecida. Três vigias guardam os marcos da Vigia, do Canal e da Memória. Silencie cada vigia e afine o marco com F." : "Siga a estrada ao norte até o Marco da Vigia; atravesse a abertura do aqueduto a leste para o Canal e continue ao norte para a Memória. Os marcos aparecem no minimapa."}</p><div>${!c.accepted ? button("REUNIR AS MEMÓRIAS", "campaign-accept", "primary") : ""}${button("MOSTRAR O CAMINHO", "dialogue-next", "secondary")}${button("VOLTAR À MARGEM", "close", "primary")}</div></div>`;
+      } else if (g.quest.rewardClaimed) {
+        content = `<div class="dialogue-panel"><p>${c.rewardClaimed ? "Pedralta se lembra de seus nomes. Você devolveu à vila as memórias da Margem. Os caminhos permanecem abertos." : c.attuned.length === 3 ? "Você reuniu as três memórias. Entregue-as para que Pedralta e Kharn voltem a compartilhar a mesma história." : "O selo tornou-se uma passagem. Entre na Margem de Kharn e procure Iria, a cartógrafa, junto ao aqueduto. Ela conhece os três marcos esquecidos."}</p><div>${c.attuned.length === 3 && !c.rewardClaimed ? button("ENTREGAR AS MEMÓRIAS", "campaign-claim", "primary") : ""}${button("VOLTAR À VILA", "close", "primary")}</div></div>`;
+      } else
+        content = `<div class="dialogue-panel"><p>${g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
     }
     if (this.panel === "quests") {
       content = `<div class="quest-detail"><div class="quest-stamp"><span class="diamond"></span> MISSÃO PRINCIPAL · CAPÍTULO I</div><h3>O Eco de Kharn</h3><p>Há algo vivo sob as pedras de Pedralta. A guardiã fala de um eco — uma memória que a vila tentou enterrar. Encontre o selo nas ruínas a nordeste e descubra o que ainda responde.</p><ol class="quest-steps"><li class="${g.quest.stage >= 1 ? "done" : "active"}">Encontrar a entrada das ruínas <span>${g.quest.stage >= 1 ? "CONCLUÍDO" : "EM ANDAMENTO"}</span></li><li class="${g.quest.kills >= 3 ? "done" : g.quest.stage === 1 ? "active" : ""}">Derrotar três ameaças da vila <span>${Math.min(3, g.quest.kills)} / 3</span></li><li class="${g.quest.stage === 2 ? "done" : g.quest.stage === 1 && g.quest.kills >= 3 ? "active" : ""}">Interagir com o selo de Kharn <span>${g.quest.stage === 2 ? "CONCLUÍDO" : "TECLA F"}</span></li></ol><div class="rewards"><small>RECOMPENSAS</small><span>200 XP</span><span>250 MOEDAS</span><span>${icon(3)} MEMÓRIA DE KHARN</span></div>${g.quest.stage === 2 ? '<div class="completed-banner">O ECO FOI OUVIDO. MISSÃO CONCLUÍDA.</div>' : ""}</div>`;
+    }
+    if (this.panel === "quests" && g.quest.rewardClaimed) {
+      const c = g.exploration.campaign;
+      content += `<div class="quest-detail campaign-detail"><div class="quest-stamp">CAMPANHA · CAPÍTULO II</div><h3>As Memórias da Margem</h3><p>O selo revelou um caminho para Kharn. Iria precisa reunir três memórias para restaurar a ligação com Pedralta.</p><ol class="quest-steps"><li class="${c.entered ? "done" : "active"}">Entrar na Margem de Kharn <span>${c.entered ? "CONCLUÍDO" : "SELO · F"}</span></li><li class="${c.accepted ? "done" : ""}">Conversar com Iria <span>${c.accepted ? "CONCLUÍDO" : "AQUEDUTO SUL"}</span></li>${ANCHORS.map((a) => `<li class="${c.attuned.includes(a.id) ? "done" : ""}">${a.name} <span>${c.attuned.includes(a.id) ? "AFINADO" : "VIGIA + F"}</span></li>`).join("")}<li class="${c.rewardClaimed ? "done" : ""}">Entregar as memórias à Guardiã <span>${c.rewardClaimed ? "CONCLUÍDO" : "PEDRALTA · F"}</span></li></ol><div class="rewards"><span>300 XP</span><span>180 MOEDAS</span><span>${icon(8)} OLHO DE KHARN</span></div><p class="campaign-objective">${g.objective()}</p></div>`;
     }
     if (this.panel === "settings") {
       const audio = g.audio.snapshot();
@@ -406,7 +426,7 @@ export class UI {
     }
     if (this.panel === "help") content = this.helpContent();
     this.modal.hidden = false;
-    this.modal.innerHTML = `<section class="panel panel-${this.panel}" role="dialog" aria-modal="true" aria-label="${title}"><div class="panel-top"><div><small>${eyebrow}</small><h2>${title}</h2></div>${this.panel === "death" ? "" : button("×", "close", "close-button")}</div>${content}<div class="panel-footer"><span>VILA PEDRALTA — SETOR LESTE</span><span>${this.game.started ? "O MUNDO ESTÁ PAUSADO" : "ESCOLHA O SEU CAMINHO"}</span></div></section>`;
+    this.modal.innerHTML = `<section class="panel panel-${this.panel}" role="dialog" aria-modal="true" aria-label="${title}"><div class="panel-top"><div><small>${eyebrow}</small><h2>${title}</h2></div>${this.panel === "death" ? "" : button("×", "close", "close-button")}</div>${content}<div class="panel-footer"><span>${REGIONS[g.world.region].name.toUpperCase()} — ${REGIONS[g.world.region].subtitle.toUpperCase()}</span><span>${this.game.started ? "O MUNDO ESTÁ PAUSADO" : "ESCOLHA O SEU CAMINHO"}</span></div></section>`;
     const tree = this.modal.querySelector(".panel-skills");
     if (tree) tree.scrollTop = treeScroll;
   }
@@ -531,18 +551,29 @@ export class UI {
         `${Math.floor(value)} / ${max}`;
     }
     document.querySelector("#level")!.textContent = String(p.level);
+    const region = REGIONS[g.world.region];
+    document.querySelector("#region-caption")!.innerHTML =
+      `<i class="live-dot"></i> ${region.name.toUpperCase()}`;
+    document.querySelector(".edition")!.innerHTML =
+      `CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO ${g.quest.rewardClaimed ? "II" : "I"}`;
+    document.querySelector(".location")!.innerHTML =
+      `<span class="location-mark"></span> ${region.name.toUpperCase()} <span>— ${region.subtitle.toUpperCase()}</span>`;
+    document.querySelector(".map-label")!.innerHTML =
+      `${region.short} <span>N</span>`;
+    this.minimap.setAttribute("aria-label", `Minimapa de ${region.name}`);
+    document.querySelector("#map-connection")!.textContent =
+      `${g.quest.rewardClaimed ? "SELO →" : "SELO FECHADO →"} ${REGIONS[region.destination].short}`;
     document.querySelector("#coordinates")!.textContent =
-      `${p.x.toFixed(1)} · ${p.y.toFixed(1)}  /  SETOR LESTE`;
-    document.querySelector("#quest-objective")!.textContent =
-      g.quest.stage === 0
-        ? "Encontre a entrada das ruínas"
-        : g.quest.stage === 2
-          ? "O selo foi rompido. O eco foi ouvido."
-          : g.quest.kills >= 3
-            ? "Atravesse o selo de Kharn · F"
-            : `Silencie as ameaças da vila · ${Math.min(3, g.quest.kills)}/3`;
-    document.querySelector("#quest-progress")!.textContent =
-      g.quest.stage === 2 ? "MISSÃO CONCLUÍDA" : "MISSÃO PRINCIPAL";
+      `${p.x.toFixed(1)} · ${p.y.toFixed(1)} / ${g.exploration.regions[g.world.region].discovered.length} ÁREAS`;
+    document.querySelector(".quest-name")!.innerHTML =
+      `<span class="diamond"></span> ${g.quest.rewardClaimed ? "AS MEMÓRIAS DA MARGEM" : "O ECO DE KHARN"}`;
+    document.querySelector("#quest-objective")!.textContent = g.objective();
+    document.querySelector("#quest-progress")!.textContent = g.exploration
+      .campaign.rewardClaimed
+      ? "CAMPANHA CONCLUÍDA"
+      : g.quest.rewardClaimed
+        ? "CAPÍTULO II"
+        : "MISSÃO PRINCIPAL";
     document.querySelector("#class-name")!.innerHTML =
       `<span>${CLASSES[p.classId].name.toUpperCase()}</span><i></i><span>${p.coins.toLocaleString("pt-BR")} MOEDAS</span>`;
     document.querySelector("#skillbar")!.innerHTML = equippedSkills(p)
@@ -571,13 +602,20 @@ export class UI {
       .join("");
     const near = g.nearby();
     document.querySelector<HTMLElement>("#interact")!.innerHTML = near
-      ? `<kbd>F</kbd> ${near.kind === "npc" ? "CONVERSAR" : near.kind === "chest" ? "ABRIR BAÚ" : "SELO DE KHARN"}`
+      ? `<kbd>F</kbd> ${near.kind === "npc" ? "CONVERSAR" : near.kind === "chest" ? "ABRIR BAÚ" : near.kind === "statue" ? "AFINAR MARCO" : g.quest.rewardClaimed ? `VIAJAR → ${REGIONS[region.destination].name.toUpperCase()}` : "SELO DE KHARN"}`
       : "";
     const toast = document.querySelector<HTMLElement>("#toast")!;
     toast.textContent = g.message;
     toast.classList.toggle("show", g.messageTimer > 0);
     document.querySelector("#save-state")!.textContent =
       g.saveStatus.toUpperCase();
-    drawMinimap(this.minimap, g.world, p, g.enemies);
+    drawMinimap(
+      this.minimap,
+      g.world,
+      p,
+      g.enemies,
+      g.exploration,
+      g.objectivePoint(),
+    );
   }
 }

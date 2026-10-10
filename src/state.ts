@@ -34,6 +34,8 @@ export interface Player extends Point {
   challenges: { kills: number; chests: number; seal: boolean };
 }
 export interface Enemy extends Point {
+  route?: import("./navigation").Route;
+  lostSight?: number;
   statusKinds?: string[];
   id: number;
   type: "bandit" | "wolf";

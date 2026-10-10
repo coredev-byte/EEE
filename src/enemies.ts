@@ -1,4 +1,5 @@
 import { COLLISION } from "./spatial";
+import { followRoute } from "./navigation";
 import { direction } from "./animation";
 import { distance, normalize, World } from "./world";
 import type { Enemy, Player } from "./state";
@@ -45,7 +46,7 @@ export function updateEnemies(
           enemy: e.type,
           classId: undefined,
         });
-        if (d < range + 0.3) {
+        if (d < range + 0.3 && world.segmentClear(e, p, 0.04, false)) {
           combat.damagePlayer(
             (e.type === "wolf" ? 19 : 26) * combat.engine.outgoing(e),
             e,
@@ -73,7 +74,17 @@ export function updateEnemies(
       }
       continue;
     }
-    if (d < range && combat.engine.detection() > 0) {
+    const visible = world.segmentClear(e, p, 0.04, false);
+    if (visible && d < combat.engine.detection()) e.lostSight = 0;
+    else e.lostSight = (e.lostSight ?? 0) + dt;
+    const chase =
+      (d < combat.engine.detection() && visible) ||
+      !!combat.engine.get(e, "taunt") ||
+      (["chase", "alert"].includes(e.state) &&
+        (e.lostSight ?? 0) < 4 &&
+        distance(e, e.home) < 12 &&
+        d < 12);
+    if (d < range && visible && combat.engine.detection() > 0) {
       combat.emit("attack.prepare", {
         position: e,
         enemy: e.type,
@@ -87,7 +98,7 @@ export function updateEnemies(
       e.direction = direction({ x: p.x - e.x, y: p.y - e.y });
       continue;
     }
-    if (d < combat.engine.detection() || !!combat.engine.get(e, "taunt")) {
+    if (chase) {
       if (e.state === "patrol") {
         combat.emit("enemy.alert", {
           position: e,
@@ -99,46 +110,50 @@ export function updateEnemies(
       }
       if (e.state === "alert" && e.timer < 0.5) continue;
       e.state = "chase";
-      const n = normalize({ x: p.x - e.x, y: p.y - e.y });
-      e.direction = direction(n);
-      if (Math.floor(e.animTime * 3) !== Math.floor((e.animTime - dt) * 3))
-        combat.emit("enemy.step", {
-          position: e,
-          enemy: e.type,
-          owner: `enemy:${e.id}`,
-          classId: undefined,
-          terrain:
-            world.tile(Math.floor(e.x), Math.floor(e.y)) >= 3
-              ? "grass"
-              : "stone",
-        });
-      world.move(
+      const before = { x: e.x, y: e.y };
+      e.route = followRoute(
+        world,
         e,
-        {
-          x: n.x * dt * slow * (e.type === "wolf" ? 2.1 : 1.55),
-          y: n.y * dt * slow * (e.type === "wolf" ? 2.1 : 1.55),
-        },
-        COLLISION.enemy,
+        e.route,
+        p,
+        dt,
+        slow * (e.type === "wolf" ? 2.1 : 1.55),
       );
-      // Local obstacle avoidance. Try tangents only after a direct path is blocked.
-      const ahead = { x: e.x + n.x * 0.32, y: e.y + n.y * 0.32 };
-      if (world.blocked(ahead, COLLISION.enemy))
-        world.move(
-          e,
-          { x: -n.y * dt * 1.6, y: n.x * dt * 1.6 },
-          COLLISION.enemy,
-        );
+      const moved = distance(e, before);
+      if (moved > 0.001) {
+        e.direction = direction({ x: e.x - before.x, y: e.y - before.y });
+        if (Math.floor(e.animTime * 3) !== Math.floor((e.animTime - dt) * 3))
+          combat.emit("enemy.step", {
+            position: e,
+            enemy: e.type,
+            owner: `enemy:${e.id}`,
+            classId: undefined,
+            terrain:
+              world.tile(Math.floor(e.x), Math.floor(e.y)) >= 3
+                ? "grass"
+                : "stone",
+          });
+      }
     } else {
       e.state = "patrol";
-      const target = {
-        x: e.home.x + Math.sin(time * 0.23 + e.id) * 0.7,
-        y: e.home.y + Math.cos(time * 0.19 + e.id) * 0.7,
-      };
+      const target =
+        distance(e, e.home) > 1
+          ? e.home
+          : world.nearestFree(
+              {
+                x: e.home.x + Math.sin(time * 0.23 + e.id) * 0.7,
+                y: e.home.y + Math.cos(time * 0.19 + e.id) * 0.7,
+              },
+              COLLISION.enemy,
+            );
       const n = normalize({ x: target.x - e.x, y: target.y - e.y });
-      world.move(
+      e.route = followRoute(
+        world,
         e,
-        { x: n.x * dt * 0.35, y: n.y * dt * 0.35 },
-        COLLISION.enemy,
+        e.route,
+        target,
+        dt,
+        distance(e, e.home) > 1 ? 1.2 : 0.35,
       );
       e.direction = direction(n);
     }

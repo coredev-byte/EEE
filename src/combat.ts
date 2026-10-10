@@ -417,6 +417,7 @@ export class Combat {
     );
     e.hp = Math.max(0, e.hp - damage);
     e.state = e.hp ? "hurt" : "dead";
+    e.lostSight = 0;
     e.timer = 0;
     e.animTime = 0;
     c.texts.push({ x: e.x, y: e.y, text: String(damage), color, time: 0 });
@@ -434,7 +435,7 @@ export class Combat {
     if (!e.hp && !e.rewarded) {
       if (periodic) this.engine.killed(e);
       e.rewarded = true;
-      c.quest.kills++;
+      if (c.world.region === "pedralta") c.quest.kills++;
       c.player.coins += e.type === "wolf" ? 12 : 20;
       c.pickup?.("coins", e.type === "wolf" ? 12 : 20);
       const levels = gainXp(c.player, e.type === "wolf" ? 45 : 65);

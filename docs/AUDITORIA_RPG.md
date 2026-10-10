@@ -55,3 +55,9 @@ Validação: build de produção, 30 testes Vitest, 9 testes Chromium e 4 testes
 ## Árvore priorizada pelo novo anexo
 
 A solicitação posterior antecipou a etapa 3. A lista sequencial foi substituída pelo grafo de 180 nós principais, melhorias, conexões, Maestrias, builds e save v2 com migração. As regras e os limites desta implementação estão em [ARVORE_IMPLEMENTACAO.md](ARVORE_IMPLEMENTACAO.md); a especificação original foi preservada em [ARVORE_SOLICITADA.md](ARVORE_SOLICITADA.md). Regiões e expansão da campanha continuam sendo etapas distintas.
+
+## Regiões e continuidade entregues
+
+A etapa 2 passou a conectar Vila Pedralta e Margem de Kharn por um selo bidirecional, com composição própria, canal e passagens, seis encontros, três marcos, Iria e a missão As Memórias da Margem. O save v3 migra v1/v2, preserva builds e missões e guarda descoberta, baús e encontros por área. A perseguição usa A* com clearance, segmentos livres, percepção e retorno à origem. O percurso, as recompensas e as limitações estão documentados em [REGIOES_IMPLEMENTACAO.md](REGIOES_IMPLEMENTACAO.md).
+
+Os limites históricos acima descrevem a base auditada, não o estado atual desses sistemas. Duas regiões finitas não são um mundo aberto contínuo. Os atlas são reutilizados e as construções antigas de Pedralta ainda usam volumes circulares. A ampliação das variantes visuais de equipamentos permanece como próxima etapa. O mixer de áudio foi entregue antes desta etapa, conforme [AUDIO_IMPLEMENTACAO.md](AUDIO_IMPLEMENTACAO.md); a produção sonora final continua pendente.

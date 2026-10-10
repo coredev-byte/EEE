@@ -1,10 +1,19 @@
+import { World } from "./world";
+import {
+  REGIONS,
+  REGION_IDS,
+  ANCHORS,
+  freshExploration,
+  type Exploration,
+} from "./regions";
 import { freshProfiles, syncPoints, validBuild, type Profiles } from "./skills";
 import { playableBounds } from "./spatial";
-import { CLASSES, ITEMS, DIRS, MAP_SIZE, type ClassId } from "./data";
+import { CLASSES, ITEMS, DIRS, type ClassId } from "./data";
 import { createPlayer, stats, type Player, type Quest } from "./state";
 export const SAVE_KEY = "distrito-zero:v1";
 export interface Save {
-  version: 2;
+  version: 3;
+  exploration: Exploration;
   player: Player;
   quest: Quest;
   opened: string[];
@@ -16,9 +25,17 @@ export function serialize(
   quest: Quest,
   opened: string[],
   killed: number[],
+  exploration?: Exploration,
 ): string {
   return JSON.stringify({
-    version: 2,
+    version: 3,
+    exploration: exploration ?? {
+      ...freshExploration(),
+      regions: {
+        ...freshExploration().regions,
+        pedralta: { ...freshExploration().regions.pedralta, opened, killed },
+      },
+    },
     player,
     quest,
     opened,
@@ -31,13 +48,21 @@ export function deserialize(raw: string | null): Save | null {
   try {
     const s = JSON.parse(raw);
     if (
-      ![1, 2].includes(s.version) ||
+      ![1, 2, 3].includes(s.version) ||
       !s.player ||
       !Object.hasOwn(CLASSES, s.player.classId)
     )
       return null;
     const p = s.player;
-    const bounds = playableBounds(MAP_SIZE);
+    if (s.version === 3 && !validExploration(s.exploration, s.quest))
+      return null;
+    const exploration: Exploration =
+      s.version === 3 ? s.exploration : freshExploration();
+    if (s.version !== 3) {
+      exploration.regions.pedralta.opened = [...(s.opened ?? [])];
+      exploration.regions.pedralta.killed = [...(s.killed ?? [])];
+    }
+    const bounds = playableBounds(REGIONS[exploration.region].size);
     const base = createPlayer(p.classId as ClassId);
     if (
       !["x", "y", "hp", "mp", "level", "xp", "coins"].every((k) =>
@@ -107,7 +132,7 @@ export function deserialize(raw: string | null): Save | null {
     )
       return null;
     const trees = s.version === 1 ? freshProfiles() : p.trees;
-    if (s.version === 2) {
+    if (s.version !== 1) {
       if (
         p.level > 60 ||
         !trees ||
@@ -168,16 +193,16 @@ export function deserialize(raw: string | null): Save | null {
       trees: trees as Profiles,
       level: Math.min(60, p.level),
       skillCooldowns:
-        s.version === 2
+        s.version !== 1
           ? p.skillCooldowns
           : Object.fromEntries(
               trees[p.classId].bar.flatMap((id: string | null, i: number) =>
                 id ? [[id, p.cooldowns[i]]] : [],
               ),
             ),
-      resource: s.version === 2 ? p.resource : 0,
+      resource: s.version !== 1 ? p.resource : 0,
       challenges:
-        s.version === 2
+        s.version !== 1
           ? p.challenges
           : {
               kills: s.quest.kills,
@@ -194,7 +219,7 @@ export function deserialize(raw: string | null): Save | null {
       guard: 0,
     };
     if (
-      s.version === 2 &&
+      s.version !== 1 &&
       Object.values(player.trees).some(
         (b) =>
           b.mastery &&
@@ -210,7 +235,13 @@ export function deserialize(raw: string | null): Save | null {
     );
     player.hp = Math.min(player.hp, stats(player).maxHp);
     player.mp = Math.min(player.mp, stats(player).maxMp);
-    return { ...s, version: 2, player };
+    const world = new World(exploration.region);
+    Object.assign(player, world.nearestFree(player));
+    exploration.regions[exploration.region].discovered = world.discover(
+      player,
+      exploration.regions[exploration.region].discovered,
+    );
+    return { ...s, version: 3, player, exploration };
   } catch {
     return null;
   }
@@ -221,4 +252,77 @@ export function load(): Save | null {
   } catch {
     return null;
   }
+}
+
+function validExploration(value: unknown, quest: Quest): value is Exploration {
+  const e = value as Exploration;
+  if (!e || !REGION_IDS.includes(e.region) || !e.campaign || !e.regions)
+    return false;
+  const c = e.campaign;
+  if (
+    ![c.accepted, c.entered, c.rewardClaimed].every(
+      (v) => typeof v === "boolean",
+    ) ||
+    !Array.isArray(c.attuned) ||
+    new Set(c.attuned).size !== c.attuned.length ||
+    c.attuned.some((id) => !ANCHORS.some((a) => a.id === id))
+  )
+    return false;
+  if (
+    (e.region === "kharn" ||
+      c.entered ||
+      c.accepted ||
+      c.attuned.length ||
+      c.rewardClaimed) &&
+    (!quest?.rewardClaimed || quest.stage !== 2)
+  )
+    return false;
+  if (c.rewardClaimed && c.attuned.length !== ANCHORS.length) return false;
+  for (const id of REGION_IDS) {
+    const r = e.regions[id];
+    if (
+      !r ||
+      !Array.isArray(r.opened) ||
+      r.opened.some((x) => typeof x !== "string") ||
+      !Array.isArray(r.killed) ||
+      r.killed.some((x) => !Number.isInteger(x)) ||
+      !Array.isArray(r.discovered) ||
+      r.discovered.length > REGIONS[id].size ** 2
+    )
+      return false;
+    if (
+      r.discovered.some(
+        (k) =>
+          typeof k !== "string" ||
+          !/^\d+:\d+$/.test(k) ||
+          k.split(":").some((v) => Number(v) >= REGIONS[id].size),
+      )
+    )
+      return false;
+    if (
+      !Array.isArray(r.encounters) ||
+      r.encounters.length > 30 ||
+      new Set(r.encounters.map((x) => x.id)).size !== r.encounters.length
+    )
+      return false;
+    if (
+      r.encounters.some(
+        (x) =>
+          !Number.isInteger(x.id) ||
+          ![x.x, x.y, x.hp, x.maxHp].every(Number.isFinite) ||
+          x.x < 1 ||
+          x.y < 1 ||
+          x.x > REGIONS[id].size - 2 ||
+          x.y > REGIONS[id].size - 2 ||
+          x.hp < 0 ||
+          x.maxHp <= 0 ||
+          x.maxHp > 1000 ||
+          x.hp > x.maxHp ||
+          typeof x.rewarded !== "boolean" ||
+          (x.rewarded && x.hp > 0),
+      )
+    )
+      return false;
+  }
+  return true;
 }
