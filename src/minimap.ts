@@ -1,3 +1,5 @@
+import { edgeIndicator, objectiveIcon, type Objective } from "./objectives";
+import type { Point } from "./spatial";
 import { REGIONS, ANCHORS, type Exploration } from "./regions";
 import { has } from "./skills";
 import { minimapPoint } from "./spatial";
@@ -10,7 +12,7 @@ export function drawMinimap(
   player: Player,
   enemies: Enemy[],
   exploration?: Exploration,
-  objective = PORTAL,
+  objective: Objective | Point | null = PORTAL,
 ) {
   const ctx = canvas.getContext("2d")!;
   const padding = 7,
@@ -90,13 +92,58 @@ export function drawMinimap(
         4,
         exploration?.campaign.attuned.includes(a.id) ? "#80c393" : "#a48ac8",
       );
-  const goal = point(objective);
+  if (objective) {
+    const raw = point(objective),
+      goal = edgeIndicator(raw, canvas.width, canvas.height, {
+        left: padding,
+        right: padding,
+        top: padding,
+        bottom: padding,
+      });
+    ctx.save();
+    ctx.translate(Math.round(goal.x), Math.round(goal.y));
+    ctx.rotate(Math.PI / 4);
+    ctx.strokeStyle = "#e8bd68";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-4, -4, 8, 8);
+    ctx.restore();
+    if ("kind" in objective)
+      objectiveIcon(ctx, objective.kind, goal.x, goal.y, 5);
+    if (goal.outside) {
+      ctx.save();
+      ctx.translate(goal.x, goal.y);
+      ctx.rotate(goal.angle);
+      ctx.fillStyle = "#e8bd68";
+      ctx.beginPath();
+      ctx.moveTo(6, 0);
+      ctx.lineTo(1, -3);
+      ctx.lineTo(1, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  const at = point(player);
+  const vectors = {
+    front: [1, 1],
+    back: [-1, -1],
+    left: [-1, 1],
+    right: [1, -1],
+  };
+  const [dx, dy] = vectors[player.direction];
   ctx.save();
-  ctx.translate(Math.round(goal.x), Math.round(goal.y));
-  ctx.rotate(Math.PI / 4);
-  ctx.strokeStyle = "#e8bd68";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(-3, -3, 6, 6);
+  ctx.translate(Math.round(at.x), Math.round(at.y));
+  ctx.rotate(Math.atan2(dy * cellY, dx * cellX));
+  ctx.fillStyle = "#e9edf6";
+  ctx.strokeStyle = "#090f19";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(6, 0);
+  ctx.lineTo(-3, -3);
+  ctx.lineTo(-1, 0);
+  ctx.lineTo(-3, 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
   ctx.restore();
-  marker(player, 4, "#e9edf6");
 }

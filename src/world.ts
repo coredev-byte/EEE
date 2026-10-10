@@ -69,7 +69,7 @@ export class World {
         solid,
         radius,
         scale,
-        ...(region === "kharn" && ["house", "ruinHouse"].includes(kind)
+        ...(["house", "ruinHouse"].includes(kind)
           ? { footprint: { halfX: 1.2, halfY: 1.2 } }
           : {}),
       });
@@ -254,6 +254,29 @@ export class World {
     add("fountain", 11, 17, 1.1, true, 0.7);
     add("statue", 21, 5, 1.3, true, 0.5);
     add("fence", 17, 19, 1.1, true, 0.6);
+  }
+  /** Reach is separate from visual bounds; solid bases prevent through-wall use. */
+  canInteract(from: Point, target: Prop) {
+    const steps = Math.max(1, Math.ceil(distance(from, target) / 0.08));
+    for (let i = 0; i <= steps; i++) {
+      const p = {
+        x: from.x + ((target.x - from.x) * i) / steps,
+        y: from.y + ((target.y - from.y) * i) / steps,
+      };
+      if (
+        this.props.some(
+          (o) => o !== target && o.solid && this.hitsProp(o, p, 0.04),
+        )
+      )
+        return false;
+      if (
+        this.region === "kharn" &&
+        Math.abs(p.x - 14) < 0.5 &&
+        this.tile(14, Math.round(p.y)) === 7
+      )
+        return false;
+    }
+    return true;
   }
   tile(x: number, y: number) {
     if (x === 0 || y === 0 || x === this.size - 1 || y === this.size - 1)

@@ -40,6 +40,7 @@ export class UI {
   previewSkill = false;
   confirmRespec = false;
   lastHUD = 0;
+  private hudLayoutDirty = true;
   selectedItem = "brasa";
   inventoryFilter = "all";
   comparing = false;
@@ -56,7 +57,7 @@ export class UI {
    <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><div class="game-viewport"><canvas id="game" width="${VIEW.width}" height="${VIEW.height}" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
    <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas><span id="level">1</span></div><div class="bars"><div class="bar-row"><label>HP</label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label>MP</label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label>XP</label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div></section>
    <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
-   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div></section>
+   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div><div class="map-legend" aria-label="Legenda do minimapa"><span>➤ Você</span><span class="legend-goal">◇ Objetivo</span><span class="legend-exit">▪ Passagem</span></div></section>
    <div class="loot-notifications" id="loot-notifications" role="status" aria-label="Itens coletados"></div><div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
    <div class="loading" id="loading"><div class="loading-rune"></div><span>DESPERTANDO PEDRALTA</span></div><div class="menu-layer" id="menu-layer"></div><div class="modal-layer" id="modal-layer" hidden></div>
    </div></section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
@@ -150,9 +151,18 @@ export class UI {
       },
       true,
     );
-    const layout = new ResizeObserver(() => this.layoutInventory());
+    const layout = new ResizeObserver(() => {
+      this.hudLayoutDirty = true;
+      this.layoutInventory();
+    });
     layout.observe(document.querySelector(".game-viewport")!);
-    layout.observe(document.querySelector(".player-hud")!);
+    for (const selector of [
+      ".player-hud",
+      ".location",
+      ".quest-hud",
+      ".minimap-box",
+    ])
+      layout.observe(document.querySelector(selector)!);
     game.onDialogue = () => this.open("dialogue");
     game.onUpdate = () => this.update();
     game.onMenu = (p) => {
@@ -533,6 +543,26 @@ export class UI {
       `ÁUDIO · ${this.game.audio.enabled ? "ON" : "OFF"}`;
   }
   update() {
+    if (this.hudLayoutDirty && this.game.renderer) {
+      const viewport = document.querySelector("#game")!.getBoundingClientRect();
+      if (viewport.width && viewport.height) {
+        this.game.renderer.hudBounds = [
+          ".player-hud",
+          ".location",
+          ".quest-hud",
+          ".minimap-box",
+        ].map((selector) => {
+          const b = document.querySelector(selector)!.getBoundingClientRect();
+          return {
+            x: ((b.left - viewport.left) * VIEW.width) / viewport.width,
+            y: ((b.top - viewport.top) * VIEW.height) / viewport.height,
+            width: (b.width * VIEW.width) / viewport.width,
+            height: (b.height * VIEW.height) / viewport.height,
+          };
+        });
+        this.hudLayoutDirty = false;
+      }
+    }
     this.drawSkillPreview();
     const now = performance.now();
     if (now - this.lastHUD < 80) return;
@@ -615,7 +645,7 @@ export class UI {
       p,
       g.enemies,
       g.exploration,
-      g.objectivePoint(),
+      g.activeObjective(),
     );
   }
 }

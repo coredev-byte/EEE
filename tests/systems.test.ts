@@ -45,7 +45,9 @@ describe("Mundo e animações", () => {
     expect(w.blocked({ x: 12, y: 12 })).toBe(false);
     const p = { x: 3.3, y: 9 };
     w.move(p, { x: 2, y: 0 });
-    expect(p.x).toBe(3.3);
+    expect(p.x).toBeGreaterThan(3.3);
+    expect(p.x).toBeLessThanOrEqual(5 - 1.2 - 0.22);
+    expect(w.blocked(p)).toBe(false);
   });
   it("quatro linhas direcionais e caminhada articulada", () => {
     expect(

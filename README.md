@@ -38,6 +38,7 @@ Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Con
 - Bandidos e lobos com patrulha, linha de visão, perseguição por A*, ataque, recuperação, dano, morte e retorno à origem. Seis encontros únicos em Kharn, além dos inimigos da vila.
 - Combate com alcance, cone, preparação, recuperação, proteção contra dano duplicado, invulnerabilidade temporária, projéteis e recargas.
 - Guerreiro, Arcanista, Assassino e Atirador, com atributos e habilidades distintos: cortes, projéteis, investidas, explosões, defesa e cura.
+- Objetivos com alvos reais, símbolos por ação, nome próximo e seta de direção que evita os painéis da HUD. Minimapa com orientação do jogador, objetivo ativo e legenda; destaques encerram ao concluir a campanha. Máscaras locais de oclusão preservam personagem, ameaças e interativos sem alterar a ordem de profundidade. Casas das duas regiões têm bases físicas retangulares, separadas dos sprites. Veja [visibilidade e objetivos](docs/VISIBILIDADE_IMPLEMENTACAO.md).
 - HUD ligada ao estado real, minimapa dinâmico, poções e seis painéis. Inventário em três colunas seguindo a referência: personagem e equipamentos, mochila com filtros e detalhes do item. Selecione um item e use E para equipar/usar, C para comparar ou R para descartar com confirmação. Os equipamentos modificam atributos e os efeitos elementais; a arma é desenhada nos próprios frames de animação.
 - Árvore com 180 nós principais, 36 melhorias, 12 conexões híbridas e 12 escolhas de Maestria. Nível máximo 60, 59 pontos por perfil de classe, quatro habilidades equipáveis e uma suprema. Builds, redistribuição por moeda e migração de saves antigos. Veja [as regras da árvore](docs/ARVORE_IMPLEMENTACAO.md).
 - XP, níveis, pontos de habilidade, moedas, baús e missão com recompensa única. Reaparecimento distante dos inimigos permite continuar a progressão.
@@ -46,21 +47,22 @@ Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Con
 
 ## Arquitetura
 
-| Arquivo                               | Responsabilidade                                               |
-| ------------------------------------- | -------------------------------------------------------------- |
-| `src/main.ts`                         | Inicialização e inspeção de estado somente leitura para testes |
-| `src/data.ts`                         | Classes, habilidades, itens e tempos de animação               |
-| `src/world.ts`                        | Composição das regiões, projeção, terreno e colisões           |
-| `src/regions.ts`, `src/navigation.ts` | Campanha, conexões, progresso regional e rotas A*              |
-| `src/state.ts`                        | Entidades, atributos, equipamento e progressão                 |
-| `src/animation.ts`                    | Frames, direção e orientação                                   |
-| `src/combat.ts`                       | Preparação, acertos, recursos, projéteis e recompensas         |
-| `src/enemies.ts`                      | Máquina de estados, percepção, perseguição e retorno           |
-| `src/game.ts`                         | Loop, coordenação, interação e missão                          |
-| `src/renderer.ts`                     | Mundo, profundidade, sprites, iluminação, VFX e minimapa       |
-| `src/ui.ts`                           | HUD e painéis conectados ao estado                             |
-| `src/save.ts`                         | Serialização e validação de salvamentos                        |
-| `src/input.ts`, `src/audio.ts`        | Entrada e mixer central de áudio                               |
+| Arquivo                               | Responsabilidade                                                |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `src/main.ts`                         | Inicialização e inspeção de estado somente leitura para testes  |
+| `src/data.ts`                         | Classes, habilidades, itens e tempos de animação                |
+| `src/world.ts`                        | Composição das regiões, projeção, terreno e colisões            |
+| `src/regions.ts`, `src/navigation.ts` | Campanha, conexões, progresso regional e rotas A*               |
+| `src/state.ts`                        | Entidades, atributos, equipamento e progressão                  |
+| `src/animation.ts`                    | Frames, direção e orientação                                    |
+| `src/combat.ts`                       | Preparação, acertos, recursos, projéteis e recompensas          |
+| `src/enemies.ts`                      | Máquina de estados, percepção, perseguição e retorno            |
+| `src/game.ts`                         | Loop, coordenação, interação e missão                           |
+| `src/renderer.ts`, `src/occlusion.ts` | Mundo, profundidade, sprites, iluminação, VFX e máscaras locais |
+| `src/objectives.ts`, `src/minimap.ts` | Símbolos, direção, posição real dos objetivos e minimapa        |
+| `src/ui.ts`                           | HUD e painéis conectados ao estado                              |
+| `src/save.ts`                         | Serialização e validação de salvamentos                         |
+| `src/input.ts`, `src/audio.ts`        | Entrada e mixer central de áudio                                |
 
 ## Validar
 

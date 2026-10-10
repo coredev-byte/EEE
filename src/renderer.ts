@@ -1,3 +1,10 @@
+import { Occlusion, type VisibilityTarget } from "./occlusion";
+import {
+  placeObjective,
+  objectiveIcon,
+  type Objective,
+  type ScreenRect,
+} from "./objectives";
 import { effectFrame } from "./effect-art";
 import { NODE_BY_ID, profile } from "./skills";
 import {
@@ -25,11 +32,16 @@ export class Renderer {
   floorOrigin: number;
   readonly floorOffsetY = TILE.height * 0.75;
   time = 0;
+  hudBounds: ScreenRect[] = [];
+  private occlusion: Occlusion;
+  private visibility: VisibilityTarget[] = [];
+  private frameDt = 0;
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly assets: Assets,
     readonly world: World,
   ) {
+    this.occlusion = new Occlusion(assets);
     this.ctx = canvas.getContext("2d", { alpha: false })!;
     this.ctx.imageSmoothingEnabled = false;
     this.floor = document.createElement("canvas");
@@ -39,6 +51,7 @@ export class Renderer {
     this.makeFloor();
   }
   makeFloor() {
+    this.occlusion.reset();
     this.floorOrigin = (this.world.size * TILE.width) / 2;
     this.floor.width = (this.world.size + 1) * TILE.width;
     this.floor.height = (this.world.size + 2) * TILE.height;
@@ -87,6 +100,7 @@ export class Renderer {
     texts: DamageText[],
     projectiles: Projectile[],
     dt: number,
+    objective: Objective | null = null,
   ) {
     this.time += dt;
     const target = iso(p),
@@ -102,6 +116,46 @@ export class Renderer {
       VIEW.focus.x - cameraPixels(this.camera).x - this.floorOrigin,
       VIEW.focus.y - cameraPixels(this.camera).y - this.floorOffsetY,
     );
+    this.frameDt = dt;
+    this.visibility = [
+      {
+        id: "player",
+        foot: this.project(p),
+        depth: p.x + p.y,
+        height: 84,
+        width: 26,
+      },
+    ];
+    for (const e of enemies)
+      if (e.hp > 0 && (e.state !== "patrol" || distance(e, p) < 3))
+        this.visibility.push({
+          id: `enemy:${e.id}`,
+          foot: this.project(e),
+          depth: e.x + e.y,
+          height: e.type === "wolf" ? 40 : 76,
+          width: e.type === "wolf" ? 48 : 26,
+        });
+    if (objective && !this.visibility.some((t) => t.id === objective.id))
+      this.visibility.push({
+        id: objective.id,
+        foot: this.project(objective),
+        depth: objective.x + objective.y,
+        height: Math.min(88, objective.height),
+        width: 30,
+      });
+    for (const o of this.world.props)
+      if (
+        ["npc", "chest"].includes(o.kind) &&
+        !o.opened &&
+        distance(o, p) < 2.5
+      )
+        this.visibility.push({
+          id: o.id,
+          foot: this.project(o),
+          depth: o.x + o.y,
+          height: o.kind === "npc" ? 64 : 40,
+          width: 30,
+        });
     const entries: WorldDraw[] = this.world.props.map((prop) => ({
       point: prop,
       layer: 1,
@@ -151,6 +205,7 @@ export class Renderer {
       c.fillRect(0, edge, edge, VIEW.height - edge * 2);
       c.fillRect(VIEW.width - edge, edge, edge, VIEW.height - edge * 2);
     }
+    if (objective) this.goal(objective, p);
   }
   shadow(s: Point, rx = 16) {
     const c = this.ctx;
@@ -374,16 +429,16 @@ export class Renderer {
       statue: 3,
     };
     if (objectIndex[o.kind] !== undefined) {
-      this.assets.draw(
+      this.occlusion.draw(
         c,
+        o.id,
         "objects",
         objectIndex[o.kind]!,
-        0,
-        FRAMES.prop.width,
-        FRAMES.prop.height,
-        s.x,
-        s.y,
+        s,
         o.scale,
+        o.x + o.y,
+        this.visibility,
+        this.frameDt,
       );
       if (o.kind === "statue" && this.world.region === "kharn") {
         const name =
@@ -437,26 +492,17 @@ export class Renderer {
       );
       return;
     }
-    if (
-      (o.kind === "house" ||
-        o.kind === "ruinHouse" ||
-        o.kind === "tree" ||
-        o.kind === "pine") &&
-      o.x + o.y > p.x + p.y &&
-      distance(o, p) < 2.8
-    )
-      c.globalAlpha = 0.48;
     if (o.opened) c.globalAlpha = 0.45;
-    this.assets.draw(
+    this.occlusion.draw(
       c,
+      o.id,
       "props",
       map[o.kind] ?? 0,
-      0,
-      FRAMES.prop.width,
-      FRAMES.prop.height,
-      s.x,
-      s.y,
+      s,
       o.scale,
+      o.x + o.y,
+      this.visibility,
+      this.frameDt,
     );
     c.globalAlpha = 1;
     if (o.kind === "portal") {
@@ -474,6 +520,39 @@ export class Renderer {
       }
       c.globalAlpha = 1;
     }
+  }
+  goal(goal: Objective, player: Player) {
+    const foot = this.project(goal),
+      head = { x: foot.x, y: foot.y - goal.height };
+    const at = placeObjective(head, VIEW.width, VIEW.height, this.hudBounds);
+    const c = this.ctx;
+    c.save();
+    c.fillStyle = "rgba(4,10,18,.9)";
+    c.fillRect(Math.round(at.x) - 13, Math.round(at.y) - 13, 26, 26);
+    objectiveIcon(c, goal.kind, at.x, at.y, 14);
+    if (at.outside) {
+      c.translate(at.x, at.y);
+      c.rotate(at.angle);
+      c.fillStyle = "#e8bd68";
+      c.beginPath();
+      c.moveTo(21, 0);
+      c.lineTo(15, -4);
+      c.lineTo(15, 4);
+      c.closePath();
+      c.fill();
+    } else if (distance(goal, player) < 5) {
+      c.font = "11px monospace";
+      c.textAlign = "center";
+      const width = c.measureText(goal.label).width + 16;
+      const x = Math.max(
+        width / 2 + 4,
+        Math.min(VIEW.width - width / 2 - 4, at.x),
+      );
+      c.fillRect(x - width / 2, at.y + 17, width, 20);
+      c.fillStyle = "#f4d698";
+      c.fillText(goal.label, x, at.y + 31);
+    }
+    c.restore();
   }
   lanternLight(o: Prop) {
     const s = this.project(o),

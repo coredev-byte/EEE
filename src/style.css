@@ -3156,3 +3156,26 @@ h1 > span {
 .campaign-objective {
   color: var(--gold);
 }
+
+.map-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  color: #dce4ef;
+}
+.legend-goal {
+  color: #e8bd68;
+}
+.legend-exit {
+  color: #70c8d4;
+}
+@media (max-width: 600px) {
+  .map-legend {
+    font-size: 6px;
+    gap: 2px;
+  }
+}

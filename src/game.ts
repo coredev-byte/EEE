@@ -7,6 +7,7 @@ import {
 } from "./regions";
 import { type AudioEvent, type AudioCue } from "./audio-catalog";
 import { syncPoints, learn, profile, equippedSkills } from "./skills";
+import type { Objective } from "./objectives";
 import { ACTOR_HEIGHT } from "./spatial";
 import { CLASSES, ITEMS, type ClassId } from "./data";
 import { direction } from "./animation";
@@ -291,6 +292,7 @@ export class Game {
       this.texts,
       this.projectiles,
       this.paused ? 0 : dt,
+      this.activeObjective(),
     );
     this.onUpdate();
     requestAnimationFrame((n) => this.tick(n));
@@ -430,7 +432,11 @@ export class Game {
           ].includes(o.kind),
       )
       .sort((a, b) => distance(a, this.player) - distance(b, this.player))
-      .find((o) => distance(o, this.player) < 1.5);
+      .find(
+        (o) =>
+          distance(o, this.player) < 1.5 &&
+          this.world.canInteract(this.player, o),
+      );
   }
   interact() {
     const o = this.nearby();
@@ -715,21 +721,78 @@ export class Game {
       return "Entre na Margem de Kharn pelo selo a nordeste · F";
     if (!c.accepted) return "Converse com Iria junto ao aqueduto · F";
     const next = ANCHORS.find((a) => !c.attuned.includes(a.id))!;
-    return `Silencie o vigia e afine o ${next.name} · ${c.attuned.length}/3`;
+    const alive = this.enemies.some((e) => e.id === next.guardian && e.hp > 0);
+    return `${alive ? "Derrote o vigia do" : "Afine o"} ${next.name} · ${c.attuned.length}/3`;
+  }
+  activeObjective(): Objective | null {
+    const prop = (
+      kind: string,
+      type: Objective["kind"],
+      label: string,
+    ): Objective | null => {
+      const o = this.world.props.find((o) => o.kind === kind);
+      return o
+        ? {
+            x: o.x,
+            y: o.y,
+            id: o.id,
+            kind: type,
+            label,
+            height: (kind === "npc" ? 88 : 156) * o.scale + 18,
+          }
+        : null;
+    };
+    const foe = (id?: number): Objective | null => {
+      const e = this.enemies
+        .filter((e) => e.hp > 0 && (id === undefined || e.id === id))
+        .sort((a, b) => distance(a, this.player) - distance(b, this.player))[0];
+      return e
+        ? {
+            x: e.x,
+            y: e.y,
+            id: `enemy:${e.id}`,
+            kind: "defeat",
+            label: id === undefined ? "Derrote a ameaça" : "Derrote o vigia",
+            height: e.type === "wolf" ? 60 : 92,
+          }
+        : null;
+    };
+    if (!this.quest.rewardClaimed) {
+      if (this.quest.stage === 1 && this.quest.kills < 3) return foe();
+      return prop(
+        "portal",
+        this.quest.stage === 0 ? "investigate" : "interact",
+        this.quest.stage === 0 ? "Entrada das ruínas" : "Abra o selo · F",
+      );
+    }
+    const c = this.exploration.campaign;
+    if (c.rewardClaimed) return null;
+    if (this.world.region === "pedralta")
+      return c.attuned.length === 3
+        ? prop("npc", "talk", "Entregue as memórias · F")
+        : prop("portal", "reach", "Passagem para Kharn · F");
+    if (c.attuned.length === 3)
+      return prop("portal", "reach", "Retorne a Pedralta · F");
+    if (!c.accepted) return prop("npc", "talk", "Converse com Iria · F");
+    const a = ANCHORS.find((a) => !c.attuned.includes(a.id))!;
+    const guardian = foe(a.guardian);
+    if (guardian) return guardian;
+    const o = this.world.props.find(
+      (o) => o.kind === "statue" && o.x === a.x && o.y === a.y,
+    );
+    return o
+      ? {
+          x: o.x,
+          y: o.y,
+          id: o.id,
+          kind: "interact",
+          label: `Afine o ${a.name} · F`,
+          height: 156 * o.scale + 18,
+        }
+      : null;
   }
   objectivePoint(): Point {
-    if (!this.quest.rewardClaimed) return PORTAL;
-    const c = this.exploration.campaign;
-    if (this.world.region === "pedralta")
-      return c.attuned.length === 3 && !c.rewardClaimed
-        ? { x: 10, y: 14 }
-        : PORTAL;
-    if (c.rewardClaimed || c.attuned.length === 3)
-      return REGIONS.kharn.connection;
-    if (!c.accepted) return { x: 6, y: 20 };
-    return (
-      ANCHORS.find((a) => !c.attuned.includes(a.id)) ?? REGIONS.kharn.connection
-    );
+    return this.activeObjective() ?? REGIONS[this.world.region].connection;
   }
   acceptCampaign() {
     if (!this.quest.rewardClaimed) return false;
@@ -790,6 +853,7 @@ export class Game {
       region: this.world.region,
       exploration: structuredClone(this.exploration),
       objective: this.objective(),
+      activeObjective: this.activeObjective(),
       pointsOfInterest: this.world.props
         .filter((o) => ["npc", "portal", "statue", "chest"].includes(o.kind))
         .map((o) => ({
