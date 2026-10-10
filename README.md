@@ -36,7 +36,7 @@ O diamante dourado no minimapa é a entrada das ruínas. Encontre a entrada, der
 - Bandidos e lobos com patrulha, percepção, perseguição, ataque, recuperação, dano e morte.
 - Combate com alcance, cone, preparação, recuperação, proteção contra dano duplicado, invulnerabilidade temporária, projéteis e recargas.
 - Guerreiro, Arcanista, Assassino e Atirador, com atributos e habilidades distintos: cortes, projéteis, investidas, explosões, defesa e cura.
-- HUD ligada ao estado real, minimapa dinâmico, poções e seis painéis. Inventário em três colunas seguindo a referência: personagem e equipamentos, mochila com filtros e detalhes do item. Selecione um item e use E para equipar/usar, C para comparar ou R para descartar com confirmação. Os equipamentos modificam atributos e a arma visível.
+- HUD ligada ao estado real, minimapa dinâmico, poções e seis painéis. Inventário em três colunas seguindo a referência: personagem e equipamentos, mochila com filtros e detalhes do item. Selecione um item e use E para equipar/usar, C para comparar ou R para descartar com confirmação. Os equipamentos modificam atributos e os efeitos elementais; a arma é desenhada nos próprios frames de animação.
 - XP, níveis, pontos de habilidade, moedas, baús e missão com recompensa única.
 - Persistência versionada em localStorage: personagem, inventário, equipamentos, missão, inimigos derrotados e baús. Salvamento a cada oito segundos e nas transações importantes; dados inválidos são recusados.
 - Efeitos com 48 frames de sprites: corte, projétil, explosão, impacto, cura e dissipação de morte.

@@ -46,3 +46,5 @@ As imagens de referência são a direção obrigatória, mas os PNGs gerados sã
 ## Inventário
 
 A tela mantém o HUD superior sobre a vila e segue a composição da referência: personagem ampliado em nearest-neighbor com espaços de equipamento à esquerda, mochila com seis colunas no centro, detalhe e ações à direita. As seis abas levam aos menus reais. Armas, armaduras, acessórios e poções têm filtros; os espaços vazios não simulam itens adquiridos. Nível, atributos, quantidades, equipamento e moedas vêm do salvamento. Em celular, as três áreas são empilhadas e roláveis.
+
+A renderização do personagem usa as armas dos frames de animação, sem sobrepor ícones rotacionados de inventário na mão. Os equipamentos elementais mantêm suas partículas de fogo, eletricidade ou runas.

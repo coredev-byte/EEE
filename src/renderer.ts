@@ -230,11 +230,8 @@ export class Renderer {
     const weapon = ITEMS.find((i) => i.id === p.equipment.weapon);
     if (weapon && p.hp > 0) {
       const wx = p.direction === "left" ? -12 : 12;
-      c.save();
-      c.translate(s.x + wx, s.y - 25);
-      c.rotate(p.direction === "left" ? -0.45 : 0.45);
-      this.assets.icon(c, weapon.icon, -10, -13, 23);
-      c.restore();
+      // Weapons belong to the animation artwork. A rotated inventory icon here
+      // floated over the hands and appeared as a blue cylinder during movement.
       if (
         weapon.element === "fire" ||
         weapon.element === "lightning" ||
