@@ -1,3 +1,4 @@
+import { learn, assign, syncPoints } from "../src/skills";
 import { describe, it, expect } from "vitest";
 import { iso, uniso, World, distance } from "../src/world";
 import {
@@ -194,7 +195,10 @@ describe("RPG e persistência", () => {
 describe("Habilidades avançadas", () => {
   it("nova causa dano em múltiplos alvos, uma vez em cada um", () => {
     const c = context();
-    c.player.unlocked = 4;
+    c.player.level = 3;
+    syncPoints(c.player);
+    learn(c.player, `${c.player.classId}-base-2`);
+    assign(c.player, `${c.player.classId}-base-2`, 2);
     for (const e of c.enemies.slice(0, 2)) {
       e.x = 12.5;
       e.y = 12.5;
@@ -220,8 +224,11 @@ describe("Habilidades avançadas", () => {
   });
   it("cura e defesa possuem comportamento funcional", () => {
     const c = context();
-    c.player.unlocked = 4;
     c.player.classId = "arcanista";
+    c.player.level = 3;
+    syncPoints(c.player);
+    learn(c.player, "arcanista-base-3");
+    assign(c.player, "arcanista-base-3", 3);
     c.player.hp = 40;
     const cb = new Combat(c);
     cb.attack(undefined, 3);
@@ -230,6 +237,9 @@ describe("Habilidades avançadas", () => {
     c.player.attackTimer = 0;
     cb.pending = null;
     c.player.classId = "guerreiro";
+    syncPoints(c.player);
+    learn(c.player, "guerreiro-base-3");
+    assign(c.player, "guerreiro-base-3", 3);
     c.player.cooldowns[3] = 0;
     cb.attack(undefined, 3);
     cb.update(0.2);

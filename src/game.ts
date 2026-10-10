@@ -1,3 +1,4 @@
+import { syncPoints, learn, profile, equippedSkills } from "./skills";
 import { ACTOR_HEIGHT } from "./spatial";
 import { CLASSES, type ClassId } from "./data";
 import { direction } from "./animation";
@@ -82,6 +83,11 @@ export class Game {
     this.renderer.snap(this.player);
     requestAnimationFrame((t) => this.tick(t));
   }
+  skillHeld = (id: string) => {
+    const index = profile(this.player).bar.indexOf(id);
+    return index >= 0 && this.input?.keys.has(String(index + 1));
+  };
+  soundSkill = (element: string) => this.audio.skill(element);
   sound = (kind: "attack" | "hit" | "magic" | "death") =>
     this.audio.sound(kind);
   notify = (text: string) => {
@@ -187,7 +193,11 @@ export class Game {
     const p = this.player;
     p.invulnerable = Math.max(0, p.invulnerable - dt);
     p.guard = Math.max(0, p.guard - dt);
-    p.cooldowns = p.cooldowns.map((n) => Math.max(0, n - dt));
+    for (const id in p.skillCooldowns)
+      p.skillCooldowns[id] = Math.max(0, p.skillCooldowns[id] - dt);
+    p.cooldowns = equippedSkills(p).map((s) =>
+      s ? (p.skillCooldowns[s.id] ?? 0) : 0,
+    );
     p.mp = Math.min(stats(p).maxMp, p.mp + dt * 2.2);
     p.animTime += dt;
     if (p.hp > 0) {
@@ -206,7 +216,9 @@ export class Game {
             p.animTime = 0;
           }
           const speed =
-            stats(p).speed * (this.input.keys.has("shift") ? 1.45 : 1);
+            stats(p).speed *
+            this.combat.engine.speed() *
+            (this.input.keys.has("shift") ? 1.45 : 1);
           this.world.move(p, { x: n.x * speed * dt, y: n.y * speed * dt });
           if (this.input.keys.has("shift")) p.animTime += dt * 0.45;
           this.stepTimer += dt;
@@ -227,6 +239,11 @@ export class Game {
         p.animTime = 0;
       }
       this.combat.update(dt);
+      p.stealth = this.combat.engine.active("stealth");
+      for (const e of this.enemies)
+        e.statusKinds = (this.combat.engine.statuses.get(e.id) ?? []).map(
+          (s) => s.kind,
+        );
       updateEnemies(this.enemies, p, this.world, this.combat, dt, this.time);
     } else {
       this.combat.pending = null;
@@ -235,6 +252,18 @@ export class Game {
       if (p.animTime > 0.8) {
         this.paused = true;
         this.onDeath();
+      }
+    }
+    for (const e of this.enemies) {
+      if (e.hp <= 0 && e.timer > 90 && distance(p, e.home) > 8) {
+        e.x = e.home.x;
+        e.y = e.home.y;
+        e.maxHp = (e.type === "wolf" ? 75 : 100) + Math.max(0, p.level - 1) * 8;
+        e.hp = e.maxHp;
+        e.rewarded = false;
+        e.state = "patrol";
+        e.timer = 0;
+        e.animTime = 0;
       }
     }
     for (const e of this.effects) e.time += dt;
@@ -280,6 +309,7 @@ export class Game {
       );
     if (o.kind === "chest") {
       o.opened = true;
+      this.player.challenges.chests++;
       this.player.coins += 75;
       this.player.potions[0]++;
       this.player.inventory.push(o.x < 10 ? "couraça" : "amuleto");
@@ -294,6 +324,7 @@ export class Game {
       } else if (!this.quest.rewardClaimed) {
         this.quest.stage = 2;
         this.quest.rewardClaimed = true;
+        this.player.challenges.seal = true;
         this.player.coins += 250;
         if (!this.player.inventory.includes("runa"))
           this.player.inventory.push("runa");
@@ -333,6 +364,10 @@ export class Game {
   changeClass(id: ClassId) {
     const ratio = this.player.hp / stats(this.player).maxHp;
     this.player.classId = id;
+    syncPoints(this.player);
+    this.player.resource = 0;
+    this.player.mp = Math.min(this.player.mp, stats(this.player).maxMp);
+    this.combat.engine.ensure();
     this.player.hp = Math.max(1, Math.round(stats(this.player).maxHp * ratio));
     this.player.cooldowns = [0, 0, 0, 0];
     this.combat.pending = null;
@@ -348,12 +383,24 @@ export class Game {
     }
     return ok;
   }
-  unlock() {
-    if (this.player.skillPoints <= 0 || this.player.unlocked >= 4) return false;
-    this.player.skillPoints--;
-    this.player.unlocked++;
-    this.save();
-    return true;
+  unlock(id?: string) {
+    const target =
+      id ??
+      `${this.player.classId}-base-${profile(this.player).nodes.includes(`${this.player.classId}-base-2`) ? 3 : 2}`;
+    const ok = learn(this.player, target);
+    if (ok) this.save();
+    return ok;
+  }
+  inCombat() {
+    return (
+      this.combat.engine.combatTime > 0 ||
+      this.enemies.some(
+        (e) =>
+          e.hp > 0 &&
+          ["attack", "chase", "alert"].includes(e.state) &&
+          distance(e, this.player) < 5.5,
+      )
+    );
   }
   respawn() {
     this.player.x = 12;
@@ -364,6 +411,8 @@ export class Game {
     this.player.action = "idle";
     this.player.animTime = 0;
     this.player.invulnerable = 3;
+    this.combat = new Combat(this);
+    this.player.resource = 0;
     for (const e of this.enemies)
       if (e.hp > 0) {
         e.x = e.home.x;
@@ -409,6 +458,7 @@ export class Game {
       enemies: structuredClone(this.enemies),
       quest: structuredClone(this.quest),
       nearby: this.nearby()?.kind,
+      skills: this.combat.engine.snapshot(),
       projectiles: this.projectiles.length,
       effects: this.effects.length,
       saveStatus: this.saveStatus,

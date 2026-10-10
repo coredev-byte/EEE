@@ -1,3 +1,4 @@
+import { has } from "./skills";
 import { minimapPoint } from "./spatial";
 import { distance, PORTAL, type World } from "./world";
 import type { Enemy, Player } from "./state";
@@ -54,7 +55,12 @@ export function drawMinimap(
     if (color) marker(prop, 4, color);
   }
   for (const enemy of enemies)
-    if (enemy.hp > 0 && distance(enemy, player) < 6)
+    if (
+      enemy.hp > 0 &&
+      (enemy.statusKinds?.includes("mark") ||
+        distance(enemy, player) <
+          (player.classId === "atirador" && has(player, 2, 1) ? 12 : 6))
+    )
       marker(enemy, 3, "#d76475");
   const goal = point(PORTAL);
   ctx.save();

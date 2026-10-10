@@ -1,3 +1,4 @@
+import { freshProfiles, has, syncPoints, type Profiles } from "./skills";
 import {
   CLASSES,
   ITEMS,
@@ -8,6 +9,7 @@ import {
 } from "./data";
 import type { Point } from "./world";
 export interface Player extends Point {
+  stealth?: boolean;
   hp: number;
   mp: number;
   level: number;
@@ -26,8 +28,13 @@ export interface Player extends Point {
   equipment: Record<Item["slot"], string | null>;
   skillPoints: number;
   unlocked: number;
+  trees: Profiles;
+  skillCooldowns: Record<string, number>;
+  resource: number;
+  challenges: { kills: number; chests: number; seal: boolean };
 }
 export interface Enemy extends Point {
+  statusKinds?: string[];
   id: number;
   type: "bandit" | "wolf";
   hp: number;
@@ -49,12 +56,21 @@ export interface Effect extends Point {
   range: number;
 }
 export interface Projectile extends Point {
+  speed?: number;
   vx: number;
   vy: number;
   damage: number;
   range: number;
   traveled: number;
   color: string;
+  source?: string;
+  boomerang?: boolean;
+  returning?: boolean;
+  pierce?: boolean;
+  ricochet?: boolean;
+  bounced?: boolean;
+  ghost?: boolean;
+  hitIds?: number[];
 }
 export interface DamageText extends Point {
   text: string;
@@ -96,6 +112,10 @@ export function createPlayer(classId: ClassId = "guerreiro"): Player {
     equipment: { weapon: "ferro", armor: "casaco", accessory: null },
     skillPoints: 0,
     unlocked: 2,
+    trees: freshProfiles(),
+    skillCooldowns: {},
+    resource: 0,
+    challenges: { kills: 0, chests: 0, seal: false },
   };
 }
 export function stats(p: Player): Stats {
@@ -105,7 +125,10 @@ export function stats(p: Player): Stats {
     .filter((i): i is Item => !!i);
   return {
     maxHp: c.hp + (p.level - 1) * 18 + items.reduce((s, i) => s + i.hp, 0),
-    maxMp: 120 + (p.level - 1) * 8,
+    maxMp:
+      120 +
+      (p.level - 1) * 8 +
+      (p.classId === "arcanista" && has(p, 2, 3) ? 40 : 0),
     attack:
       c.damage + (p.level - 1) * 3 + items.reduce((s, i) => s + i.attack, 0),
     defense: items.reduce((s, i) => s + i.defense, 0),
@@ -116,14 +139,15 @@ export function stats(p: Player): Stats {
 export function gainXp(p: Player, value: number) {
   p.xp += value;
   let levels = 0;
-  while (p.xp >= stats(p).xpGoal) {
+  while (p.level < 60 && p.xp >= stats(p).xpGoal) {
     p.xp -= stats(p).xpGoal;
     p.level++;
-    p.skillPoints++;
+    syncPoints(p);
     levels++;
     p.hp = stats(p).maxHp;
     p.mp = stats(p).maxMp;
   }
+  if (p.level >= 60) p.xp = 0;
   return levels;
 }
 export function equip(p: Player, id: string | null, slot?: Item["slot"]) {

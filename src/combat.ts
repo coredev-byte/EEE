@@ -1,3 +1,5 @@
+import { SkillEngine } from "./skill-engine";
+import { equippedSkills, NODE_BY_ID, owns } from "./skills";
 import { CLASSES, type Skill } from "./data";
 import { direction, facing } from "./animation";
 import { distance, normalize, type Point, World } from "./world";
@@ -20,17 +22,24 @@ export interface CombatContext {
   quest: Quest;
   world: World;
   notify: (text: string) => void;
+  skillHeld?: (id: string) => boolean;
+  soundSkill?: (element: string) => void;
   sound: (kind: "attack" | "hit" | "magic" | "death") => void;
 }
 export interface PendingAttack {
   time: number;
   done: boolean;
+  duration: number;
   skill: Skill;
   aim: Point;
+  target?: Point;
 }
 export class Combat {
   pending: PendingAttack | null = null;
-  constructor(readonly ctx: CombatContext) {}
+  engine: SkillEngine;
+  constructor(readonly ctx: CombatContext) {
+    this.engine = new SkillEngine(this);
+  }
   aim(target?: Point): Point {
     const p = this.ctx.player;
     return target
@@ -43,20 +52,22 @@ export class Combat {
     const c = CLASSES[p.classId];
     let s: Skill;
     if (skillIndex >= 0) {
-      if (skillIndex >= p.unlocked) {
-        this.ctx.notify(
-          "Habilidade bloqueada. Evolua e use um ponto de habilidade.",
-        );
+      const equipped = equippedSkills(p)[skillIndex];
+      if (!equipped || !owns(p, equipped.id)) {
+        this.ctx.notify("Slot vazio. Equipe uma habilidade na árvore (K).");
         return false;
       }
-      s = c.skills[skillIndex];
-      if (p.cooldowns[skillIndex] > 0) return false;
+      s = equipped;
+      if ((p.skillCooldowns[s.id] ?? 0) > 0) return false;
       if (p.mp < s.cost) {
-        this.ctx.notify("Mana insuficiente. Use uma poção com 2.");
+        this.ctx.notify("Essência / mana insuficiente. Use uma poção com X.");
         return false;
       }
+      if (!this.engine.before(NODE_BY_ID.get(s.id))) return false;
       p.mp -= s.cost;
+      p.skillCooldowns[s.id] = s.cooldown;
       p.cooldowns[skillIndex] = s.cooldown;
+      this.engine.cast(NODE_BY_ID.get(s.id));
     } else
       s = {
         id: "basic",
@@ -74,36 +85,74 @@ export class Combat {
     p.direction = direction(aim);
     p.action = s.kind === "slash" || s.kind === "dash" ? "attack" : "cast";
     p.animTime = 0;
-    p.attackTimer = p.classId === "assassino" ? 0.36 : 0.5;
-    this.pending = { time: 0, done: false, skill: s, aim };
+    p.attackTimer =
+      (p.classId === "assassino" ? 0.36 : 0.5) * this.engine.attackSpeed();
+    this.pending = {
+      time: 0,
+      done: false,
+      skill: s,
+      aim,
+      duration: p.attackTimer,
+      target: target ? { ...target } : undefined,
+    };
     return true;
   }
   update(dt: number) {
     const p = this.ctx.player;
+    this.engine.update(dt);
     p.attackTimer = Math.max(0, p.attackTimer - dt);
     if (this.pending) {
       this.pending.time += dt;
-      if (!this.pending.done && this.pending.time >= 0.16) {
+      const node = NODE_BY_ID.get(this.pending.skill.id),
+        channel = node?.mechanic === "channel";
+      const ready = channel
+        ? this.pending.time >= (node?.type === "ultimate" ? 1 : 0.25) &&
+          (!this.ctx.skillHeld?.(this.pending.skill.id) ||
+            this.pending.time >= 2)
+        : this.pending.time >= 0.16;
+      if (channel && !this.pending.done) {
+        p.attackTimer = 0.3;
+        p.action = "cast";
+      }
+      if (!this.pending.done && ready) {
+        if (channel)
+          this.pending.skill = {
+            ...this.pending.skill,
+            damage:
+              this.pending.skill.damage *
+              (1 + Math.min(2, this.pending.time) * 0.35),
+          };
         this.pending.done = true;
         this.resolve(this.pending);
       }
-      if (this.pending.time >= (p.classId === "assassino" ? 0.36 : 0.5))
+      if (this.pending.done && this.pending.time >= this.pending.duration)
         this.pending = null;
     }
     const c = this.ctx;
     for (const b of c.projectiles) {
-      const step = Math.min(dt * 9, b.range - b.traveled);
+      const step = Math.min(dt * (b.speed ?? 9), b.range - b.traveled);
       const old = { x: b.x, y: b.y };
       b.x += b.vx * step;
       b.y += b.vy * step;
       b.traveled += step;
-      if (c.world.blocked(b, 0.04)) {
+      if (c.world.projectileBlocked(b, !!b.ghost)) {
+        if (b.ricochet && !b.bounced) {
+          b.x = old.x;
+          b.y = old.y;
+          b.vx = -b.vx;
+          b.vy = -b.vy;
+          b.bounced = true;
+          continue;
+        }
         b.traveled = b.range;
         this.effect("impact", b, b.color, 0.5);
+        b.x = old.x;
+        b.y = old.y;
+        this.explode(b);
         continue;
       }
       for (const e of c.enemies) {
-        if (e.hp <= 0) continue;
+        if (e.hp <= 0 || b.hitIds?.includes(e.id)) continue;
         const v = { x: b.x - old.x, y: b.y - old.y };
         const vv = v.x * v.x + v.y * v.y;
         const t = vv
@@ -113,13 +162,56 @@ export class Combat {
             )
           : 0;
         if (distance(e, { x: old.x + v.x * t, y: old.y + v.y * t }) < 0.45) {
-          this.hit(e, b.damage, b.color);
-          b.traveled = b.range;
-          break;
+          const offset = distance(e, {
+            x: old.x + v.x * t,
+            y: old.y + v.y * t,
+          });
+          const precise = offset < 0.15;
+          const node = NODE_BY_ID.get(b.source ?? "");
+          let amount = b.damage;
+          if (
+            precise &&
+            this.ctx.player.classId === "arcanista" &&
+            this.engine.has(2, 7)
+          )
+            amount *= 1.15;
+          if (precise && this.ctx.player.classId === "atirador") {
+            if (node?.branch === 0 && node.index === 0) amount *= 1.3;
+            if (this.engine.has(0, 3)) amount *= 1.3;
+            if (this.engine.has(0, 9)) this.engine.resource(5);
+          }
+          this.hit(e, amount, b.color, b.source);
+          (b.hitIds ??= []).push(e.id);
+          if (!b.pierce) {
+            b.traveled = b.range;
+            this.explode(b, e.id);
+            break;
+          }
         }
       }
     }
+    for (const b of c.projectiles)
+      if (b.boomerang && !b.returning && b.traveled >= b.range) {
+        b.returning = true;
+        b.traveled = 0;
+        b.vx = -b.vx;
+        b.vy = -b.vy;
+        b.hitIds = [];
+      }
     c.projectiles = c.projectiles.filter((b) => b.traveled < b.range);
+  }
+  explode(b: Projectile, except?: number) {
+    const n = NODE_BY_ID.get(b.source ?? "");
+    if (
+      n?.classId === "arcanista" &&
+      n.branch === 0 &&
+      [3, 11].includes(n.index)
+    ) {
+      this.effect("nova", b, n.color, 2, 0.6);
+      for (const e of this.ctx.enemies)
+        if (e.hp > 0 && e.id !== except && distance(e, b) < 2)
+          this.hit(e, b.damage * 0.6, b.color, b.source);
+    }
   }
   effect(
     kind: Effect["kind"],
@@ -144,18 +236,38 @@ export class Combat {
       p = c.player,
       s = a.skill;
     const angle = Math.atan2(a.aim.y, a.aim.x);
-    c.sound(s.kind === "slash" ? "attack" : "magic");
+    const identity = NODE_BY_ID.get(s.id);
+    if (identity?.mechanic && c.soundSkill) c.soundSkill(identity.element);
+    else c.sound(s.kind === "slash" ? "attack" : "magic");
+    if (this.engine.resolve(a)) return;
+    const node = NODE_BY_ID.get(s.id);
     if (s.kind === "projectile") {
+      const mods = this.engine.projectile(node);
       c.projectiles.push({
         x: p.x + a.aim.x * 0.45,
         y: p.y + a.aim.y * 0.45,
         vx: a.aim.x,
         vy: a.aim.y,
         damage: s.damage + (s.id === "basic" ? 0 : stats(p).attack * 0.35),
-        range: s.range,
+        range: s.range * (this.engine.active("distortion") ? 1.35 : 1),
         traveled: 0,
         color: s.color,
+        source: s.id,
+        speed:
+          node?.classId === "arcanista" && node.branch === 0 && node.index === 3
+            ? 5
+            : 9,
+        ...mods,
       });
+      if (mods.duplicate) {
+        const copy = {
+          ...c.projectiles[c.projectiles.length - 1],
+          damage: c.projectiles[c.projectiles.length - 1].damage * 0.6,
+        };
+        copy.x += a.aim.y * 0.2;
+        copy.y -= a.aim.x * 0.2;
+        c.projectiles.push(copy);
+      }
       return;
     }
     if (s.kind === "guard") {
@@ -169,7 +281,8 @@ export class Combat {
       return;
     }
     if (s.kind === "dash") {
-      p.invulnerable = 0.45;
+      p.invulnerable =
+        p.classId === "assassino" && this.engine.has(2, 1) ? 0.65 : 0.45;
       const origin = { x: p.x, y: p.y };
       for (let i = 0; i < 18; i++) {
         c.world.move(p, {
@@ -179,12 +292,13 @@ export class Combat {
         for (const e of c.enemies) {
           if (e.hp > 0 && distance(e, p) < 0.85 && !hitIds.has(e.id)) {
             hitIds.add(e.id);
-            this.hit(e, s.damage, s.color);
+            this.hit(e, s.damage, s.color, s.id);
           }
         }
       }
       this.effect("dash", origin, s.color, s.range, 0.4, angle);
       hitIds.clear();
+      this.engine.dash(node);
       return;
     }
     this.effect(
@@ -203,13 +317,23 @@ export class Combat {
           e,
           s.damage + (s.id === "basic" ? 0 : stats(p).attack * 0.3),
           s.color,
+          s.id,
         );
     }
   }
-  hit(e: Enemy, amount: number, color: string) {
+  hit(
+    e: Enemy,
+    amount: number,
+    color: string,
+    source?: string,
+    periodic = false,
+  ) {
     if (e.hp <= 0) return;
     const c = this.ctx;
-    const damage = Math.round(amount);
+    this.engine.ensure();
+    const damage = Math.round(
+      periodic ? amount : this.engine.amplify(e, amount, source),
+    );
     e.hp = Math.max(0, e.hp - damage);
     e.state = e.hp ? "hurt" : "dead";
     e.timer = 0;
@@ -219,7 +343,9 @@ export class Combat {
     c.sound("hit");
     const away = normalize({ x: e.x - c.player.x, y: e.y - c.player.y });
     c.world.move(e, { x: away.x * 0.15, y: away.y * 0.15 });
+    if (!periodic) this.engine.afterHit(e, damage, source);
     if (!e.hp && !e.rewarded) {
+      if (periodic) this.engine.killed(e);
       e.rewarded = true;
       c.quest.kills++;
       c.player.coins += e.type === "wolf" ? 12 : 20;
@@ -232,12 +358,14 @@ export class Combat {
       c.sound("death");
     }
   }
-  damagePlayer(amount: number) {
+  damagePlayer(amount: number, attacker?: Enemy) {
     const p = this.ctx.player;
-    if (p.invulnerable > 0 || p.hp <= 0) return false;
+    this.engine.ensure();
+    const incoming = this.engine.incoming(amount, attacker);
+    if (incoming <= 0 || p.hp <= 0) return false;
     const value = Math.max(
       1,
-      Math.round((amount - stats(p).defense) * (p.guard > 0 ? 0.25 : 1)),
+      Math.round((incoming - stats(p).defense) * (p.guard > 0 ? 0.25 : 1)),
     );
     p.hp = Math.max(0, p.hp - value);
     p.invulnerable = 0.65;

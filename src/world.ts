@@ -186,6 +186,18 @@ export class World {
     if (p.x < min || p.y < min || p.x > max || p.y > max) return true;
     return this.props.some((o) => o.solid && distance(o, p) < o.radius + r);
   }
+  projectileBlocked(p: Point, ghost = false) {
+    if (!ghost) return this.blocked(p, 0.04);
+    const { min, max } = playableBounds(this.size);
+    if (p.x < min || p.y < min || p.x > max || p.y > max) return true;
+    // Tiro Fantasma atravessa vegetação e cercas, mas não construções ou limites.
+    return this.props.some(
+      (o) =>
+        o.solid &&
+        !["tree", "pine", "wall"].includes(o.kind) &&
+        distance(o, p) < o.radius + 0.04,
+    );
+  }
   move(p: Point, delta: Point, r: number = COLLISION.player) {
     // Bounded substeps preserve wall sliding and never jump across an obstacle.
     const steps = Math.max(

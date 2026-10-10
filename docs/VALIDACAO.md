@@ -2,8 +2,8 @@
 
 - Instalação repetida com `npm ci --no-audit --no-fund --cache /workspace/.npm`: concluída com lockfile preservado.
 - `npm run build`: TypeScript e bundle de produção aprovados.
-- `npm test`: 30 testes de lógica, renderização e coordenadas executados e aprovados.
-- `npm run test:e2e`: 9 testes de Chromium executados e aprovados. A revisão do inventário verificou seleção, filtros, comparação, equipar/remover, atalhos E/C/R, descarte confirmado com persistência, uso de poções, abas e layout móvel.
+- `npm test`: 52 testes de lógica, renderização e coordenadas executados e aprovados.
+- `npm run test:e2e`: 12 testes de Chromium executados e aprovados. A revisão do inventário verificou seleção, filtros, comparação, equipar/remover, atalhos E/C/R, descarte confirmado com persistência, uso de poções, abas e layout móvel.
 - A missão inicial foi concluída por entrada real de teclado e mouse: combate, XP, desbloqueio, baú, equipamento, percurso até o portal, interação e recompensa. O reload confirmou persistência.
 - Foram verificados quatro sentidos de movimento, animação durante o movimento, dano e morte, retorno à vila, recargas, poções, pausa, troca de classe, equipamento/remover, restauração do salvamento e redimensionamento.
 - A primeira inicialização monitorada não apresentou exceções JavaScript. Vite respondeu HTTP 200 na porta 5173.
@@ -17,3 +17,5 @@ As instruções completas de instalação e início foram salvas nos campos `ins
 A remoção da arma sobreposta foi verificada nas quatro classes, quatro direções e ações de repouso, caminhada, ataque, conjuração, dano e morte. A captura `artifacts/player-without-overlay.png` mostra a renderização sem o cilindro; partículas elementais e o indicador de proteção continuam funcionando.
 
 A primeira etapa estrutural também verifica conversões e câmera fracionária, pivôs, profundidade de trechos da investida, colisão com deslocamento longo, deslizamento, normalização de direção sem perda de save v1 e construções altas parcialmente visíveis. No Chromium, foram verificados clique sem pointermove, dois formatos de tela cheia com Canvas/HUD coincidentes, inventário abaixo da HUD em 1024px e oclusão por pixels opacos do cenário. O teste de oclusão confirma que o projétil cobriria esses pixels se fosse pintado por último, prevenindo uma verificação vazia. `python scripts/test_sprite_frames.py`: quatro testes aprovados; os 192 frames continuam com margens transparentes.
+
+A árvore acrescenta 22 testes de lógica e três de navegador: alcance dos 180 nós, requisitos e orçamento, limite de nível, melhorias, conexões, Maestrias, equipagem, supremas, recargas por ID, builds e migração v1/v2. O combate verifica queimadura, corrupção, veneno limitado com morte e recompensa única, escudos e retaliação, furtividade, torretas, detonação, duplicação, canalização, retorno da lâmina e limites do tiro fantasma. No Chromium, a prévia não gasta pontos; aprender/equipar uma habilidade produz queimadura real e persiste após reload. Também foram verificadas redistribuição com cobrança, comparação, restauração e acesso no celular. Capturas: `artifacts/skill-tree.png` e `artifacts/skill-tree-mobile.png`.

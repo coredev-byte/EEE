@@ -29,13 +29,22 @@ export function updateEnemies(
       }
       continue;
     }
+    const slow = combat.engine.slow(e);
+    if (slow === 0) {
+      e.state = "recover";
+      e.timer = 0;
+      continue;
+    }
     const d = distance(e, p);
     const range = e.type === "wolf" ? 0.7 : 0.85;
     if (e.state === "attack") {
       if (e.timer > 0.26 && !e.attackHit) {
         e.attackHit = true;
         if (d < range + 0.3) {
-          combat.damagePlayer(e.type === "wolf" ? 19 : 26);
+          combat.damagePlayer(
+            (e.type === "wolf" ? 19 : 26) * combat.engine.outgoing(e),
+            e,
+          );
           combat.effect(
             "slash",
             e,
@@ -59,7 +68,7 @@ export function updateEnemies(
       }
       continue;
     }
-    if (d < range) {
+    if (d < range && combat.engine.detection() > 0) {
       e.state = "attack";
       e.timer = 0;
       e.animTime = 0;
@@ -67,7 +76,7 @@ export function updateEnemies(
       e.direction = direction({ x: p.x - e.x, y: p.y - e.y });
       continue;
     }
-    if (d < 5.5) {
+    if (d < combat.engine.detection() || !!combat.engine.get(e, "taunt")) {
       if (e.state === "patrol") {
         e.state = "alert";
         e.timer = 0;
@@ -79,8 +88,8 @@ export function updateEnemies(
       world.move(
         e,
         {
-          x: n.x * dt * (e.type === "wolf" ? 2.1 : 1.55),
-          y: n.y * dt * (e.type === "wolf" ? 2.1 : 1.55),
+          x: n.x * dt * slow * (e.type === "wolf" ? 2.1 : 1.55),
+          y: n.y * dt * slow * (e.type === "wolf" ? 2.1 : 1.55),
         },
         COLLISION.enemy,
       );

@@ -1,3 +1,5 @@
+import { effectFrame } from "./effect-art";
+import { NODE_BY_ID, profile } from "./skills";
 import {
   VIEW,
   PROP_HEIGHT,
@@ -160,6 +162,7 @@ export class Renderer {
     const c = this.ctx;
     if (p.invulnerable > 0 && p.hp > 0 && Math.floor(this.time * 12) % 2 === 0)
       c.globalAlpha = 0.65;
+    if (p.stealth) c.globalAlpha = 0.35;
     const index = spriteIndex(p.direction, p.action, p.animTime);
     if (p.classId === "guerreiro")
       this.assets.draw(
@@ -251,6 +254,17 @@ export class Renderer {
         1,
       );
     c.globalAlpha = 1;
+    const mastery = NODE_BY_ID.get(profile(p).mastery ?? "");
+    if (mastery && p.hp > 0) {
+      c.fillStyle = mastery.color;
+      for (let i = 0; i < 4; i++)
+        c.fillRect(
+          s.x + Math.round(Math.cos(this.time + i * 1.57) * 18),
+          s.y - 2 + Math.round(Math.sin(this.time + i * 1.57) * 6),
+          2,
+          2,
+        );
+    }
     const weapon = ITEMS.find((i) => i.id === p.equipment.weapon);
     if (weapon && p.hp > 0) {
       const wx = p.direction === "left" ? -12 : 12;
@@ -309,6 +323,24 @@ export class Renderer {
     );
     c.globalAlpha = 1;
     if (e.hp > 0) {
+      const statusColors: Record<string, string> = {
+        burn: "#fa8c55",
+        poison: "#8dc98b",
+        bleed: "#e57683",
+        rune: "#94b4f5",
+        corruption: "#b48fe7",
+        mark: "#e9ce85",
+        root: "#87bdcf",
+        stun: "#e0d29a",
+        exposed: "#df956c",
+      };
+      for (const [i, kind] of (e.statusKinds ?? [])
+        .filter((k) => statusColors[k])
+        .slice(0, 5)
+        .entries()) {
+        c.fillStyle = statusColors[kind];
+        c.fillRect(s.x - 14 + i * 6, s.y - (e.type === "wolf" ? 50 : 81), 4, 4);
+      }
       c.fillStyle = "#080b12";
       c.fillRect(s.x - 19, s.y - (e.type === "wolf" ? 43 : 74), 38, 6);
       c.fillStyle = "#724452";
@@ -448,15 +480,23 @@ export class Renderer {
       c.fill();
     }
   }
-  vfx(row: number, col: number, x: number, y: number, angle = 0, scale = 1) {
+  vfx(
+    row: number,
+    col: number,
+    x: number,
+    y: number,
+    angle = 0,
+    scale = 1,
+    color?: string,
+  ) {
     const c = this.ctx;
     c.save();
     c.translate(Math.round(x), Math.round(y));
     c.rotate(angle);
     c.drawImage(
-      this.assets.images.effects,
-      col * FRAMES.effect.width,
-      row * FRAMES.effect.height,
+      effectFrame(this.assets.images.effects, row, col, color),
+      0,
+      0,
       FRAMES.effect.width,
       FRAMES.effect.height,
       Math.round(-FRAMES.effect.pivot.x * scale),
@@ -469,6 +509,8 @@ export class Renderer {
   projectile(b: Projectile) {
     const s = this.project(b);
     const screen = iso({ x: b.vx, y: b.vy });
+    this.ctx.fillStyle = b.color;
+    this.ctx.fillRect(s.x - 2, s.y - ACTOR_HEIGHT.projectile - 2, 4, 4);
     this.vfx(
       b.color === "#fc8953" ? 0 : 1,
       2 + (Math.floor(this.time * 12) % 3),
@@ -476,6 +518,7 @@ export class Renderer {
       s.y - ACTOR_HEIGHT.projectile,
       Math.atan2(screen.y, screen.x),
       0.6,
+      b.color,
     );
   }
   effect(e: Effect, position = effectPosition(e)) {
@@ -486,15 +529,29 @@ export class Renderer {
     if (e.kind === "slash") {
       const n = iso({ x: Math.cos(e.angle), y: Math.sin(e.angle) });
       const angle = Math.atan2(n.y, n.x);
-      this.vfx(0, col, s.x, s.y - ACTOR_HEIGHT.slash, angle, 1);
+      this.vfx(0, col, s.x, s.y - ACTOR_HEIGHT.slash, angle, 1, e.color);
     } else if (e.kind === "nova")
-      this.vfx(2, col, s.x, s.y - ACTOR_HEIGHT.nova, 0, 1.4);
-    else if (e.kind === "heal") this.vfx(4, col, s.x, s.y - ACTOR_HEIGHT.heal);
+      this.vfx(2, col, s.x, s.y - ACTOR_HEIGHT.nova, 0, 1.4, e.color);
+    else if (e.kind === "heal")
+      this.vfx(4, col, s.x, s.y - ACTOR_HEIGHT.heal, 0, 1, e.color);
     else if (e.kind === "impact")
-      this.vfx(3, col, s.x, s.y - ACTOR_HEIGHT.impact, 0, 0.7);
-    else if (e.kind === "death") this.vfx(5, col, s.x, s.y - ACTOR_HEIGHT.nova);
+      this.vfx(3, col, s.x, s.y - ACTOR_HEIGHT.impact, 0, 0.7, e.color);
+    else if (e.kind === "death")
+      this.vfx(5, col, s.x, s.y - ACTOR_HEIGHT.nova, 0, 1, e.color);
     else if (e.kind === "dash")
-      this.vfx(1, col, s.x, s.y - ACTOR_HEIGHT.impact, 0, 0.5);
+      this.vfx(1, col, s.x, s.y - ACTOR_HEIGHT.impact, 0, 0.5, e.color);
     c.globalAlpha = 1;
+    if (e.kind !== "death") {
+      c.fillStyle = e.color;
+      for (let i = 0; i < 4; i++) {
+        const a = (i * Math.PI) / 2 + e.time * 4;
+        c.fillRect(
+          s.x + Math.round(Math.cos(a) * 12),
+          s.y - ACTOR_HEIGHT.impact + Math.round(Math.sin(a) * 8),
+          2,
+          2,
+        );
+      }
+    }
   }
 }

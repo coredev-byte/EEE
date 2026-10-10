@@ -27,6 +27,35 @@ export class AudioEngine {
       this.ambientGain.gain.value = this.enabled ? this.volume * 0.1 : 0;
     if (this.enabled) this.unlock();
   }
+  skill(element: string) {
+    if (!this.enabled || !this.context) return;
+    const c = this.context;
+    const frequency: Record<string, number> = {
+      steel: 160,
+      blood: 95,
+      rune: 330,
+      fire: 220,
+      void: 75,
+      arcane: 660,
+      shadow: 130,
+      poison: 280,
+      precision: 950,
+      device: 430,
+      hunt: 510,
+    };
+    const o = c.createOscillator(),
+      g = c.createGain();
+    o.type = ["steel", "blood", "precision", "device"].includes(element)
+      ? "triangle"
+      : "sine";
+    o.frequency.setValueAtTime(frequency[element] ?? 350, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(40, c.currentTime + 0.25);
+    g.gain.setValueAtTime(this.volume * 0.45, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.28);
+    o.connect(g).connect(c.destination);
+    o.start();
+    o.stop(c.currentTime + 0.3);
+  }
   sound(kind: "attack" | "hit" | "magic" | "step" | "death" | "interact") {
     if (!this.enabled || !this.context) return;
     const c = this.context;

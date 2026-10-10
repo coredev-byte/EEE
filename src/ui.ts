@@ -1,3 +1,17 @@
+import { effectFrame } from "./effect-art";
+import { Combat } from "./combat";
+import { skillPanel } from "./skill-panel";
+import {
+  learn,
+  assign,
+  respec,
+  saveBuild,
+  restoreBuild,
+  equippedSkills,
+  RESOURCES,
+  NODE_BY_ID,
+  syncPoints,
+} from "./skills";
 import { VIEW } from "./spatial";
 import { drawMinimap } from "./minimap";
 import { CLASSES, ITEMS, type ClassId } from "./data";
@@ -19,6 +33,9 @@ const titles: Record<string, string> = {
 };
 export class UI {
   panel = "";
+  selectedNode = "";
+  previewSkill = false;
+  confirmRespec = false;
   lastHUD = 0;
   selectedItem = "brasa";
   inventoryFilter = "all";
@@ -46,9 +63,20 @@ export class UI {
     this.portrait = document.querySelector("#portrait")!;
     document.addEventListener("click", (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>(
-        "[data-action],[data-panel],[data-skill],[data-potion],[data-equip],[data-class],[data-unequip],[data-item],[data-filter]",
+        "[data-action],[data-panel],[data-skill],[data-potion],[data-equip],[data-class],[data-unequip],[data-item],[data-filter],[data-node],[data-tree-action]",
       );
       if (!el) return;
+      if (el.dataset.node) {
+        this.selectedNode = el.dataset.node;
+        this.previewSkill = false;
+        this.confirmRespec = false;
+        this.renderPanel();
+        if (innerWidth <= 600)
+          this.modal
+            .querySelector(".tree-detail")
+            ?.scrollIntoView({ block: "start" });
+      }
+      if (el.dataset.treeAction) this.treeAction(el.dataset.treeAction);
       if (el.dataset.panel) {
         if (game.started) this.open(el.dataset.panel);
       }
@@ -250,7 +278,7 @@ export class UI {
     this.panel = "";
     this.modal.hidden = true;
     document.querySelector(".game-shell")!.classList.remove("inventory-open");
-    this.modal.classList.remove("inventory-layer");
+    this.modal.classList.remove("inventory-layer", "skills-layer");
     this.game.paused = !this.game.started || this.game.player.hp <= 0;
     this.game.input.keys.clear();
   }
@@ -269,6 +297,9 @@ export class UI {
   renderPanel() {
     const g = this.game,
       p = g.player;
+    const treeScroll =
+      this.modal.querySelector(".panel-skills")?.scrollTop ?? 0;
+    this.modal.classList.toggle("skills-layer", this.panel === "skills");
     const inventory = ["inventory", "equipment"].includes(this.panel);
     this.modal.classList.toggle("inventory-layer", inventory);
     document
@@ -303,7 +334,11 @@ export class UI {
         )}</div>${this.newGameSelection ? button("ENTRAR EM PEDRALTA →", "begin", "primary begin-button") : '<p class="subtle">Trocar de classe preserva inventário, nível e missão.</p>'}`;
     }
     if (this.panel === "skills") {
-      content = `<div class="section-heading">${CLASSES[p.classId].name.toUpperCase()} <span>${p.skillPoints} PONTOS DISPONÍVEIS</span></div><p class="panel-intro">A cada nível, um novo ponto. As primeiras duas habilidades já estão disponíveis.</p><div class="skill-list">${CLASSES[p.classId].skills.map((skill, i) => `<div class="skill-detail ${i >= p.unlocked ? "locked" : ""}">${icon(skill.icon)}<div><small>HABILIDADE ${i + 1} <kbd>${"1234"[i]}</kbd></small><h3>${skill.name}</h3><p>${skill.description}</p><span>${skill.cost} MP · ${skill.cooldown}s RECARGA · ${skill.damage ? `${skill.damage} ${skill.kind === "heal" ? "CURA" : "DANO BASE"}` : "75% REDUÇÃO DE DANO"}</span></div><span class="skill-state">${i < p.unlocked ? "DESBLOQUEADA" : "BLOQUEADA"}</span></div>`).join("")}</div>${button(p.unlocked >= 4 ? "TODAS DESBLOQUEADAS" : p.skillPoints > 0 ? "DESBLOQUEAR PRÓXIMA HABILIDADE" : "EVOLUA PARA GANHAR UM PONTO", "unlock", "primary")}`;
+      content = skillPanel(g, this.selectedNode, this.previewSkill);
+      if (this.confirmRespec)
+        content =
+          `<div class="tree-confirm">A reconfiguração custa moedas e devolve os pontos. <button data-tree-action="confirm-respec">CONFIRMAR RECONFIGURAÇÃO</button></div>` +
+          content;
     }
     if (this.panel === "quests") {
       content = `<div class="quest-detail"><div class="quest-stamp"><span class="diamond"></span> MISSÃO PRINCIPAL · CAPÍTULO I</div><h3>O Eco de Kharn</h3><p>Há algo vivo sob as pedras de Pedralta. A guardiã fala de um eco — uma memória que a vila tentou enterrar. Encontre o selo nas ruínas a nordeste e descubra o que ainda responde.</p><ol class="quest-steps"><li class="${g.quest.stage >= 1 ? "done" : "active"}">Encontrar a entrada das ruínas <span>${g.quest.stage >= 1 ? "CONCLUÍDO" : "EM ANDAMENTO"}</span></li><li class="${g.quest.kills >= 3 ? "done" : g.quest.stage === 1 ? "active" : ""}">Derrotar três ameaças da vila <span>${Math.min(3, g.quest.kills)} / 3</span></li><li class="${g.quest.stage === 2 ? "done" : g.quest.stage === 1 && g.quest.kills >= 3 ? "active" : ""}">Interagir com o selo de Kharn <span>${g.quest.stage === 2 ? "CONCLUÍDO" : "TECLA F"}</span></li></ol><div class="rewards"><small>RECOMPENSAS</small><span>200 XP</span><span>250 MOEDAS</span><span>${icon(3)} MEMÓRIA DE KHARN</span></div>${g.quest.stage === 2 ? '<div class="completed-banner">O ECO FOI OUVIDO. MISSÃO CONCLUÍDA.</div>' : ""}</div>`;
@@ -322,15 +357,105 @@ export class UI {
     if (this.panel === "help") content = this.helpContent();
     this.modal.hidden = false;
     this.modal.innerHTML = `<section class="panel panel-${this.panel}" role="dialog" aria-modal="true" aria-label="${title}"><div class="panel-top"><div><small>${eyebrow}</small><h2>${title}</h2></div>${this.panel === "death" ? "" : button("×", "close", "close-button")}</div>${content}<div class="panel-footer"><span>VILA PEDRALTA — SETOR LESTE</span><span>${this.game.started ? "O MUNDO ESTÁ PAUSADO" : "ESCOLHA O SEU CAMINHO"}</span></div></section>`;
+    const tree = this.modal.querySelector(".panel-skills");
+    if (tree) tree.scrollTop = treeScroll;
+  }
+  treeAction(action: string) {
+    const g = this.game,
+      p = g.player;
+    let ok = false;
+    if (action === "preview") {
+      this.previewSkill = true;
+      this.renderPanel();
+      return;
+    }
+    if (action === "learn") ok = learn(p, this.selectedNode);
+    if (action.startsWith("assign-"))
+      ok = assign(p, this.selectedNode, Number(action.slice(7)));
+    if (action === "respec") {
+      this.confirmRespec = true;
+      this.renderPanel();
+      return;
+    }
+    if (action === "confirm-respec" && !g.inCombat()) {
+      ok = respec(p);
+      this.confirmRespec = false;
+    }
+    if (action.startsWith("save-")) ok = saveBuild(p, Number(action.slice(5)));
+    if (action.startsWith("load-") && !g.inCombat())
+      ok = restoreBuild(p, Number(action.slice(5)));
+    if (ok) {
+      if (action === "confirm-respec" || action.startsWith("load-"))
+        g.combat = new Combat(g);
+      syncPoints(p);
+      p.mp = Math.min(p.mp, stats(p).maxMp);
+      g.save();
+      g.notify("Configuração de habilidades salva.");
+    } else g.notify("Requisitos não atendidos ou combate em andamento.");
+    this.renderPanel();
   }
   helpContent() {
     return `<div class="section-heading">CONTROLES DA JORNADA</div><div class="help-grid"><div><kbd>W A S D</kbd><span>Mover o personagem</span></div><div><kbd>SHIFT</kbd><span>Correr</span></div><div><kbd>CLIQUE ESQUERDO</kbd><span>Ataque básico · mire com o mouse</span></div><div><kbd>1 2 3 4</kbd><span>Habilidades da classe</span></div><div><kbd>Z / X / V</kbd><span>Vida / mana / elixir</span></div><div><kbd>F</kbd><span>Conversar, abrir baú, entrar nas ruínas</span></div><div><kbd>I / C / K / J</kbd><span>Inventário / classes / habilidades / diário</span></div><div><kbd>M / ESC</kbd><span>Configurações / pausar</span></div></div><p class="subtle">O diamante dourado do minimapa marca a entrada das ruínas. Baús guardam equipamentos. Inimigos concedem experiência e moedas. WASD move o personagem; 1–4 ativa habilidades; Z, X e V usam poções.</p>`;
+  }
+  drawSkillPreview() {
+    const canvas = document.querySelector<HTMLCanvasElement>(
+        "#skill-preview-canvas",
+      ),
+      n = NODE_BY_ID.get(this.selectedNode);
+    if (!canvas || !n?.skill) return;
+    const c = canvas.getContext("2d")!;
+    c.imageSmoothingEnabled = false;
+    c.clearRect(0, 0, 240, 120);
+    const t = (performance.now() / 1000) % 1.5,
+      f = Math.min(7, Math.floor((t / 1.5) * 8)),
+      kind = n.skill.kind;
+    const art =
+      this.game.assets.images[
+        this.game.player.classId === "guerreiro"
+          ? "hero"
+          : this.game.player.classId
+      ];
+    c.drawImage(art, 0, 0, 96, 112, 15, 0, 96, 112);
+    const row =
+      kind === "projectile" || kind === "dash"
+        ? 1
+        : kind === "guard" || kind === "heal"
+          ? 4
+          : kind === "nova"
+            ? 2
+            : 0;
+    const x =
+      kind === "projectile"
+        ? 75 + Math.floor(t * 80)
+        : kind === "nova"
+          ? 80
+          : 100;
+    c.drawImage(
+      effectFrame(this.game.assets.images.effects, row, f, n.skill.color),
+      0,
+      0,
+      128,
+      128,
+      x - 64,
+      5,
+      128,
+      128,
+    );
+    c.fillStyle = n.skill.color;
+    for (let i = 0; i < 5; i++)
+      c.fillRect(
+        x + Math.round(Math.sin(i + t * 8) * 24),
+        60 + Math.round(Math.cos(i + t * 8) * 20),
+        2,
+        2,
+      );
   }
   updateSound() {
     document.querySelector("#sound-toggle")!.textContent =
       `ÁUDIO · ${this.game.audio.enabled ? "ON" : "OFF"}`;
   }
   update() {
+    this.drawSkillPreview();
     const now = performance.now();
     if (now - this.lastHUD < 80) return;
     this.lastHUD = now;
@@ -362,12 +487,15 @@ export class UI {
       g.quest.stage === 2 ? "MISSÃO CONCLUÍDA" : "MISSÃO PRINCIPAL";
     document.querySelector("#class-name")!.innerHTML =
       `<span>${CLASSES[p.classId].name.toUpperCase()}</span><i></i><span>${p.coins.toLocaleString("pt-BR")} MOEDAS</span>`;
-    document.querySelector("#skillbar")!.innerHTML = CLASSES[p.classId].skills
-      .map(
-        (skill, i) =>
-          `<button class="ability ${i >= p.unlocked ? "locked" : ""} ${p.mp < skill.cost ? "no-mana" : ""}" data-skill="${i}" title="${skill.name} — ${skill.description}" aria-label="${skill.name}">${icon(skill.icon)}<span class="ability-cooldown" style="height:${(p.cooldowns[i] / skill.cooldown) * 100}%"></span>${p.cooldowns[i] > 0 ? `<strong class="cooldown-count">${p.cooldowns[i].toFixed(1)}</strong>` : ""}${i >= p.unlocked ? '<span class="lock-mark">×</span>' : ""}<kbd>${"1234"[i]}</kbd></button>`,
+    document.querySelector("#skillbar")!.innerHTML = equippedSkills(p)
+      .map((skill, i) =>
+        skill
+          ? `<button class="ability ${p.mp < skill.cost ? "no-mana" : ""}" data-skill="${i}" title="${skill.name} — ${skill.description}" aria-label="${skill.name}">${icon(skill.icon)}<span class="ability-cooldown" style="height:${Math.min(100, (p.cooldowns[i] / skill.cooldown) * 100)}%"></span>${p.cooldowns[i] > 0 ? `<strong class="cooldown-count">${p.cooldowns[i].toFixed(1)}</strong>` : ""}<kbd>${i + 1}</kbd></button>`
+          : `<button class="ability locked" data-panel="skills" title="Escolha uma habilidade na árvore" aria-label="Slot ${i + 1} vazio"><span class="lock-mark">+</span><kbd>${i + 1}</kbd></button>`,
       )
       .join("");
+    document.querySelector("#class-name")!.innerHTML +=
+      `<i></i><span>${RESOURCES[p.classId].toUpperCase()} ${Math.floor(p.classId === "arcanista" ? p.mp : p.resource)}${p.classId === "arcanista" ? "" : p.classId === "assassino" ? "/10" : "/100"}</span>`;
     document.querySelector("#quickbar")!.innerHTML =
       p.potions
         .map(

@@ -206,6 +206,11 @@ describe("Colisões e compatibilidade estrutural", () => {
       [0, 1],
     );
     const old = JSON.parse(raw);
+    old.version = 1;
+    delete old.player.trees;
+    delete old.player.skillCooldowns;
+    delete old.player.resource;
+    delete old.player.challenges;
     old.player.direction = "invalid";
     const restored = deserialize(JSON.stringify(old))!;
     expect(restored.player.direction).toBe("front");
@@ -213,7 +218,7 @@ describe("Colisões e compatibilidade estrutural", () => {
     expect(restored.player.equipment).toEqual(player.equipment);
     expect(restored.player.level).toBe(3);
     expect(restored.player.unlocked).toBe(3);
-    expect(restored.player.skillPoints).toBe(2);
+    expect(restored.player.skillPoints).toBe(1);
     expect(restored.quest).toEqual(old.quest);
     expect(restored.opened).toEqual(old.opened);
     expect(restored.killed).toEqual(old.killed);

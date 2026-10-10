@@ -201,9 +201,11 @@ test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", asyn
   expect(after.quest.kills).toBeGreaterThanOrEqual(4);
   expect(after.player.coins).toBeGreaterThan(125);
   await page.keyboard.press("k");
+  await page.locator('[data-node="arcanista-base-2"]').click();
   await page
-    .getByRole("button", { name: "DESBLOQUEAR PRÓXIMA HABILIDADE" })
+    .getByRole("button", { name: "APRENDER HABILIDADE", exact: true })
     .click();
+  await page.locator('[data-tree-action="assign-2"]').click();
   expect((await state(page)).player.unlocked).toBe(3);
   await page.keyboard.press("Escape");
   await travel(page, { x: 8, y: 16 });

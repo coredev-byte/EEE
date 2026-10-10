@@ -25,7 +25,7 @@ O Vite escuta na porta 5173. O jogo funciona inteiramente no navegador; não pre
 | Inventário / classes / habilidades / missões | I / C / K / J                        |
 | Configurações / pausa                        | M / Esc                              |
 
-WASD controla o movimento; as teclas 1–4 ativam habilidades, e Z/X/V usam poções. As duas primeiras habilidades começam desbloqueadas. Subir de nível concede pontos para as demais. Os menus pausam o mundo. Clicar em um item o equipa; o × remove o equipamento daquele espaço.
+WASD controla o movimento; as teclas 1–4 ativam habilidades, e Z/X/V usam poções. As duas primeiras habilidades começam desbloqueadas. Subir de nível concede pontos para a árvore: três especializações por classe, ativas, passivas, melhorias e conexões híbridas. Abra K, selecione um nó, aprenda e equipe em 1–4. Os menus pausam o mundo. Clicar em um item o equipa; o × remove o equipamento daquele espaço.
 
 O diamante dourado no minimapa é a entrada das ruínas. Encontre a entrada, derrote três ameaças e interaja com o selo usando F. Baús podem ser abertos uma vez e concedem moedas, uma poção e equipamentos. As quatro classes podem ser trocadas no painel C, preservando progressão e equipamento. Morrer oferece um retorno à vila, com custo de 25 moedas.
 
@@ -37,7 +37,8 @@ O diamante dourado no minimapa é a entrada das ruínas. Encontre a entrada, der
 - Combate com alcance, cone, preparação, recuperação, proteção contra dano duplicado, invulnerabilidade temporária, projéteis e recargas.
 - Guerreiro, Arcanista, Assassino e Atirador, com atributos e habilidades distintos: cortes, projéteis, investidas, explosões, defesa e cura.
 - HUD ligada ao estado real, minimapa dinâmico, poções e seis painéis. Inventário em três colunas seguindo a referência: personagem e equipamentos, mochila com filtros e detalhes do item. Selecione um item e use E para equipar/usar, C para comparar ou R para descartar com confirmação. Os equipamentos modificam atributos e os efeitos elementais; a arma é desenhada nos próprios frames de animação.
-- XP, níveis, pontos de habilidade, moedas, baús e missão com recompensa única.
+- Árvore com 180 nós principais, 36 melhorias, 12 conexões híbridas e 12 escolhas de Maestria. Nível máximo 60, 59 pontos por perfil de classe, quatro habilidades equipáveis e uma suprema. Builds, redistribuição por moeda e migração de saves antigos. Veja [as regras da árvore](docs/ARVORE_IMPLEMENTACAO.md).
+- XP, níveis, pontos de habilidade, moedas, baús e missão com recompensa única. Reaparecimento distante dos inimigos permite continuar a progressão.
 - Persistência versionada em localStorage: personagem, inventário, equipamentos, missão, inimigos derrotados e baús. Salvamento a cada oito segundos e nas transações importantes; dados inválidos são recusados.
 - Efeitos com 48 frames de sprites: corte, projétil, explosão, impacto, cura e dissipação de morte.
 
