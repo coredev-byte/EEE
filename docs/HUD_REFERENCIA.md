@@ -16,6 +16,8 @@ Regressão aprovada: `npm test` passou com **83 testes**, `npm run test:e2e` pas
 
 Capturas: `artifacts/hud-reference.png` e `artifacts/hud-reference-mobile.png`.
 
+Ajuste posterior solicitado: minimapa restaurado ao canto superior direito, a 2% da borda direita. A moldura e o canvas mantêm proporção 1:1 em desktop e celular, formando um círculo completo. A legenda abre abaixo do botão para permitir fechá-la sem sobreposição. Os cinco cenários de visibilidade passaram novamente, incluindo verificações geométricas do círculo e de sua posição, e o build foi aprovado.
+
 ## Limites
 
 O retrato usa os sprites atuais, não o desenho de perfil novo da imagem enviada. O acabamento da moldura é criado com CSS, e os pictogramas são vetoriais com formas angulares, sem um novo atlas de interface desenhado à mão. A legenda exemplifica objetivo secundário e chefe, mas a campanha existente continua com um objetivo principal ativo e os encontros já implementados.

@@ -171,6 +171,33 @@ test("Movimento real atrás da casa, minimapa orientado e objetivo concluído se
   await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
   const before = await page.evaluate(() => (window as any).__DZ.snapshot());
   expect(before.activeObjective).toBeNull();
+  const checkMinimap = async () => {
+    const geometry = await page.locator(".minimap-box").evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const viewport = document
+        .querySelector(".game-viewport")!
+        .getBoundingClientRect();
+      const canvas = el.querySelector("canvas")!.getBoundingClientRect();
+      return {
+        width: box.width,
+        height: box.height,
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        right: (viewport.right - box.right) / viewport.width,
+        top: (box.top - viewport.top) / viewport.height,
+        radius: getComputedStyle(el).borderRadius,
+      };
+    });
+    expect(Math.abs(geometry.width - geometry.height)).toBeLessThan(1);
+    expect(Math.abs(geometry.canvasWidth - geometry.canvasHeight)).toBeLessThan(
+      1,
+    );
+    expect(geometry.right).toBeCloseTo(0.02, 2);
+    expect(geometry.top).toBeGreaterThan(0.03);
+    expect(geometry.top).toBeLessThan(0.05);
+    expect(geometry.radius).toBe("50%");
+  };
+  await checkMinimap();
   await page.keyboard.down("w");
   await page.waitForTimeout(240);
   await page.keyboard.up("w");
@@ -212,6 +239,7 @@ test("Movimento real atrás da casa, minimapa orientado e objetivo concluído se
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(200);
+  await checkMinimap();
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
