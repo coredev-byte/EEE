@@ -1,6 +1,6 @@
 # Distrito Zero — O Eco de Kharn
 
-RPG de ação isométrico em pixel art. O primeiro capítulo é jogável: explore Vila Pedralta, lute contra bandidos e lobos, encontre equipamentos e rompa o selo de Kharn.
+RPG de ação isométrico em pixel art. Explore Vila Pedralta, restaure as memórias de Kharn e continue a aventura no Bairro da Ferrugem, com campanha industrial e missões opcionais.
 
 ## Executar
 
@@ -29,42 +29,43 @@ WASD controla o movimento; as teclas 1–4 ativam habilidades, e Z/X/V usam poç
 
 O diamante dourado no minimapa marca o objetivo atual. Encontre a entrada, derrote três ameaças e interaja com o selo usando F. Baús podem ser abertos uma vez e concedem moedas, uma poção e equipamentos. As quatro classes podem ser trocadas no painel C, preservando progressão e equipamento. Morrer oferece um retorno à vila, com custo de 25 moedas.
 
-Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Converse com Iria, derrote os vigias e afine os três marcos com F. Volte pelo selo ao sul e entregue as memórias à Guardiã de Pedralta. O diário (J) mostra ambos os capítulos; o minimapa revela áreas e indica passagens e objetivos. Região, encontros, baús e campanha são persistidos em save v3, com migração de v1/v2. Veja [a implementação das regiões](docs/REGIOES_IMPLEMENTACAO.md).
+Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Converse com Iria, derrote os vigias e afine os três marcos com F. Volte pelo selo ao sul e entregue as memórias à Guardiã de Pedralta. Depois da entrega, retorne a Kharn e siga pela Estrada das Caldeiras (24,18) até Ferrugem. Converse com Elcio, recupere componentes, restaure a bomba, leia o manifesto e enfrente o Mestre da Fornalha. Resgatar Nara e restaurar a passarela são missões opcionais. O diário (J) reúne as missões, estados, recompensas, registros e rastreamento; o minimapa revela áreas e indica passagens e objetivos. Região, encontros, baús e campanha são persistidos em save v4, com migração de v1/v2/v3 e cópia local dos saves antigos antes da primeira gravação. Veja [a expansão industrial](docs/EXPANSAO_IMPLEMENTACAO.md). Veja [a implementação das regiões](docs/REGIOES_IMPLEMENTACAO.md).
 
 A HUD segue a referência metálica com detalhes em bronze: nível em losango, vida/coração vermelho, mana/gota azul, XP/estrela roxa, três atalhos e minimapa circular com legenda no botão **?**. Veja [o modelo aplicado e as capturas](docs/HUD_REFERENCIA.md).
 
 ## Sistemas implementados
 
-- Duas regiões de 28 × 28 conectadas por selo interativo: Vila Pedralta e Margem de Kharn. Terrenos, pontos de interesse, encontros e descoberta próprios; câmera e colisões compartilhadas, canal com passagens e ordenação por posição dos pés.
+- Três regiões de 28 × 28 conectadas por passagens: Vila Pedralta, Margem de Kharn e Bairro da Ferrugem. Terrenos, pontos de interesse, encontros e descoberta próprios; câmera e colisões compartilhadas, canal com passagens e ordenação por posição dos pés.
 - Sprites direcionais e frames próprios de idle, caminhada, preparação, ataque, recuperação, dano, magia e morte. Corrida acelera o ciclo de movimentação; interação usa os frames de gestos existentes.
-- Bandidos e lobos com patrulha, linha de visão, perseguição por A*, ataque, recuperação, dano, morte e retorno à origem. Seis encontros únicos em Kharn, além dos inimigos da vila.
+- Bandidos e lobos com patrulha, linha de visão, perseguição por A*, ataque, recuperação, dano, morte e retorno à origem. Seis encontros únicos em Kharn e cinco autômatos em Ferrugem, incluindo o Mestre da Fornalha e o Sucateiro Voraz opcional. O Mestre entra em sobrecarga e sinaliza descargas de calor antes de atingir a área próxima.
 - Combate com alcance, cone, preparação, recuperação, proteção contra dano duplicado, invulnerabilidade temporária, projéteis e recargas.
 - Guerreiro, Arcanista, Assassino e Atirador, com atributos e habilidades distintos: cortes, projéteis, investidas, explosões, defesa e cura.
-- Objetivos com alvos reais, símbolos por ação, nome próximo e seta de direção que evita os painéis da HUD. Minimapa com orientação do jogador, objetivo ativo e legenda; destaques encerram ao concluir a campanha. Máscaras locais de oclusão preservam personagem, ameaças e interativos sem alterar a ordem de profundidade. Casas das duas regiões têm bases físicas retangulares, separadas dos sprites. Veja [visibilidade e objetivos](docs/VISIBILIDADE_IMPLEMENTACAO.md).
+- Objetivos com alvos reais, símbolos por ação, nome próximo e seta de direção que evita os painéis da HUD. Minimapa com orientação do jogador, objetivo ativo e legenda; o objetivo continua para Ferrugem após as memórias e encerra ao concluir a campanha industrial; secundárias podem ser rastreadas pelo diário. Máscaras locais de oclusão preservam personagem, ameaças e interativos sem alterar a ordem de profundidade. Casas das três regiões têm bases físicas retangulares, separadas dos sprites. Veja [visibilidade e objetivos](docs/VISIBILIDADE_IMPLEMENTACAO.md).
 - HUD ligada ao estado real, minimapa dinâmico, poções e seis painéis. Inventário em três colunas seguindo a referência: personagem e equipamentos, mochila com filtros e detalhes do item. Selecione um item e use E para equipar/usar, C para comparar ou R para descartar com confirmação. Os equipamentos modificam atributos e os efeitos elementais; a arma é desenhada nos próprios frames de animação.
 - Árvore com 180 nós principais, 36 melhorias, 12 conexões híbridas e 12 escolhas de Maestria. Nível máximo 60, 59 pontos por perfil de classe, quatro habilidades equipáveis e uma suprema. Builds, redistribuição por moeda e migração de saves antigos. Veja [as regras da árvore](docs/ARVORE_IMPLEMENTACAO.md).
 - XP, níveis, pontos de habilidade, moedas, baús e missão com recompensa única. Reaparecimento distante dos inimigos permite continuar a progressão.
-- Persistência v3 em localStorage: personagem, inventário, equipamentos, campanha, região atual, descoberta, posição/HP dos encontros e baús por região. Migração dos saves v1/v2. Salvamento a cada oito segundos e nas transações importantes; dados inválidos são recusados.
+- Persistência v4 em localStorage: personagem, inventário, equipamentos, campanha, região atual, descoberta, posição/HP dos encontros e baús por região. Migração dos saves v1/v2/v3, com backup do formato anterior. Missões, passagens, chefes e mudanças no mundo também são persistidos. Salvamento a cada oito segundos e nas transações importantes; dados inválidos são recusados.
 - Efeitos com 48 frames de sprites: corte, projétil, explosão, impacto, cura e dissipação de morte.
 
 ## Arquitetura
 
-| Arquivo                               | Responsabilidade                                                |
-| ------------------------------------- | --------------------------------------------------------------- |
-| `src/main.ts`                         | Inicialização e inspeção de estado somente leitura para testes  |
-| `src/data.ts`                         | Classes, habilidades, itens e tempos de animação                |
-| `src/world.ts`                        | Composição das regiões, projeção, terreno e colisões            |
-| `src/regions.ts`, `src/navigation.ts` | Campanha, conexões, progresso regional e rotas A*               |
-| `src/state.ts`                        | Entidades, atributos, equipamento e progressão                  |
-| `src/animation.ts`                    | Frames, direção e orientação                                    |
-| `src/combat.ts`                       | Preparação, acertos, recursos, projéteis e recompensas          |
-| `src/enemies.ts`                      | Máquina de estados, percepção, perseguição e retorno            |
-| `src/game.ts`                         | Loop, coordenação, interação e missão                           |
-| `src/renderer.ts`, `src/occlusion.ts` | Mundo, profundidade, sprites, iluminação, VFX e máscaras locais |
-| `src/objectives.ts`, `src/minimap.ts` | Símbolos, direção, posição real dos objetivos e minimapa        |
-| `src/ui.ts`                           | HUD e painéis conectados ao estado                              |
-| `src/save.ts`                         | Serialização e validação de salvamentos                         |
-| `src/input.ts`, `src/audio.ts`        | Entrada e mixer central de áudio                                |
+| Arquivo                                | Responsabilidade                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/main.ts`                          | Inicialização e inspeção de estado somente leitura para testes                       |
+| `src/data.ts`                          | Classes, habilidades, itens e tempos de animação                                     |
+| `src/world.ts`                         | Composição das regiões, projeção, terreno e colisões                                 |
+| `src/regions.ts`, `src/navigation.ts`  | Campanha, conexões, progresso regional e rotas A*                                    |
+| `src/missions.ts`, `src/mission-ui.ts` | Definições e eventos das missões, adaptação do legado, diário e diálogos industriais |
+| `src/state.ts`                         | Entidades, atributos, equipamento e progressão                                       |
+| `src/animation.ts`                     | Frames, direção e orientação                                                         |
+| `src/combat.ts`                        | Preparação, acertos, recursos, projéteis e recompensas                               |
+| `src/enemies.ts`                       | Máquina de estados, percepção, perseguição e retorno                                 |
+| `src/game.ts`                          | Loop, coordenação, interação e missão                                                |
+| `src/renderer.ts`, `src/occlusion.ts`  | Mundo, profundidade, sprites, iluminação, VFX e máscaras locais                      |
+| `src/objectives.ts`, `src/minimap.ts`  | Símbolos, direção, posição real dos objetivos e minimapa                             |
+| `src/ui.ts`                            | HUD e painéis conectados ao estado                                                   |
+| `src/save.ts`                          | Serialização e validação de salvamentos                                              |
+| `src/input.ts`, `src/audio.ts`         | Entrada e mixer central de áudio                                                     |
 
 ## Validar
 
@@ -82,8 +83,8 @@ A suíte de lógica cobre projeção, colisões, animação, dano, alcance, reco
 
 Leia [a documentação de arte](docs/ART.md) para atlas, pivôs e processamento. Os sprites foram produzidos com a ferramenta de imagens a partir das referências do usuário; não são os arquivos originais dessas referências, e não constituem uma reprodução exata pixel a pixel. A revisão humana de fidelidade visual ainda é necessária, sobretudo em silhuetas, materiais, detalhe do ambiente e continuidade de alguns frames gerados.
 
-A campanha tem dois capítulos e duas regiões finitas conectadas pelo selo. Não há mundo aberto contínuo, interiores ou terceiro capítulo. Kharn reutiliza os atlas existentes; Iria, bandidos e lobos não têm novos sprites exclusivos. A navegação usa A* com obstáculos estáticos; não inclui planejamento cooperativo entre criaturas. As construções antigas de Pedralta conservam colisões circulares, enquanto as grandes ruínas de Kharn usam footprints. Os efeitos de iluminação são polígonos discretos e não uma simulação de sombras dinâmicas.
+A campanha jogável mantém as duas missões de Pedralta/Kharn como primeira parte e acrescenta Máquinas Mortas, no capítulo II. São três regiões finitas conectadas, sem streaming ou interiores. Jardim do Véu, Cidade Afogada, Cinzas e Distrito Zero são metadados futuros, sem mapas ou capítulos jogáveis nesta entrega. Bizel e o confronto com Kharn descritos na nova especificação ainda não foram implementados; o conteúdo existente foi preservado. Ferrugem reutiliza os atlas de construções, com piso em tons de ferrugem e autômatos desenhados em pixel art por código. Elcio e Nara usam o sprite de NPC existente. A navegação usa A* com obstáculos estáticos; não inclui planejamento cooperativo entre criaturas. Casas e ruínas grandes usam bases retangulares; objetos menores conservam raios físicos. Os efeitos de iluminação são polígonos discretos e não uma simulação de sombras dinâmicas.
 
-O áudio usa **53 arquivos locais sintetizados**, mixer por categorias, manutenção/cancelamento por dono, coleta agrupada e música em três camadas. Em M, ajuste os volumes e mute, salvos neste navegador. As gravações e a trilha definitivas continuam pendentes; [a documentação de áudio](docs/AUDIO_IMPLEMENTACAO.md) descreve o que funciona, o inventário e a produção necessária. A interface se adapta a telas menores, mas a jogabilidade desta entrega usa teclado e mouse, sem controles de toque. Não há sincronização de progresso entre dispositivos.
+O áudio usa **54 arquivos locais sintetizados**, incluindo a ambiência mecânica de Ferrugem, mixer por categorias, manutenção/cancelamento por dono, coleta agrupada e música em três camadas. Em M, ajuste os volumes e mute, salvos neste navegador. As gravações e a trilha definitivas continuam pendentes; [a documentação de áudio](docs/AUDIO_IMPLEMENTACAO.md) descreve o que funciona, o inventário e a produção necessária. A interface se adapta a telas menores, mas a jogabilidade desta entrega usa teclado e mouse, sem controles de toque. Não há sincronização de progresso entre dispositivos.
 
 A evolução estrutural está registrada em [docs/AUDITORIA_RPG.md](docs/AUDITORIA_RPG.md), com causas verificadas, sistemas preservados e critérios das próximas etapas. A primeira entrega estabelece coordenadas e pivôs compartilhados, ordem de profundidade incluindo efeitos, clique correto em tela cheia, minimapa separado e movimento com colisão em subpassos. Regiões conectadas, continuidade do capítulo II, árvore ramificada e mixer de áudio foram entregues em etapas posteriores. Variantes visuais ampliadas de equipamento, drops no chão e produção sonora final permanecem no roteiro.

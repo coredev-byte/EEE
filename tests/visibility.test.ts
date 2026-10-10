@@ -23,7 +23,7 @@ describe("Objetivos ligados ao estado real", () => {
     g.quest.kills = 3;
     expect(g.activeObjective()?.kind).toBe("interact");
   });
-  it("indica passagem da região, conversa, vigia, marco e entrega; encerra destaque", () => {
+  it("indica passagem da região, conversa, vigia, marco e entrega; continua para Ferrugem", () => {
     const g = new Game();
     g.quest = { stage: 2, kills: 3, rewardClaimed: true };
     expect(g.activeObjective()?.kind).toBe("reach");
@@ -45,7 +45,10 @@ describe("Objetivos ligados ao estado real", () => {
     g.world.setRegion("pedralta");
     expect(g.activeObjective()).toMatchObject({ kind: "talk", x: 10, y: 14 });
     g.exploration.campaign.rewardClaimed = true;
-    expect(g.activeObjective()).toBeNull();
+    expect(g.activeObjective()).toMatchObject({
+      kind: "reach",
+      id: "portal-22-7",
+    });
   });
   it("resolve posições dos objetos no mundo em vez de repetir coordenadas", () => {
     const g = new Game();

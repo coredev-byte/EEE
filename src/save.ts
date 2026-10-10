@@ -1,9 +1,11 @@
 import { World } from "./world";
+import { validJournal } from "./missions";
 import {
   REGIONS,
   REGION_IDS,
   ANCHORS,
   freshExploration,
+  PASSAGES,
   type Exploration,
 } from "./regions";
 import { freshProfiles, syncPoints, validBuild, type Profiles } from "./skills";
@@ -12,7 +14,7 @@ import { CLASSES, ITEMS, DIRS, type ClassId } from "./data";
 import { createPlayer, stats, type Player, type Quest } from "./state";
 export const SAVE_KEY = "distrito-zero:v1";
 export interface Save {
-  version: 3;
+  version: 4;
   exploration: Exploration;
   player: Player;
   quest: Quest;
@@ -28,7 +30,7 @@ export function serialize(
   exploration?: Exploration,
 ): string {
   return JSON.stringify({
-    version: 3,
+    version: 4,
     exploration: exploration ?? {
       ...freshExploration(),
       regions: {
@@ -48,17 +50,26 @@ export function deserialize(raw: string | null): Save | null {
   try {
     const s = JSON.parse(raw);
     if (
-      ![1, 2, 3].includes(s.version) ||
+      ![1, 2, 3, 4].includes(s.version) ||
       !s.player ||
       !Object.hasOwn(CLASSES, s.player.classId)
     )
       return null;
     const p = s.player;
-    if (s.version === 3 && !validExploration(s.exploration, s.quest))
+    if (s.version === 3 && s.exploration) {
+      const old = s.exploration;
+      s.exploration = {
+        ...freshExploration(),
+        ...old,
+        regions: { ...freshExploration().regions, ...old.regions },
+        visited: old.campaign?.entered ? ["pedralta", "kharn"] : ["pedralta"],
+      };
+    }
+    if (s.version >= 3 && !validExploration(s.exploration, s.quest))
       return null;
     const exploration: Exploration =
-      s.version === 3 ? s.exploration : freshExploration();
-    if (s.version !== 3) {
+      s.version >= 3 ? s.exploration : freshExploration();
+    if (s.version < 3) {
       exploration.regions.pedralta.opened = [...(s.opened ?? [])];
       exploration.regions.pedralta.killed = [...(s.killed ?? [])];
     }
@@ -236,12 +247,13 @@ export function deserialize(raw: string | null): Save | null {
     player.hp = Math.min(player.hp, stats(player).maxHp);
     player.mp = Math.min(player.mp, stats(player).maxMp);
     const world = new World(exploration.region);
+    world.applyChanges(exploration.changes);
     Object.assign(player, world.nearestFree(player));
     exploration.regions[exploration.region].discovered = world.discover(
       player,
       exploration.regions[exploration.region].discovered,
     );
-    return { ...s, version: 3, player, exploration };
+    return { ...s, version: 4, player, exploration };
   } catch {
     return null;
   }
@@ -257,6 +269,27 @@ export function load(): Save | null {
 function validExploration(value: unknown, quest: Quest): value is Exploration {
   const e = value as Exploration;
   if (!e || !REGION_IDS.includes(e.region) || !e.campaign || !e.regions)
+    return false;
+  if (
+    !Array.isArray(e.visited) ||
+    !e.visited.includes("pedralta") ||
+    e.visited.some((id) => !REGION_IDS.includes(id)) ||
+    ![e.knownPassages, e.unlocked].every(
+      (list) =>
+        Array.isArray(list) &&
+        list.every((id) => PASSAGES.some((p) => `${p.region}:${p.id}` === id)),
+    ) ||
+    ![e.bosses, e.changes].every(
+      (list) =>
+        Array.isArray(list) && list.every((id) => typeof id === "string"),
+    ) ||
+    !e.journal ||
+    ![e.journal.events, e.journal.accepted, e.journal.completed].every(
+      (list) =>
+        Array.isArray(list) && list.every((id) => typeof id === "string"),
+    ) ||
+    !(e.journal.tracked === null || typeof e.journal.tracked === "string")
+  )
     return false;
   const c = e.campaign;
   if (
@@ -278,6 +311,8 @@ function validExploration(value: unknown, quest: Quest): value is Exploration {
   )
     return false;
   if (c.rewardClaimed && c.attuned.length !== ANCHORS.length) return false;
+  if (e.region === "ferrugem" && !c.rewardClaimed) return false;
+  if (!validJournal(e)) return false;
   for (const id of REGION_IDS) {
     const r = e.regions[id];
     if (

@@ -7,6 +7,46 @@
   --line: #2b3548;
   --muted: #7d879e;
 }
+.journal-summary {
+  padding: 14px;
+  border: 1px solid #655646;
+  margin-bottom: 16px;
+  color: #d8c39b;
+}
+.journal-summary small,
+.world-journal small {
+  color: #94a9bd;
+}
+.mission-card {
+  margin-bottom: 22px;
+}
+.mission-card > small {
+  display: block;
+  margin: 12px 0;
+  color: #94a9bd;
+}
+.mission-card .secondary,
+.mission-offers .secondary {
+  margin: 8px 0;
+}
+.world-journal {
+  border-top: 1px solid #3c4657;
+  padding: 16px 0;
+}
+.world-journal p {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.world-journal small {
+  font-size: 9px;
+}
+.mission-offers {
+  border-top: 1px solid #3c4657;
+  padding: 10px 0;
+}
 * {
   box-sizing: border-box;
 }

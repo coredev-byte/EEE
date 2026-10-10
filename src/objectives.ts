@@ -3,6 +3,7 @@ export type ObjectiveKind =
   "talk" | "investigate" | "collect" | "defeat" | "interact" | "reach";
 /** Position is the current actor/object position, never a decorative map coordinate. */
 export interface Objective extends Point {
+  category?: "main" | "secondary";
   id: string;
   kind: ObjectiveKind;
   label: string;
@@ -105,12 +106,13 @@ export function objectiveIcon(
   x: number,
   y: number,
   size = 12,
+  color = "#e8bd68",
 ) {
   c.save();
   c.translate(Math.round(x), Math.round(y));
   c.scale(size / 12, size / 12);
-  c.strokeStyle = "#e8bd68";
-  c.fillStyle = "#e8bd68";
+  c.strokeStyle = color;
+  c.fillStyle = color;
   c.lineWidth = 2;
   c.beginPath();
   if (kind === "talk") {

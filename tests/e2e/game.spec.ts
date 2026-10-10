@@ -160,7 +160,7 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   page,
 }) => {
   await start(page);
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(53);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(54);
   await page.keyboard.press("i");
   expect((await state(page)).paused).toBe(true);
   await page.locator('[data-item="brasa"]').first().click();

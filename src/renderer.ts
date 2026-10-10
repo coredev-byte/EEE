@@ -82,6 +82,15 @@ export class Renderer {
           TILE.width,
           TILE.height,
         );
+        if (this.world.region === "ferrugem") {
+          c.fillStyle = "rgba(112,58,26,.22)";
+          c.beginPath();
+          c.moveTo(sx, sy - TILE.height / 2);
+          c.lineTo(sx + TILE.width / 2, sy);
+          c.lineTo(sx, sy + TILE.height / 2);
+          c.lineTo(sx - TILE.width / 2, sy);
+          c.fill();
+        }
       }
   }
   project(p: Point): Point {
@@ -145,7 +154,7 @@ export class Renderer {
       });
     for (const o of this.world.props)
       if (
-        ["npc", "chest"].includes(o.kind) &&
+        (["npc", "chest"].includes(o.kind) || !!o.interaction) &&
         !o.opened &&
         distance(o, p) < 2.5
       )
@@ -367,18 +376,20 @@ export class Renderer {
         e.type === "wolf" ? (e.timer < 0.25 ? 2 : 3) : e.timer < 0.25 ? 3 : 4;
     else if (e.state === "chase" || e.state === "patrol")
       col = 1 + (Math.floor(e.animTime * 6) % 2);
-    this.assets.draw(
-      c,
-      "enemies",
-      col,
-      e.type === "wolf" ? 1 : 0,
-      FRAMES.character.width,
-      FRAMES.character.height,
-      s.x,
-      s.y,
-      1,
-      e.direction === "left",
-    );
+    if (e.appearance === "machine") this.machine(e, s);
+    else
+      this.assets.draw(
+        c,
+        "enemies",
+        col,
+        e.type === "wolf" ? 1 : 0,
+        FRAMES.character.width,
+        FRAMES.character.height,
+        s.x,
+        s.y,
+        1,
+        e.direction === "left",
+      );
     c.globalAlpha = 1;
     if (e.hp > 0) {
       const statusColors: Record<string, string> = {
@@ -415,7 +426,62 @@ export class Renderer {
         c.font = "bold 14px monospace";
         c.fillText("!", s.x, s.y - 85);
       }
+      if (
+        e.name &&
+        (e.boss || e.optional || distance(e, this.cameraPoint()) < 8)
+      ) {
+        c.fillStyle = e.boss ? "#efb06a" : "#b5c1ca";
+        c.font = e.boss ? "bold 11px monospace" : "9px monospace";
+        c.textAlign = "center";
+        c.fillText(e.name, s.x, s.y - (e.boss ? 104 : 91));
+      }
     }
+  }
+  cameraPoint() {
+    return this.worldAt({ x: 480, y: 285 });
+  }
+  machine(e: Enemy, s: Point) {
+    const c = this.ctx;
+    c.save();
+    c.translate(Math.round(s.x), Math.round(s.y));
+    const scale = e.boss ? 1.35 : 1;
+    c.scale(scale, scale);
+    const stride =
+      e.state === "chase" || e.state === "patrol"
+        ? Math.floor(Math.sin(e.animTime * 9) * 3)
+        : 0;
+    const rect = (
+      color: string,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+    ) => {
+      c.fillStyle = color;
+      c.fillRect(x, y, w, h);
+    };
+    rect("#080b10", -21, -68, 42, 54);
+    rect("#563d32", -15, -57, 30, 37);
+    rect("#a3754d", -15, -57, 6, 31);
+    rect("#343d45", -8, -55, 24, 28);
+    rect("#747e83", -8, -55, 24, 4);
+    rect("#151c22", -7, -47, 17, 20);
+    rect(e.phase === 2 ? "#ffdf87" : "#f07836", -4, -44, 11, 15);
+    for (let y = -43; y < -28; y += 4) rect("#493125", -7, y, 18, 2);
+    rect("#1c262f", -10, -75, 21, 16);
+    rect("#b08763", -10, -75, 21, 3);
+    rect("#edc272", -6, -69, 4, 3);
+    rect("#edc272", 3, -69, 4, 3);
+    rect("#7b5940", -23, -58, 9, 29);
+    rect("#b19061", -23, -58, 9, 4);
+    rect("#555f67", 16, -57, 10, 28);
+    rect("#9a7b54", 20, -47, 13, 19);
+    rect("#282e34", -14, -22, 10, 18 + stride);
+    rect("#282e34", 5, -22, 10, 18 - stride);
+    rect("#8a755d", -17, -5 + stride, 15, 5);
+    rect("#8a755d", 3, -5 - stride, 15, 5);
+    for (let i = 0; i < 3; i++) rect("#a56f44", -17 + i * 4, -51 + i * 6, 2, 2);
+    c.restore();
   }
   prop(o: Prop, p: Player) {
     const s = this.project(o);
@@ -452,6 +518,7 @@ export class Renderer {
         c.fillStyle = "#d1b88e";
         c.fillText(name, s.x, s.y - FRAMES.prop.pivot.y * o.scale - 12);
       }
+      this.propCaption(o, p, s);
       return;
     }
     const map: Partial<Record<Prop["kind"], number>> = {
@@ -486,7 +553,10 @@ export class Renderer {
       c.font = "10px monospace";
       c.textAlign = "center";
       c.fillText(
-        this.world.region === "kharn" ? "IRIA · CARTÓGRAFA" : "GUARDIÃ DO ECO",
+        o.name ??
+          (this.world.region === "kharn"
+            ? "IRIA · CARTÓGRAFA"
+            : "GUARDIÃ DO ECO"),
         s.x,
         Math.round(s.y - ACTOR_HEIGHT.head * o.scale - 12),
       );
@@ -507,7 +577,13 @@ export class Renderer {
     c.globalAlpha = 1;
     if (o.kind === "portal") {
       for (let i = 0; i < 12; i++) {
-        c.fillStyle = i % 2 ? "#a283d3" : "#7295bf";
+        c.fillStyle = o.locked
+          ? "#c97248"
+          : this.world.region === "ferrugem"
+            ? "#d3a56f"
+            : i % 2
+              ? "#a283d3"
+              : "#7295bf";
         c.globalAlpha = 0.5 + Math.sin(this.time * 2 + i) * 0.3;
         c.fillRect(
           s.x + Math.round(Math.sin(i * 3.2 + this.time) * 27),
@@ -520,6 +596,21 @@ export class Renderer {
       }
       c.globalAlpha = 1;
     }
+    this.propCaption(o, p, s);
+  }
+  propCaption(o: Prop, p: Player, s: Point) {
+    if (!o.name || distance(o, p) > 5 || (o.opened && !o.lock)) return;
+    const c = this.ctx;
+    c.font = "9px monospace";
+    c.textAlign = "center";
+    c.fillStyle = o.locked || (o.solid && o.lock) ? "#e49c73" : "#ccbd95";
+    c.fillText(
+      `${o.name}${o.locked ? " · BLOQUEADA" : o.lock && o.solid ? " · FECHADO" : ""}`,
+      s.x,
+      s.y - (o.kind === "portal" ? 174 : 103),
+    );
+    if (o.locked && distance(o, p) < 2.5)
+      c.fillText(o.blockedReason ?? "Passagem bloqueada", s.x, s.y - 162);
   }
   goal(goal: Objective, player: Player) {
     const foot = this.project(goal),
@@ -529,7 +620,14 @@ export class Renderer {
     c.save();
     c.fillStyle = "rgba(4,10,18,.9)";
     c.fillRect(Math.round(at.x) - 13, Math.round(at.y) - 13, 26, 26);
-    objectiveIcon(c, goal.kind, at.x, at.y, 14);
+    objectiveIcon(
+      c,
+      goal.kind,
+      at.x,
+      at.y,
+      14,
+      goal.category === "secondary" ? "#efb74e" : "#e8bd68",
+    );
     if (at.outside) {
       c.translate(at.x, at.y);
       c.rotate(at.angle);

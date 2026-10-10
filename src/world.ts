@@ -21,6 +21,11 @@ export type PropKind =
   | "fountain"
   | "statue";
 export interface Prop extends Point {
+  name?: string;
+  interaction?: string;
+  lock?: string;
+  blockedReason?: string;
+  locked?: boolean;
   id: string;
   kind: PropKind;
   solid: boolean;
@@ -84,6 +89,7 @@ export class World {
         add(region === "kharn" ? "rock" : "wall", x, y, 1, true, 0.48);
     if (region === "kharn") {
       add("portal", 4, 22, 1.9, false);
+      add("portal", 24, 18, 1.4, false);
       add("npc", 6, 20, 0.72, false);
       for (const [x, y] of [
         [8, 16],
@@ -148,6 +154,97 @@ export class World {
         add("barrel", x, y, 0.75, true, 0.35);
       add("chest", 9, 14, 0.8, false);
       add("chest", 24, 8, 0.8, false);
+      return;
+    }
+    if (region === "ferrugem") {
+      const site = (
+        kind: PropKind,
+        x: number,
+        y: number,
+        name: string,
+        interaction?: string,
+      ) => {
+        add(
+          kind,
+          x,
+          y,
+          kind === "npc" ? 0.72 : kind === "portal" ? 1.4 : 0.9,
+          false,
+        );
+        Object.assign(this.props[this.props.length - 1], { name, interaction });
+      };
+      site("portal", 4, 22, "Estrada para Kharn");
+      site("npc", 6, 20, "ELCIO · MECÂNICO", "elcio");
+      site("npc", 11, 11, "NARA · OPERÁRIA", "nara");
+      site("crate", 8, 18, "Engrenagem intacta", "gear");
+      site("crate", 17, 16, "Fusível de cobre", "fuse");
+      site("fountain", 17, 12, "Bomba de refrigeração", "pump");
+      site("crate", 20, 11, "Manifesto de transporte", "manifest");
+      site("crate", 9, 14, "Diário de uma operária", "worker-log");
+      site("crate", 7, 16, "Manivela da ponte", "crank");
+      site("bench", 13, 20, "Guincho da passarela", "bridge");
+      site("chest", 25, 6, "Depósito da Fornalha");
+      site("chest", 5, 8, "Esconderijo dos sucateiros");
+      for (const [x, y] of [
+        [8, 23],
+        [5, 13],
+        [5, 5],
+        [10, 5],
+        [18, 4],
+        [24, 14],
+        [24, 23],
+      ])
+        add("ruinHouse", x, y, 2.1, true, 1.55);
+      // Cooling-channel masonry; the service opening is always usable.
+      for (let y = 7; y <= 23; y++) {
+        if ([13, 14, 15, 16].includes(y)) continue;
+        add("wall", 14, y, 1, true, 0.48);
+        if ([20, 21].includes(y))
+          Object.assign(this.props[this.props.length - 1], {
+            lock: "bridge",
+            name: "Passarela recolhida",
+          });
+      }
+      for (let x = 17; x <= 26; x++) {
+        add("wall", x, 10, 1, true, 0.48);
+        if ([21, 22].includes(x))
+          Object.assign(this.props[this.props.length - 1], {
+            lock: "pump",
+            name: "Portão térmico",
+          });
+      }
+      // Close arena sides: entry through the cooled gate, not around its edge.
+      for (let y = 1; y < 10; y++) {
+        add("wall", 17, y, 1, true, 0.48);
+        add("wall", 26, y, 1, true, 0.48);
+      }
+      for (const [x, y] of [
+        [7, 21],
+        [9, 17],
+        [12, 14],
+        [16, 14],
+        [18, 12],
+        [21, 11],
+        [23, 7],
+        [6, 9],
+      ])
+        add("lantern", x, y, 1, false);
+      for (const [x, y] of [
+        [9, 22],
+        [11, 18],
+        [16, 22],
+        [19, 18],
+        [23, 20],
+        [7, 7],
+      ])
+        add("barrel", x, y, 0.8, true, 0.35);
+      for (const [x, y] of [
+        [3, 18],
+        [12, 24],
+        [23, 4],
+        [25, 17],
+      ])
+        add("deadTree", x, y, 1.3, true, 0.5);
       return;
     }
     // Hand-composed streets: central diagonal thoroughfare, garden and northern ruins.
@@ -256,6 +353,20 @@ export class World {
     add("fence", 17, 19, 1.1, true, 0.6);
   }
   /** Reach is separate from visual bounds; solid bases prevent through-wall use. */
+  applyChanges(changes: string[]) {
+    let changed = false;
+    for (const p of this.props) {
+      if (!p.lock) continue;
+      const solid = !changes.includes(p.lock);
+      if (p.solid !== solid) {
+        p.solid = solid;
+        p.opened = !solid;
+        changed = true;
+      }
+    }
+    // The navigation grid is keyed by the static-prop array identity.
+    if (changed) this.props = [...this.props];
+  }
   canInteract(from: Point, target: Prop) {
     const steps = Math.max(1, Math.ceil(distance(from, target) / 0.08));
     for (let i = 0; i <= steps; i++) {
@@ -281,6 +392,11 @@ export class World {
   tile(x: number, y: number) {
     if (x === 0 || y === 0 || x === this.size - 1 || y === this.size - 1)
       return 7;
+    if (this.region === "ferrugem") {
+      const road =
+        (y >= 13 && y <= 16) || (x >= 6 && x <= 9) || (x >= 20 && x <= 23);
+      return road ? (hash(x, y) > 0.6 ? 2 : 1) : hash(x, y) > 0.55 ? 6 : 2;
+    }
     if (this.region === "kharn") {
       const road =
         (x >= 4 && x <= 9 && y >= 15 && y <= 23) ||

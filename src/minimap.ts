@@ -1,7 +1,14 @@
 import { paintHudIcon } from "./hud-icons";
 import { edgeIndicator, type Objective } from "./objectives";
 import type { Point } from "./spatial";
-import { REGIONS, ANCHORS, type Exploration } from "./regions";
+import {
+  REGIONS,
+  ANCHORS,
+  PASSAGES,
+  passageKey,
+  passageOpen,
+  type Exploration,
+} from "./regions";
 import { has } from "./skills";
 import { minimapPoint, minimapPadding } from "./spatial";
 import { distance, PORTAL, type World } from "./world";
@@ -81,6 +88,15 @@ export function drawMinimap(
       );
     }
   for (const prop of world.props) {
+    const passage = PASSAGES.find(
+      (p) => p.region === world.region && p.id === prop.id,
+    );
+    if (
+      passage?.requirement === "memories" &&
+      exploration &&
+      !exploration.knownPassages.includes(passageKey(passage))
+    )
+      continue;
     if (
       discovered &&
       !discovered.has(`${Math.floor(prop.x)}:${Math.floor(prop.y)}`) &&
@@ -89,7 +105,9 @@ export function drawMinimap(
       continue;
     const color =
       prop.kind === "portal"
-        ? "#b886de"
+        ? prop.locked
+          ? "#b76c43"
+          : "#51caa0"
         : prop.kind === "npc"
           ? "#c9d5db"
           : prop.kind === "chest" && !prop.opened
@@ -98,6 +116,10 @@ export function drawMinimap(
               ? "#101925"
               : null;
     if (color) marker(prop, 4, color);
+    if (prop.interaction && prop.kind !== "npc" && !prop.opened) {
+      const at = point(prop);
+      paintHudIcon(ctx, "xp", at.x, at.y, 6);
+    }
   }
   for (const enemy of enemies)
     if (
@@ -109,8 +131,29 @@ export function drawMinimap(
       const at = point(enemy);
       paintHudIcon(ctx, "enemy", at.x, at.y, 8);
     }
-  const passage = point(REGIONS[world.region].connection);
-  paintHudIcon(ctx, "exit", passage.x, passage.y, 10);
+  for (const p of PASSAGES.filter((p) => p.region === world.region)) {
+    if (
+      p.requirement === "memories" &&
+      exploration &&
+      !exploration.knownPassages.includes(passageKey(p))
+    )
+      continue;
+    const at = point(p);
+    paintHudIcon(
+      ctx,
+      exploration &&
+        !passageOpen(
+          p,
+          exploration,
+          exploration.unlocked.includes(passageKey(p)),
+        )
+        ? "secondary"
+        : "exit",
+      at.x,
+      at.y,
+      10,
+    );
+  }
   if (world.region === "kharn")
     for (const a of ANCHORS) {
       const at = point(a);
@@ -134,7 +177,15 @@ export function drawMinimap(
     ctx.arc(0, 0, 6, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-    paintHudIcon(ctx, "main", goal.x, goal.y, 9);
+    paintHudIcon(
+      ctx,
+      "category" in objective && objective.category === "secondary"
+        ? "secondary"
+        : "main",
+      goal.x,
+      goal.y,
+      9,
+    );
     if (goal.outside) {
       ctx.save();
       ctx.translate(goal.x, goal.y);

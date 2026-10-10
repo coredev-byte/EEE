@@ -5,6 +5,7 @@ import {
   ANCHORS,
   freshExploration,
   kharnEnemies,
+  ferrugemEnemies,
 } from "../src/regions";
 import { findPath, followRoute } from "../src/navigation";
 import { createPlayer, createEnemies } from "../src/state";
@@ -15,6 +16,54 @@ import { Combat, type CombatContext } from "../src/combat";
 const complete = { stage: 2 as const, kills: 4, rewardClaimed: true };
 afterEach(() => vi.unstubAllGlobals());
 describe("Regiões e migração", () => {
+  it("Ferrugem possui rotas reais para recursos, NPCs e arena após refrigeração", () => {
+    const w = new World("ferrugem");
+    expect(w.segmentClear({ x: 21, y: 11 }, { x: 21, y: 9 })).toBe(false);
+    expect(findPath(w, REGIONS.ferrugem.arrival, { x: 21, y: 7 })).toEqual([]);
+    w.applyChanges(["pump", "bridge"]);
+    expect(w.segmentClear({ x: 21, y: 11 }, { x: 21, y: 9 })).toBe(true);
+    for (const p of [
+      ...w.props.filter(
+        (p) => p.interaction || ["chest", "portal"].includes(p.kind),
+      ),
+      ...ferrugemEnemies(),
+    ]) {
+      expect(w.blocked(p, 0.23), p.id.toString()).toBe(false);
+      expect(
+        findPath(w, REGIONS.ferrugem.arrival, p).length,
+        p.id.toString(),
+      ).toBeGreaterThan(0);
+    }
+  });
+  it("migra v3 intacto, acrescenta Ferrugem e preserva memórias e encontros", () => {
+    const e = freshExploration();
+    e.region = "kharn";
+    e.campaign = {
+      accepted: true,
+      entered: true,
+      attuned: ["vigia", "canal", "memoria"],
+      rewardClaimed: true,
+    };
+    e.regions.kharn.killed = [100, 102, 104];
+    const raw = JSON.parse(serialize(createPlayer(), complete, [], [], e));
+    raw.version = 3;
+    delete raw.exploration.regions.ferrugem;
+    for (const key of [
+      "visited",
+      "knownPassages",
+      "unlocked",
+      "bosses",
+      "changes",
+      "journal",
+    ])
+      delete raw.exploration[key];
+    const saved = deserialize(JSON.stringify(raw))!;
+    expect(saved.version).toBe(4);
+    expect(saved.exploration.campaign).toEqual(e.campaign);
+    expect(saved.exploration.regions.kharn.killed).toEqual([100, 102, 104]);
+    expect(saved.exploration.regions.ferrugem.opened).toEqual([]);
+    expect(saved.exploration.visited).toEqual(["pedralta", "kharn"]);
+  });
   it("as passagens, personagens, baús, marcos e encontros são alcançáveis nas duas regiões", () => {
     for (const id of ["pedralta", "kharn"] as const) {
       const w = new World(id);
@@ -63,7 +112,7 @@ describe("Regiões e migração", () => {
     raw.version = 2;
     delete raw.exploration;
     const s = deserialize(JSON.stringify(raw))!;
-    expect(s.version).toBe(3);
+    expect(s.version).toBe(4);
     expect(s.player.inventory).toEqual(p.inventory);
     expect(s.player.equipment).toEqual(p.equipment);
     expect(s.player.trees).toEqual(p.trees);
@@ -256,6 +305,27 @@ describe("Campanha e transações reais", () => {
     g.quest = { ...complete };
     return g;
   }
+  it("a estrada industrial exige memórias, permite retorno pela entrada correta e mantém encontros", () => {
+    const g = game();
+    expect(g.changeRegion("ferrugem")).toBe(false);
+    g.changeRegion("kharn");
+    expect(g.changeRegion("ferrugem")).toBe(false);
+    g.exploration.campaign = {
+      accepted: true,
+      entered: true,
+      attuned: ["vigia", "canal", "memoria"],
+      rewardClaimed: true,
+    };
+    expect(g.changeRegion("ferrugem")).toBe(true);
+    expect(g.player.x).toBe(5);
+    g.enemies[0].hp = 32;
+    expect(g.changeRegion("kharn")).toBe(true);
+    expect(g.player.x).toBe(23);
+    expect(g.player.y).toBe(18);
+    g.changeRegion("ferrugem");
+    expect(g.enemies[0].hp).toBe(32);
+    expect(g.exploration.visited).toContain("ferrugem");
+  });
   it("transição mantém personagem, inventário e árvores, cancela efeitos e restaura baú na volta", () => {
     const g = game();
     g.player.hp = 150;

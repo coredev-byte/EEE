@@ -3,6 +3,7 @@ Noise/foley transients and inharmonic resonators, never a renamed bank of beeps.
 Mono PCM16/22050Hz; bounded levels and faded tails. Loops use periodic spectra.
 """
 from pathlib import Path
+from create_machinery import generate as generate_machinery
 import json, wave
 import numpy as np
 ROOT=Path(__file__).resolve().parents[1]/'public/audio'
@@ -57,6 +58,7 @@ for name,low,high in [('wind',30,600),('water',150,3500),('insects',2500,7000),(
     if name=='structure':x=x*.4+np.sin(2*np.pi*55*t)*.1+np.sin(2*np.pi*110*t)*.04
     manifest.append(write(ROOT/'ambience'/f'{name}.wav',x*mod,True))
 # Original 16-second D minor ambient sketch: common transport, three layers.
+manifest.append(generate_machinery(ROOT))
 n=RATE*16;t=np.arange(n)/RATE
 pad=sum(np.sin(2*np.pi*(round(f*16)/16)*t+np.sin(2*np.pi*t/16)*.1)*a for f,a in [(73.42,.3),(110,.16),(146.83,.1),(174.61,.08)])*(.7+.3*np.cos(2*np.pi*t/16))
 pulse=np.zeros(n);motif=np.zeros(n)

@@ -3,11 +3,21 @@ import {
   ANCHORS,
   freshExploration,
   kharnEnemies,
+  ferrugemEnemies,
+  PASSAGES,
+  passageOpen,
+  passageKey,
   type RegionId,
 } from "./regions";
 import { type AudioEvent, type AudioCue } from "./audio-catalog";
 import { syncPoints, learn, profile, equippedSkills } from "./skills";
 import type { Objective } from "./objectives";
+import {
+  missionViews,
+  selectedMission,
+  acceptMission,
+  recordMissionEvent,
+} from "./missions";
 import { ACTOR_HEIGHT } from "./spatial";
 import { CLASSES, ITEMS, type ClassId } from "./data";
 import { direction } from "./animation";
@@ -31,7 +41,14 @@ import {
   type Projectile,
   type Quest,
 } from "./state";
-import { World, distance, normalize, PORTAL, type Point } from "./world";
+import {
+  World,
+  distance,
+  normalize,
+  PORTAL,
+  type Point,
+  type Prop,
+} from "./world";
 export class Game {
   world = new World();
   exploration = freshExploration();
@@ -59,6 +76,7 @@ export class Game {
   onDialogue: () => void = () => {};
   dialogueOpen = false;
   dialogueStep = 0;
+  dialogueNPC = "";
   pickups: {
     id: string;
     name: string;
@@ -258,16 +276,18 @@ export class Game {
     }
     this.audio.setListener(this.player);
     const region =
-      this.world.region === "kharn"
-        ? "ruins"
-        : distance(this.player, PORTAL) < 5
+      this.world.region === "ferrugem"
+        ? "industrial"
+        : this.world.region === "kharn"
           ? "ruins"
-          : this.world.tile(
-                Math.floor(this.player.x),
-                Math.floor(this.player.y),
-              ) >= 3
-            ? "forest"
-            : "village";
+          : distance(this.player, PORTAL) < 5
+            ? "ruins"
+            : this.world.tile(
+                  Math.floor(this.player.x),
+                  Math.floor(this.player.y),
+                ) >= 3
+              ? "forest"
+              : "village";
     const mood = !this.started
       ? "menu"
       : this.player.hp <= 0
@@ -279,7 +299,11 @@ export class Game {
                 (e) =>
                   e.hp > 0 && e.maxHp >= 200 && distance(e, this.player) < 6,
               )
-              ? "elite"
+              ? this.enemies.some(
+                  (e) => e.boss && e.hp > 0 && distance(e, this.player) < 6,
+                )
+                ? "boss"
+                : "elite"
               : "combat"
             : this.enemies.some((e) => e.hp > 0 && distance(e, this.player) < 8)
               ? "danger"
@@ -301,6 +325,9 @@ export class Game {
     const p = this.player;
     const progress = this.exploration.regions[this.world.region];
     progress.discovered = this.world.discover(p, progress.discovered);
+    this.syncPassages();
+    this.syncMissions();
+    this.discoverSites();
     p.invulnerable = Math.max(0, p.invulnerable - dt);
     p.guard = Math.max(0, p.guard - dt);
     for (const id in p.skillCooldowns) {
@@ -428,8 +455,14 @@ export class Game {
             "portal",
             "chest",
             "npc",
+            ...(this.world.region === "ferrugem"
+              ? ["crate", "fountain", "bench"]
+              : []),
             ...(this.world.region === "kharn" ? ["statue"] : []),
-          ].includes(o.kind),
+          ].includes(o.kind) &&
+          (this.world.region !== "ferrugem" ||
+            ["npc", "portal", "chest"].includes(o.kind) ||
+            !!o.interaction),
       )
       .sort((a, b) => distance(a, this.player) - distance(b, this.player))
       .find(
@@ -448,6 +481,8 @@ export class Game {
     }
     this.player.action = "interact";
     this.player.animTime = 0;
+    if (this.world.region === "ferrugem" && o.interaction)
+      return this.interactFerrugem(o);
     if (this.world.region === "kharn" && o.kind === "statue") {
       if (!this.exploration.campaign.accepted) {
         this.notify("Converse primeiro com Iria junto ao aqueduto.");
@@ -489,6 +524,19 @@ export class Game {
     }
     if (o.kind === "portal") {
       this.audioEvent("object.portal", { position: o });
+      const passage = PASSAGES.find(
+        (p) => p.region === this.world.region && p.id === o.id,
+      );
+      if (
+        passage &&
+        !(this.world.region === "pedralta" && !this.quest.rewardClaimed)
+      ) {
+        if (!passageOpen(passage, this.exploration, this.quest.rewardClaimed)) {
+          this.notify(`${passage.name} bloqueada. ${passage.blocked}.`);
+          return false;
+        }
+        return this.changeRegion(passage.destination);
+      }
       if (this.world.region === "kharn") {
         return this.changeRegion("pedralta");
       }
@@ -646,8 +694,15 @@ export class Game {
     this.exploration.region = id;
     this.world.setRegion(id);
     const progress = this.exploration.regions[id];
-    this.enemies = id === "pedralta" ? createEnemies() : kharnEnemies();
+    this.enemies =
+      id === "pedralta"
+        ? createEnemies()
+        : id === "kharn"
+          ? kharnEnemies()
+          : ferrugemEnemies();
     for (const p of this.world.props) p.opened = progress.opened.includes(p.id);
+    this.syncPassages();
+    this.world.applyChanges(this.exploration.changes);
     for (const e of this.enemies) {
       const saved = progress.encounters.find((s) => s.id === e.id);
       if (saved) Object.assign(e, saved);
@@ -663,10 +718,16 @@ export class Game {
         e.timer = 3;
       }
     }
+    this.syncMissions();
     this.renderer?.makeFloor();
   }
   changeRegion(id: RegionId) {
+    const passage = PASSAGES.find(
+      (p) => p.region === this.world.region && p.destination === id,
+    );
     if (
+      !passage ||
+      !passageOpen(passage, this.exploration, this.quest.rewardClaimed) ||
       id === this.world.region ||
       !this.quest.rewardClaimed ||
       this.player.hp <= 0
@@ -676,7 +737,7 @@ export class Game {
     this.combat.engine.cancelAudio();
     this.audio.stopEffects();
     this.mountRegion(id);
-    const at = this.world.nearestFree(REGIONS[id].arrival);
+    const at = this.world.nearestFree(passage.arrival);
     Object.assign(this.player, at, {
       action: "idle",
       animTime: 0,
@@ -694,6 +755,11 @@ export class Game {
     this.stepTimer = 0;
     const first = !this.exploration.campaign.entered;
     if (id === "kharn") this.exploration.campaign.entered = true;
+    if (!this.exploration.visited.includes(id)) {
+      this.exploration.visited.push(id);
+      this.audioEvent("area.discover");
+    }
+    if (id === "ferrugem") this.missionEvent("enter:ferrugem", false);
     const r = this.exploration.regions[id];
     r.discovered = this.world.discover(this.player, r.discovered);
     this.renderer.snap(this.player);
@@ -703,7 +769,274 @@ export class Game {
     this.notify(`${REGIONS[id].name}. ${this.objective()}`);
     return true;
   }
+  syncPassages() {
+    for (const p of PASSAGES) {
+      const open = passageOpen(p, this.exploration, this.quest.rewardClaimed);
+      const key = passageKey(p);
+      if (open && !this.exploration.unlocked.includes(key))
+        this.exploration.unlocked.push(key);
+      if (p.region !== this.world.region) continue;
+      const prop = this.world.props.find((o) => o.id === p.id);
+      if (prop)
+        Object.assign(prop, {
+          name: p.name,
+          locked: !open,
+          blockedReason: p.blocked,
+        });
+      if (
+        (distance(p, this.player) < 4.5 ||
+          (p.requirement === "memories" && open)) &&
+        !this.exploration.knownPassages.includes(key)
+      )
+        this.exploration.knownPassages.push(key);
+    }
+  }
+  missionEvent(event: string, persist = true) {
+    const changed = recordMissionEvent(this.exploration, event);
+    this.syncMissions();
+    if (changed && persist) this.save();
+    return changed;
+  }
+  syncMissions() {
+    if (this.exploration.campaign.rewardClaimed)
+      acceptMission(this.exploration, this.quest, "machines");
+    for (const v of missionViews(this.exploration, this.quest)) {
+      if (v.status !== "ativa" || v.stage !== v.definition.steps.length)
+        continue;
+      const { id, reward, name } = v.definition;
+      this.exploration.journal.completed.push(id);
+      this.player.coins += reward.coins;
+      this.pickup("coins", reward.coins);
+      if (reward.item && !this.player.inventory.includes(reward.item)) {
+        this.player.inventory.push(reward.item);
+        this.pickup(reward.item);
+      }
+      if (reward.potions) {
+        this.player.potions[0] += reward.potions;
+        this.pickup("potion-0", reward.potions);
+      }
+      if (
+        reward.consequence &&
+        !this.exploration.changes.includes(reward.consequence)
+      )
+        this.exploration.changes.push(reward.consequence);
+      if (gainXp(this.player, reward.xp)) this.audioEvent("level.up");
+      this.audioEvent("quest.complete");
+      if (this.exploration.journal.tracked === id)
+        this.exploration.journal.tracked = null;
+      this.notify(
+        `${name} concluída! +${reward.xp} XP · +${reward.coins} moedas.${id === "machines" ? " O manifesto revela fragmentos do Núcleo enviados ao Jardim do Véu; a rota adiante ainda precisa ser investigada." : ""}`,
+      );
+    }
+    this.world.applyChanges(this.exploration.changes);
+    const nara = this.world.props.find((p) => p.interaction === "nara");
+    if (nara && this.exploration.changes.includes("nara-safe"))
+      Object.assign(nara, { x: 7.5, y: 20, name: "NARA" });
+  }
+  acceptSideMission(id: string) {
+    if (!acceptMission(this.exploration, this.quest, id)) return false;
+    this.exploration.journal.tracked = id;
+    this.audioEvent("quest.accept");
+    this.syncMissions();
+    this.save();
+    return true;
+  }
+  trackMission(id: string) {
+    if (
+      !missionViews(this.exploration, this.quest).some(
+        (v) => v.definition.id === id && v.status === "ativa",
+      )
+    )
+      return false;
+    this.exploration.journal.tracked = id;
+    this.save();
+    return true;
+  }
+  onEnemyDefeated = (enemy: Enemy) => {
+    if (this.world.region !== "ferrugem") return;
+    if ([203, 204].includes(enemy.id)) {
+      const id = `ferrugem:${enemy.id}`;
+      if (!this.exploration.bosses.includes(id))
+        this.exploration.bosses.push(id);
+      this.missionEvent(`defeat:${enemy.id}`);
+    } else this.save();
+  };
+  interactFerrugem(o: Prop) {
+    const event = o.interaction!;
+    const known = (id: string) => this.exploration.journal.events.includes(id);
+    if (event === "elcio") {
+      this.missionEvent("talk:elcio", false);
+      for (const id of ["machines", "workers"]) {
+        const v = missionViews(this.exploration, this.quest).find(
+          (v) => v.definition.id === id,
+        )!;
+        if (v.status === "ativa" && v.stage === v.definition.steps.length - 1)
+          this.missionEvent(`report:${id}`, false);
+      }
+    } else if (event === "nara") {
+      if (!known("defeat:204")) {
+        this.notify(
+          "Nara: o Sucateiro ainda ronda a saída. Silencie-o antes de me escoltar ao abrigo.",
+        );
+        return false;
+      }
+      if (!known("talk:nara")) {
+        this.exploration.changes.push("nara-safe");
+        this.missionEvent("talk:nara", false);
+        this.notify(
+          "Nara voltou ao abrigo de Elcio. Conte a ele o que aconteceu.",
+        );
+      }
+    } else {
+      if (event === "pump" && !["talk:elcio", "gear", "fuse"].every(known)) {
+        this.notify(
+          "Bomba parada: converse com Elcio e recupere a engrenagem e o fusível.",
+        );
+        return false;
+      }
+      if (
+        event === "bridge" &&
+        (!known("crank") ||
+          !this.exploration.journal.accepted.includes("bridge"))
+      ) {
+        this.notify(
+          "Guincho sem manivela. Elcio pode orientar a restauração da passarela.",
+        );
+        return false;
+      }
+      if (event === "pump" || event === "bridge") {
+        if (!this.exploration.changes.includes(event))
+          this.exploration.changes.push(event);
+      }
+      this.missionEvent(event, false);
+      o.opened = true;
+      this.audioEvent(
+        event === "worker-log" || event === "manifest"
+          ? "loot.quest"
+          : "object.chest",
+        { position: o },
+      );
+      const texts: Record<string, string> = {
+        gear: "Engrenagem recuperada e guardada com os componentes da missão.",
+        fuse: "Fusível de cobre recuperado.",
+        pump: "Refrigeração restaurada. O portão térmico da Fornalha abriu.",
+        manifest:
+          "Manifesto: fragmentos do Núcleo foram levados ao Jardim do Véu por ordem de uma autoridade apagada dos registros. A Fornalha manteve as máquinas sob comando.",
+        "worker-log":
+          "Diário de Nara: escondi-me junto ao depósito norte, perto da oficina. O Sucateiro não permite que eu saia.",
+        crank: "Manivela recuperada. Leve-a ao guincho do canal sul.",
+        bridge:
+          "Passarela restaurada. Agora você pode cruzar o canal pelo sul.",
+      };
+      if (this.messageTimer <= 0 || !this.message.includes("concluída!"))
+        this.notify(texts[event] ?? o.name ?? "Registro encontrado.");
+      this.save();
+      return true;
+    }
+    this.dialogueNPC = event;
+    this.dialogueOpen = true;
+    this.dialogueStep = 0;
+    this.save();
+    this.onDialogue();
+    return true;
+  }
+  buySupplies() {
+    if (
+      !this.exploration.changes.includes("merchant") ||
+      this.world.region !== "ferrugem" ||
+      this.dialogueNPC !== "elcio" ||
+      this.player.coins < 50
+    ) {
+      this.notify("A provisão custa 50 moedas e exige resgatar Nara.");
+      return false;
+    }
+    this.player.coins -= 50;
+    this.player.potions[0]++;
+    this.pickup("potion-0");
+    this.save();
+    return true;
+  }
+  discoverSites() {
+    if (this.world.region !== "ferrugem") return;
+    for (const site of [
+      { id: "depot", name: "Depósito abandonado", x: 9, y: 14 },
+      { id: "canal", name: "Canal de refrigeração", x: 17, y: 16 },
+      { id: "furnace", name: "Pátio da Fornalha", x: 21, y: 8 },
+      { id: "cache", name: "Esconderijo dos sucateiros", x: 5, y: 8 },
+    ]) {
+      if (
+        distance(site, this.player) < 2 &&
+        recordMissionEvent(this.exploration, `site:${site.id}`)
+      ) {
+        this.audioEvent("area.discover");
+        this.notify(`Local descoberto: ${site.name}.`);
+        this.save();
+      }
+    }
+  }
+  missionObjective(): Objective | null {
+    const mission = selectedMission(this.exploration, this.quest);
+    const step = mission?.definition.steps[mission.stage];
+    if (!mission || !step) return null;
+    const category = mission.definition.main ? "main" : "secondary";
+    if (step.region !== this.world.region) {
+      const passage =
+        PASSAGES.find(
+          (p) =>
+            p.region === this.world.region && p.destination === step.region,
+        ) ??
+        PASSAGES.find(
+          (p) => p.region === this.world.region && p.destination === "kharn",
+        );
+      return passage
+        ? {
+            x: passage.x,
+            y: passage.y,
+            id: passage.id,
+            kind: "reach",
+            label: `${passage.name} · F`,
+            height: 180,
+            category,
+          }
+        : null;
+    }
+    if (step.target.startsWith("enemy:")) {
+      const enemy = this.enemies.find(
+        (e) => e.id === Number(step.target.slice(6)) && e.hp > 0,
+      );
+      return enemy
+        ? {
+            x: enemy.x,
+            y: enemy.y,
+            id: step.target,
+            kind: "defeat",
+            label: enemy.name ?? step.text,
+            height: enemy.boss ? 108 : 82,
+            category,
+          }
+        : null;
+    }
+    const prop = this.world.props.find((p) => p.id === step.target);
+    return prop
+      ? {
+          x: prop.x,
+          y: prop.y,
+          id: prop.id,
+          kind: step.kind,
+          label: step.text,
+          height: prop.kind === "npc" ? 80 : prop.kind === "portal" ? 180 : 100,
+          category,
+        }
+      : null;
+  }
   objective() {
+    if (this.exploration.campaign.rewardClaimed) {
+      const mission = selectedMission(this.exploration, this.quest);
+      return (
+        mission?.definition.steps[mission.stage]?.text ??
+        "Fornalha silenciada. Explore os depósitos e ajude os moradores."
+      );
+    }
     if (!this.quest.rewardClaimed)
       return this.quest.stage === 0
         ? "Encontre a entrada das ruínas"
@@ -725,6 +1058,7 @@ export class Game {
     return `${alive ? "Derrote o vigia do" : "Afine o"} ${next.name} · ${c.attuned.length}/3`;
   }
   activeObjective(): Objective | null {
+    if (this.exploration.campaign.rewardClaimed) return this.missionObjective();
     const prop = (
       kind: string,
       type: Objective["kind"],
@@ -821,13 +1155,30 @@ export class Game {
     this.audio.cue("victory", 4);
     this.save();
     this.notify(
-      "As Memórias da Margem reunidas! +300 XP, +180 moedas e Olho de Kharn.",
+      "As Memórias da Margem reunidas! +300 XP, +180 moedas e Olho de Kharn. Iria revelou a Estrada das Caldeiras: retorne a Kharn e siga para Ferrugem.",
     );
+    this.syncMissions();
+    this.syncPassages();
+    this.save();
     return true;
   }
   save() {
     try {
       this.captureRegion();
+      const previous = localStorage.getItem(SAVE_KEY);
+      if (previous) {
+        let version = 0;
+        try {
+          version = JSON.parse(previous).version;
+        } catch {
+          /* A corrupt old save must not prevent starting a new journey. */
+        }
+        if (
+          [1, 2, 3].includes(version) &&
+          !localStorage.getItem(`${SAVE_KEY}:backup:v${version}`)
+        )
+          localStorage.setItem(`${SAVE_KEY}:backup:v${version}`, previous);
+      }
       localStorage.setItem(
         SAVE_KEY,
         serialize(
@@ -855,13 +1206,20 @@ export class Game {
       objective: this.objective(),
       activeObjective: this.activeObjective(),
       pointsOfInterest: this.world.props
-        .filter((o) => ["npc", "portal", "statue", "chest"].includes(o.kind))
+        .filter(
+          (o) =>
+            ["npc", "portal", "statue", "chest"].includes(o.kind) ||
+            !!o.interaction,
+        )
         .map((o) => ({
           id: o.id,
           kind: o.kind,
           x: o.x,
           y: o.y,
           opened: !!o.opened,
+          interaction: o.interaction,
+          name: o.name,
+          locked: o.locked,
         })),
       started: this.started,
       paused: this.paused,

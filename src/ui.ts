@@ -1,5 +1,8 @@
+import { missionJournal, ferrugemDialogue } from "./mission-ui";
+import { selectedMission } from "./missions";
+import { PASSAGES, passageOpen } from "./regions";
 import { hudIcon } from "./hud-icons";
-import { REGIONS, ANCHORS } from "./regions";
+import { REGIONS } from "./regions";
 import { type AudioSettings } from "./audio-catalog";
 import { effectFrame } from "./effect-art";
 import { Combat } from "./combat";
@@ -209,6 +212,19 @@ export class UI {
   }
   action(action: string) {
     const g = this.game;
+    if (
+      action.startsWith("mission-accept:") ||
+      action.startsWith("mission-track:") ||
+      action === "mission-buy"
+    ) {
+      if (action.startsWith("mission-accept:"))
+        g.acceptSideMission(action.split(":")[1]);
+      else if (action.startsWith("mission-track:"))
+        g.trackMission(action.split(":")[1]);
+      else g.buySupplies();
+      this.renderPanel();
+      return;
+    }
     if (action === "campaign-accept" || action === "campaign-claim") {
       g.audioEvent("dialogue.choice");
       if (action === "campaign-accept") g.acceptCampaign();
@@ -418,12 +434,13 @@ export class UI {
       } else
         content = `<div class="dialogue-panel"><p>${g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
     }
-    if (this.panel === "quests") {
-      content = `<div class="quest-detail"><div class="quest-stamp"><span class="diamond"></span> MISSÃO PRINCIPAL · CAPÍTULO I</div><h3>O Eco de Kharn</h3><p>Há algo vivo sob as pedras de Pedralta. A guardiã fala de um eco — uma memória que a vila tentou enterrar. Encontre o selo nas ruínas a nordeste e descubra o que ainda responde.</p><ol class="quest-steps"><li class="${g.quest.stage >= 1 ? "done" : "active"}">Encontrar a entrada das ruínas <span>${g.quest.stage >= 1 ? "CONCLUÍDO" : "EM ANDAMENTO"}</span></li><li class="${g.quest.kills >= 3 ? "done" : g.quest.stage === 1 ? "active" : ""}">Derrotar três ameaças da vila <span>${Math.min(3, g.quest.kills)} / 3</span></li><li class="${g.quest.stage === 2 ? "done" : g.quest.stage === 1 && g.quest.kills >= 3 ? "active" : ""}">Interagir com o selo de Kharn <span>${g.quest.stage === 2 ? "CONCLUÍDO" : "TECLA F"}</span></li></ol><div class="rewards"><small>RECOMPENSAS</small><span>200 XP</span><span>250 MOEDAS</span><span>${icon(3)} MEMÓRIA DE KHARN</span></div>${g.quest.stage === 2 ? '<div class="completed-banner">O ECO FOI OUVIDO. MISSÃO CONCLUÍDA.</div>' : ""}</div>`;
-    }
-    if (this.panel === "quests" && g.quest.rewardClaimed) {
-      const c = g.exploration.campaign;
-      content += `<div class="quest-detail campaign-detail"><div class="quest-stamp">CAMPANHA · CAPÍTULO II</div><h3>As Memórias da Margem</h3><p>O selo revelou um caminho para Kharn. Iria precisa reunir três memórias para restaurar a ligação com Pedralta.</p><ol class="quest-steps"><li class="${c.entered ? "done" : "active"}">Entrar na Margem de Kharn <span>${c.entered ? "CONCLUÍDO" : "SELO · F"}</span></li><li class="${c.accepted ? "done" : ""}">Conversar com Iria <span>${c.accepted ? "CONCLUÍDO" : "AQUEDUTO SUL"}</span></li>${ANCHORS.map((a) => `<li class="${c.attuned.includes(a.id) ? "done" : ""}">${a.name} <span>${c.attuned.includes(a.id) ? "AFINADO" : "VIGIA + F"}</span></li>`).join("")}<li class="${c.rewardClaimed ? "done" : ""}">Entregar as memórias à Guardiã <span>${c.rewardClaimed ? "CONCLUÍDO" : "PEDRALTA · F"}</span></li></ol><div class="rewards"><span>300 XP</span><span>180 MOEDAS</span><span>${icon(8)} OLHO DE KHARN</span></div><p class="campaign-objective">${g.objective()}</p></div>`;
+    if (this.panel === "quests") content = missionJournal(g);
+    if (this.panel === "dialogue" && g.world.region === "ferrugem") {
+      title =
+        g.dialogueNPC === "nara"
+          ? "Nara, operária do depósito"
+          : "Elcio, mecânico das Caldeiras";
+      content = ferrugemDialogue(g);
     }
     if (this.panel === "settings") {
       const audio = g.audio.snapshot();
@@ -601,22 +618,37 @@ export class UI {
     document.querySelector("#region-caption")!.innerHTML =
       `<i class="live-dot"></i> ${region.name.toUpperCase()}`;
     document.querySelector(".edition")!.innerHTML =
-      `CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO ${g.quest.rewardClaimed ? "II" : "I"}`;
+      `CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO ${g.exploration.campaign.rewardClaimed ? "II" : "I"}`;
     document.querySelector(".location")!.innerHTML =
       `<span class="location-mark"></span> ${region.name.toUpperCase()} <span>— ${region.subtitle.toUpperCase()}</span>`;
     document.querySelector(".map-label")!.innerHTML =
       `<span class="map-region">${region.short}</span><b>N</b>`;
     this.minimap.setAttribute("aria-label", `Minimapa de ${region.name}`);
-    document.querySelector("#map-connection")!.textContent =
-      `${g.quest.rewardClaimed ? "SELO →" : "SELO FECHADO →"} ${REGIONS[region.destination].short}`;
+    document.querySelector("#map-connection")!.textContent = PASSAGES.filter(
+      (passage) =>
+        passage.region === g.world.region &&
+        (passage.id ===
+          `portal-${region.connection.x}-${region.connection.y}` ||
+          g.exploration.knownPassages.includes(
+            `${passage.region}:${passage.id}`,
+          )),
+    )
+      .map(
+        (passage) =>
+          `${passageOpen(passage, g.exploration, g.quest.rewardClaimed) ? "PASSAGEM →" : "SELO FECHADO →"} ${REGIONS[passage.destination].short}`,
+      )
+      .join(" · ");
     document.querySelector("#coordinates")!.textContent =
       `${p.x.toFixed(1)} · ${p.y.toFixed(1)} / ${g.exploration.regions[g.world.region].discovered.length} ÁREAS`;
     document.querySelector(".quest-name")!.innerHTML =
-      `<span class="diamond"></span> ${g.quest.rewardClaimed ? "AS MEMÓRIAS DA MARGEM" : "O ECO DE KHARN"}`;
+      `<span class="diamond"></span> ${selectedMission(g.exploration, g.quest)?.definition.name.toUpperCase() ?? "FERRUGEM · EXPLORAÇÃO"}`;
     document.querySelector("#quest-objective")!.textContent = g.objective();
     document.querySelector("#quest-progress")!.textContent = g.exploration
       .campaign.rewardClaimed
-      ? "CAMPANHA CONCLUÍDA"
+      ? (selectedMission(
+          g.exploration,
+          g.quest,
+        )?.definition.chapter.toUpperCase() ?? "EXPLORAÇÃO LIVRE")
       : g.quest.rewardClaimed
         ? "CAPÍTULO II"
         : "MISSÃO PRINCIPAL";
@@ -648,7 +680,7 @@ export class UI {
       .join("");
     const near = g.nearby();
     document.querySelector<HTMLElement>("#interact")!.innerHTML = near
-      ? `<kbd>F</kbd> ${near.kind === "npc" ? "CONVERSAR" : near.kind === "chest" ? "ABRIR BAÚ" : near.kind === "statue" ? "AFINAR MARCO" : g.quest.rewardClaimed ? `VIAJAR → ${REGIONS[region.destination].name.toUpperCase()}` : "SELO DE KHARN"}`
+      ? `<kbd>F</kbd> ${near.kind === "npc" ? "CONVERSAR" : near.kind === "chest" ? "ABRIR BAÚ" : near.interaction ? (near.name?.toUpperCase() ?? "INVESTIGAR") : near.kind === "statue" ? "AFINAR MARCO" : g.quest.rewardClaimed ? (near.locked ? (near.blockedReason?.toUpperCase() ?? "PASSAGEM BLOQUEADA") : `VIAJAR → ${REGIONS[PASSAGES.find((p) => p.region === g.world.region && p.id === near.id)?.destination ?? region.destination].name.toUpperCase()}`) : "SELO DE KHARN"}`
       : "";
     const toast = document.querySelector<HTMLElement>("#toast")!;
     toast.textContent = g.message;

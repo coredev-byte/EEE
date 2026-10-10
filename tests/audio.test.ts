@@ -105,9 +105,9 @@ describe("Áudio central", () => {
     a.prepare();
     a.unlock();
     await a.ready();
-    expect(fetch).toHaveBeenCalledTimes(53);
-    expect(a.snapshot().loaded).toBe(53);
-    expect(ctx.sources).toHaveLength(7);
+    expect(fetch).toHaveBeenCalledTimes(54);
+    expect(a.snapshot().loaded).toBe(54);
+    expect(ctx.sources).toHaveLength(8);
     a.dispose();
     expect(ctx.state).toBe("closed");
     expect(a.snapshot().loops).toBe(0);
@@ -115,7 +115,7 @@ describe("Áudio central", () => {
   it("falha parcial não bloqueia outros efeitos", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { a } = await engine(true);
-    expect(a.snapshot().loaded).toBe(52);
+    expect(a.snapshot().loaded).toBe(53);
     expect(a.errors[0]).toContain("fire-0");
     expect(a.emit("ui.open")).toBe(true);
     a.dispose();
@@ -174,8 +174,10 @@ describe("Áudio central", () => {
     const transport = a.snapshot().transport;
     ctx.currentTime = 4;
     a.scene("forest", "combat");
+    a.scene("industrial", "combat");
+    expect(a.snapshot().region).toBe("industrial");
     a.scene("ruins", "boss");
-    expect(ctx.sources).toHaveLength(7);
+    expect(ctx.sources).toHaveLength(8);
     expect(a.snapshot().transport).toBe(transport);
     expect(a.snapshot().music).toBe("boss");
     a.emit("attack.swing");
@@ -187,7 +189,7 @@ describe("Áudio central", () => {
     a.dispose();
     a.unlock();
     await a.ready();
-    expect(a.snapshot().loaded).toBe(53);
+    expect(a.snapshot().loaded).toBe(54);
     a.dispose();
   });
   it("persiste volumes, mute e rejeita configuração inválida", async () => {

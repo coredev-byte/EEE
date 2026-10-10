@@ -12,7 +12,7 @@ export type MusicState =
   | "victory"
   | "defeat"
   | "narrative";
-export type Soundscape = "village" | "forest" | "ruins";
+export type Soundscape = "village" | "forest" | "ruins" | "industrial";
 export type AudioEvent =
   | "attack.prepare"
   | "attack.swing"
@@ -146,7 +146,7 @@ export const AUDIO_FILES: Record<string, string[]> = Object.fromEntries(
     ),
   ]),
 );
-for (const id of ["wind", "water", "insects", "structure"])
+for (const id of ["wind", "water", "insects", "structure", "machinery"])
   AUDIO_FILES[id] = [`/audio/ambience/${id}.wav`];
 for (const id of ["pad", "pulse", "motif"])
   AUDIO_FILES[id] = [`/audio/music/${id}.wav`];

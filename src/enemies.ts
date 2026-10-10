@@ -23,6 +23,31 @@ export function updateEnemies(
       e.state = "patrol";
       continue;
     }
+    if (e.boss && world.region === "ferrugem") {
+      if (world.props.some((o) => o.lock === "pump" && o.solid)) continue;
+      const phase = e.hp <= e.maxHp / 2 ? 2 : 1;
+      if (e.phase !== phase && distance(e, p) < 6) {
+        e.phase = phase;
+        combat.ctx.notify(
+          phase === 2
+            ? "Mestre da Fornalha: sobrecarga! Afaste-se do núcleo incandescente."
+            : "O Mestre da Fornalha despertou. Evite as descargas de calor.",
+        );
+      }
+      if (distance(e, p) < 6) {
+        const previous = e.furnaceTimer ?? 0;
+        e.furnaceTimer = previous + dt;
+        const interval = phase === 2 ? 4.5 : 6;
+        if (previous < interval && e.furnaceTimer >= interval)
+          combat.effect("nova", e, "#f5a34f", 2.5, 1.2);
+        if (e.furnaceTimer >= interval + 0.9) {
+          if (distance(e, p) < 2.5 && world.segmentClear(e, p, 0.04, false))
+            combat.damagePlayer(phase === 2 ? 50 : 38, e);
+          e.furnaceTimer = 0;
+          combat.emit("impact.world", { position: e, element: "fire" });
+        }
+      }
+    }
     if (e.state === "hurt") {
       if (e.timer > 0.25) {
         e.state = "chase";
@@ -48,7 +73,8 @@ export function updateEnemies(
         });
         if (d < range + 0.3 && world.segmentClear(e, p, 0.04, false)) {
           combat.damagePlayer(
-            (e.type === "wolf" ? 19 : 26) * combat.engine.outgoing(e),
+            (e.type === "wolf" ? 19 : e.boss ? 36 : 26) *
+              combat.engine.outgoing(e),
             e,
           );
           combat.effect(

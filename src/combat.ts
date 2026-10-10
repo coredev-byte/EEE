@@ -26,6 +26,7 @@ export interface CombatContext {
   skillHeld?: (id: string) => boolean;
   audioEvent?: (event: AudioEvent, cue?: AudioCue) => boolean;
   pickup?: (id: string, count?: number) => void;
+  onEnemyDefeated?: (enemy: Enemy) => void;
   audioSustain?: (owner: string, cue: AudioCue) => void;
   audioStopOwner?: (owner: string) => void;
   sound: (kind: "attack" | "hit" | "magic" | "death") => void;
@@ -446,6 +447,7 @@ export class Combat {
         );
       this.effect("death", e, "#7ab3d9", 1, 0.8);
       this.emit("enemy.death", { position: e, enemy: e.type });
+      c.onEnemyDefeated?.(e);
     }
   }
   damagePlayer(amount: number, attacker?: Enemy) {

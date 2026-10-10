@@ -428,11 +428,23 @@ export class AudioEngine {
     if (!this.context) return;
     const c = this.context;
     const targets: Record<string, number> = {
+      machinery: this.region === "industrial" ? 0.25 : 0,
       wind: this.region === "ruins" ? 0.3 : 0.2,
-      water: this.region === "village" ? 0.16 : 0.03,
+      water:
+        this.region === "village"
+          ? 0.16
+          : this.region === "industrial"
+            ? 0.08
+            : 0.03,
       insects: this.region === "forest" ? 0.25 : 0.04,
       structure:
-        this.region === "ruins" ? 0.14 : this.region === "village" ? 0.11 : 0,
+        this.region === "ruins"
+          ? 0.14
+          : this.region === "industrial"
+            ? 0.18
+            : this.region === "village"
+              ? 0.11
+              : 0,
       pad: MUSIC_LEVELS[this.music][0],
       pulse: MUSIC_LEVELS[this.music][1],
       motif: MUSIC_LEVELS[this.music][2],

@@ -29,7 +29,7 @@ test("Chromium decodifica todos os arquivos; ataque no vazio separa preparação
   page,
 }) => {
   await start(page);
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(53);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(54);
   expect((await state(page)).audio.errors).toEqual([]);
   const box = (await page.locator("#game").boundingBox())!;
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.5);
@@ -49,7 +49,7 @@ test("Chromium decodifica todos os arquivos; ataque no vazio separa preparação
   expect((await state(page)).audio.paused).toBe(true);
   await page.keyboard.press("Escape");
   expect((await state(page)).audio.paused).toBe(false);
-  expect((await state(page)).audio.loops).toBe(7);
+  expect((await state(page)).audio.loops).toBe(8);
 });
 test("Sliders e mute persistem após recarregar; jogo mantém WASD", async ({
   page,
@@ -93,7 +93,7 @@ test("Arquivo ausente e WAV inválido não impedem movimento ou outros sons", as
     route.fulfill({ status: 200, body: "invalid WAV" }),
   );
   await start(page);
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(51);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(52);
   expect((await state(page)).audio.errors).toHaveLength(2);
   await page.keyboard.press("i");
   await expect(page.locator("#modal-layer")).toBeVisible();
@@ -136,7 +136,7 @@ test("Web Audio real: rajadas, regiões, manutenção, teardown e cache", async 
   });
   expect(result.burst.effects).toBe(18);
   expect(result.paused.effects).toBe(0);
-  expect(result.transitioned.loops).toBe(7);
+  expect(result.transitioned.loops).toBe(8);
   expect(result.transitioned.transport).toBe(result.initial.transport);
   expect(result.transitioned.region).toBe("ruins");
   expect(result.sustain.effects).toBe(1);
@@ -196,7 +196,7 @@ test("Conversa real em Pedralta: abertura, resposta, missão aceita e encerramen
   });
   await page.goto("/");
   await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(53);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(54);
   await page.keyboard.press("f");
   await expect(page.locator(".dialogue-panel")).toBeVisible();
   await page.getByRole("button", { name: "ACEITAR O CHAMADO" }).click();

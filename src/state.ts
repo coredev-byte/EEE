@@ -34,6 +34,12 @@ export interface Player extends Point {
   challenges: { kills: number; chests: number; seal: boolean };
 }
 export interface Enemy extends Point {
+  appearance?: "machine";
+  name?: string;
+  boss?: boolean;
+  optional?: boolean;
+  phase?: number;
+  furnaceTimer?: number;
   route?: import("./navigation").Route;
   lostSight?: number;
   statusKinds?: string[];

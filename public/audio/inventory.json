@@ -369,5 +369,12 @@
     "peak": 0.1089,
     "rms": 0.045,
     "loop": true
+  },
+  {
+    "file": "ambience/machinery.wav",
+    "seconds": 8.0,
+    "peak": 0.1589,
+    "rms": 0.0319,
+    "loop": true
   }
 ]

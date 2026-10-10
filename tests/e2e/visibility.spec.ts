@@ -143,7 +143,7 @@ test("Oclusão real: máscara local, restauração gradual e profundidade em mú
     .screenshot({ path: "artifacts/occlusion-local.png" });
 });
 
-test("Movimento real atrás da casa, minimapa orientado e objetivo concluído sem destaque", async ({
+test("Movimento real atrás da casa, minimapa orientado e campanha continua pela estrada de Ferrugem", async ({
   page,
 }) => {
   const p = createPlayer();
@@ -170,7 +170,10 @@ test("Movimento real atrás da casa, minimapa orientado e objetivo concluído se
   await page.goto("/");
   await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
   const before = await page.evaluate(() => (window as any).__DZ.snapshot());
-  expect(before.activeObjective).toBeNull();
+  expect(before.activeObjective).toMatchObject({
+    kind: "reach",
+    id: "portal-22-7",
+  });
   const checkMinimap = async () => {
     const geometry = await page.locator(".minimap-box").evaluate((el) => {
       const box = el.getBoundingClientRect();
@@ -220,7 +223,7 @@ test("Movimento real atrás da casa, minimapa orientado e objetivo concluído se
       if (d[i] === 232 && d[i + 1] === 189 && d[i + 2] === 104) n++;
     return n;
   });
-  expect(gold).toBe(0);
+  expect(gold).toBeGreaterThan(0);
   await page.screenshot({
     path: "artifacts/objectives-hud.png",
     fullPage: true,

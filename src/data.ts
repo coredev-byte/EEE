@@ -1,11 +1,6 @@
 export type ClassId = "guerreiro" | "arcanista" | "assassino" | "atirador";
 export type SkillKind =
-  | "slash"
-  | "projectile"
-  | "nova"
-  | "dash"
-  | "guard"
-  | "heal";
+  "slash" | "projectile" | "nova" | "dash" | "guard" | "heal";
 export interface Skill {
   id: string;
   name: string;
@@ -312,6 +307,19 @@ export interface Item {
 }
 export const ITEMS: Item[] = [
   {
+    id: "anel-cobre",
+    name: "Anel das Caldeiras",
+    slot: "accessory",
+    rarity: "Rara",
+    description:
+      "Cobre resfriado da Fornalha. Elcio gravou o nome dos operários na borda.",
+    attack: 3,
+    defense: 4,
+    hp: 18,
+    icon: 8,
+    element: "steel",
+  },
+  {
     id: "ferro",
     name: "Lâmina de Pedralta",
     slot: "weapon",
@@ -399,13 +407,7 @@ export const ITEMS: Item[] = [
 export const DIRS = ["front", "right", "back", "left"] as const;
 export type Direction = (typeof DIRS)[number];
 export type Action =
-  | "idle"
-  | "walk"
-  | "attack"
-  | "hurt"
-  | "cast"
-  | "interact"
-  | "dead";
+  "idle" | "walk" | "attack" | "hurt" | "cast" | "interact" | "dead";
 export const ANIMATIONS: Record<
   Action,
   { frames: number[]; duration: number; loop: boolean }
