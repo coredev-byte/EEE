@@ -1,4 +1,5 @@
-import { CLASSES, ITEMS, type ClassId } from "./data";
+import { playableBounds } from "./spatial";
+import { CLASSES, ITEMS, DIRS, MAP_SIZE, type ClassId } from "./data";
 import { createPlayer, stats, type Player, type Quest } from "./state";
 export const SAVE_KEY = "distrito-zero:v1";
 export interface Save {
@@ -35,6 +36,7 @@ export function deserialize(raw: string | null): Save | null {
     )
       return null;
     const p = s.player;
+    const bounds = playableBounds(MAP_SIZE);
     const base = createPlayer(p.classId as ClassId);
     if (
       !["x", "y", "hp", "mp", "level", "xp", "coins"].every((k) =>
@@ -42,10 +44,10 @@ export function deserialize(raw: string | null): Save | null {
       ) ||
       p.level < 1 ||
       p.level > 1000 ||
-      p.x < 1 ||
-      p.x > 26 ||
-      p.y < 1 ||
-      p.y > 26 ||
+      p.x < bounds.min ||
+      p.x > bounds.max ||
+      p.y < bounds.min ||
+      p.y > bounds.max ||
       p.hp < 0 ||
       p.mp < 0 ||
       p.xp < 0 ||
@@ -104,6 +106,7 @@ export function deserialize(raw: string | null): Save | null {
     const player = {
       ...base,
       ...p,
+      direction: DIRS.includes(p.direction) ? p.direction : base.direction,
       action: "idle",
       animTime: 0,
       attackTimer: 0,

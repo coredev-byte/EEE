@@ -1,8 +1,7 @@
 import { MAP_SIZE } from "./data";
-export interface Point {
-  x: number;
-  y: number;
-}
+import { COLLISION, playableBounds, type Point } from "./spatial";
+export { iso, uniso } from "./spatial";
+export type { Point } from "./spatial";
 export type PropKind =
   | "house"
   | "ruinHouse"
@@ -29,14 +28,6 @@ export interface Prop extends Point {
   scale: number;
   opened?: boolean;
 }
-export const iso = (p: Point): Point => ({
-  x: (p.x - p.y) * 40,
-  y: (p.x + p.y) * 20,
-});
-export const uniso = (p: Point): Point => ({
-  x: p.x / 80 + p.y / 40,
-  y: p.y / 40 - p.x / 80,
-});
 export const distance = (a: Point, b: Point) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 export const normalize = (p: Point): Point => {
@@ -176,7 +167,8 @@ export class World {
     add("fence", 17, 19, 1.1, true, 0.6);
   }
   tile(x: number, y: number) {
-    if (x === 0 || y === 0 || x === 27 || y === 27) return 7;
+    if (x === 0 || y === 0 || x === this.size - 1 || y === this.size - 1)
+      return 7;
     const road =
       Math.abs(x - y) < 3.3 ||
       (y > 10 && y < 15 && x > 6 && x < 23) ||
@@ -189,14 +181,22 @@ export class World {
         ? 3
         : 4;
   }
-  blocked(p: Point, r = 0.22) {
-    if (p.x < 1 || p.y < 1 || p.x > 26 || p.y > 26) return true;
+  blocked(p: Point, r: number = COLLISION.player) {
+    const { min, max } = playableBounds(this.size);
+    if (p.x < min || p.y < min || p.x > max || p.y > max) return true;
     return this.props.some((o) => o.solid && distance(o, p) < o.radius + r);
   }
-  move(p: Point, delta: Point, r = 0.22) {
-    const nx = { x: p.x + delta.x, y: p.y };
-    if (!this.blocked(nx, r)) p.x = nx.x;
-    const ny = { x: p.x, y: p.y + delta.y };
-    if (!this.blocked(ny, r)) p.y = ny.y;
+  move(p: Point, delta: Point, r: number = COLLISION.player) {
+    // Bounded substeps preserve wall sliding and never jump across an obstacle.
+    const steps = Math.max(
+      1,
+      Math.ceil(Math.hypot(delta.x, delta.y) / COLLISION.maxStep),
+    );
+    for (let i = 0; i < steps; i++) {
+      const nx = { x: p.x + delta.x / steps, y: p.y };
+      if (!this.blocked(nx, r)) p.x = nx.x;
+      const ny = { x: p.x, y: p.y + delta.y / steps };
+      if (!this.blocked(ny, r)) p.y = ny.y;
+    }
   }
 }

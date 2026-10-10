@@ -320,6 +320,12 @@ test("Inventário: abas, descarte confirmado, poções e layout móvel", async (
   await page.getByRole("button", { name: "Habilidades", exact: true }).click();
   await expect(page.locator(".panel-skills")).toBeVisible();
   await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.keyboard.press("i");
+  const panel = await page.locator(".inventory-screen").boundingBox();
+  const playerHUD = await page.locator(".player-hud").boundingBox();
+  expect(panel!.y).toBeGreaterThan(playerHUD!.y + playerHUD!.height);
+  await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.keyboard.press("i");
   await expect(page.locator(".inventory-screen")).toBeVisible();
@@ -340,4 +346,136 @@ test("Inventário: abas, descarte confirmado, poções e layout móvel", async (
   await page.reload();
   await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
   expect((await state(page)).player.inventory).not.toContain("brasa");
+});
+
+test("Clique sem pointermove e viewport/HUD alinhados em tela cheia", async ({
+  page,
+}) => {
+  await start(page);
+  for (const viewport of [
+    { width: 1000, height: 1000 },
+    { width: 1600, height: 650 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.keyboard.press("m");
+    await page.getByRole("button", { name: "ALTERNAR", exact: true }).click();
+    await expect
+      .poll(() => page.evaluate(() => !!document.fullscreenElement))
+      .toBe(true);
+    await page.locator(".close-button").click();
+    const canvas = await page.locator("#game").boundingBox();
+    const hud = await page.locator("#hud").boundingBox();
+    expect(canvas!.width / canvas!.height).toBeCloseTo(16 / 9, 2);
+    expect(hud!.x).toBeCloseTo(canvas!.x, 1);
+    expect(hud!.y).toBeCloseTo(canvas!.y, 1);
+    expect(hud!.width).toBeCloseTo(canvas!.width, 1);
+    expect(hud!.height).toBeCloseTo(canvas!.height, 1);
+    await page.locator("#game").evaluate((el, box) => {
+      el.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: box.x + (box.width * 680) / 960,
+          clientY: box.y + (box.height * 257) / 540,
+        }),
+      );
+    }, canvas!);
+    expect((await state(page)).player.direction).toBe("right");
+    expect((await state(page)).player.action).toBe("attack");
+    await page.evaluate(() => document.exitFullscreen());
+    await page.waitForTimeout(600);
+  }
+});
+
+test("O cenário opaco oculta projéteis atrás e preserva os que estão à frente", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const [{ Renderer }, { Assets }, { World }, { createPlayer }] =
+      await Promise.all(
+        [
+          "/src/renderer.ts",
+          "/src/assets.ts",
+          "/src/world.ts",
+          "/src/state.ts",
+        ].map((path) => import(/* @vite-ignore */ path)),
+      );
+    const assets = new Assets();
+    await assets.load();
+    const world = new World();
+    world.props = [
+      {
+        id: "depth-house",
+        kind: "house",
+        x: 12,
+        y: 10,
+        scale: 2.1,
+        solid: true,
+        radius: 1.55,
+      },
+    ];
+    const canvas = document.createElement("canvas");
+    canvas.width = 960;
+    canvas.height = 540;
+    const renderer = new Renderer(canvas, assets, world),
+      player = createPlayer();
+    renderer.snap(player);
+    const pixels = () => renderer.ctx.getImageData(0, 0, 960, 540).data;
+    renderer.draw(player, [], [], [], [], 0);
+    const baseline = new Uint8ClampedArray(pixels());
+    const mask = document.createElement("canvas");
+    mask.width = 960;
+    mask.height = 540;
+    const maskCtx = mask.getContext("2d")!;
+    maskCtx.imageSmoothingEnabled = false;
+    const at = renderer.project(world.props[0]);
+    assets.draw(maskCtx, "props", 0, 0, 128, 160, at.x, at.y, 2.1);
+    const opaque = maskCtx.getImageData(0, 0, 960, 540).data;
+    const changed = (image: Uint8ClampedArray) => {
+      let count = 0;
+      for (let i = 0; i < image.length; i += 4)
+        if (
+          opaque[i + 3] === 255 &&
+          (image[i] !== baseline[i] ||
+            image[i + 1] !== baseline[i + 1] ||
+            image[i + 2] !== baseline[i + 2])
+        )
+          count++;
+      return count;
+    };
+    const projectile = {
+      vx: 1,
+      vy: 0,
+      damage: 5,
+      range: 4,
+      traveled: 0,
+      color: "#69c5ff",
+    };
+    // Prove the beam would cover opaque scenery if painted last (the old bug).
+    renderer.projectile({ ...projectile, x: 11, y: 9 });
+    const occlusionOpportunity = changed(pixels());
+    renderer.draw(player, [], [], [], [{ ...projectile, x: 11, y: 9 }], 0);
+    const behind = changed(pixels());
+    renderer.draw(
+      player,
+      [],
+      [],
+      [],
+      [{ ...projectile, x: 12.05, y: 10.05 }],
+      0,
+    );
+    const front = changed(pixels());
+    canvas.style.cssText =
+      "width:960px;height:540px;image-rendering:pixelated;";
+    canvas.id = "depth-evidence";
+    document.body.appendChild(canvas);
+    return { behind, front, occlusionOpportunity };
+  });
+  expect(result.occlusionOpportunity).toBeGreaterThan(0);
+  expect(result.behind).toBe(0);
+  expect(result.front).toBeGreaterThan(0);
+  await page
+    .locator("#depth-evidence")
+    .screenshot({ path: "artifacts/depth-projectile.png" });
 });

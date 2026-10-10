@@ -1,3 +1,4 @@
+import { COLLISION } from "./spatial";
 import { direction } from "./animation";
 import { distance, normalize, World } from "./world";
 import type { Enemy, Player } from "./state";
@@ -81,12 +82,16 @@ export function updateEnemies(
           x: n.x * dt * (e.type === "wolf" ? 2.1 : 1.55),
           y: n.y * dt * (e.type === "wolf" ? 2.1 : 1.55),
         },
-        0.23,
+        COLLISION.enemy,
       );
       // Local obstacle avoidance. Try tangents only after a direct path is blocked.
       const ahead = { x: e.x + n.x * 0.32, y: e.y + n.y * 0.32 };
-      if (world.blocked(ahead, 0.23))
-        world.move(e, { x: -n.y * dt * 1.6, y: n.x * dt * 1.6 }, 0.23);
+      if (world.blocked(ahead, COLLISION.enemy))
+        world.move(
+          e,
+          { x: -n.y * dt * 1.6, y: n.x * dt * 1.6 },
+          COLLISION.enemy,
+        );
     } else {
       e.state = "patrol";
       const target = {
@@ -94,7 +99,11 @@ export function updateEnemies(
         y: e.home.y + Math.cos(time * 0.19 + e.id) * 0.7,
       };
       const n = normalize({ x: target.x - e.x, y: target.y - e.y });
-      world.move(e, { x: n.x * dt * 0.35, y: n.y * dt * 0.35 });
+      world.move(
+        e,
+        { x: n.x * dt * 0.35, y: n.y * dt * 0.35 },
+        COLLISION.enemy,
+      );
       e.direction = direction(n);
     }
   }

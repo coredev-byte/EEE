@@ -1,13 +1,27 @@
-import { CLASSES, ITEMS, DIRS, type ClassId } from "./data";
+import {
+  VIEW,
+  PROP_HEIGHT,
+  spriteBounds,
+  onScreen,
+  TILE,
+  FRAMES,
+  ACTOR_HEIGHT,
+  cameraPixels,
+  worldToScreen,
+  screenToWorld,
+} from "./spatial";
+import { paintWorld, effectPosition, type WorldDraw } from "./render-order";
+import { ITEMS, DIRS } from "./data";
 import { spriteIndex, frame } from "./animation";
-import { World, iso, distance, hash, type Point, type Prop } from "./world";
+import { World, iso, distance, type Point, type Prop } from "./world";
 import type { Player, Enemy, Effect, DamageText, Projectile } from "./state";
 import { Assets } from "./assets";
 export class Renderer {
   ctx: CanvasRenderingContext2D;
   camera: Point = { x: 0, y: 0 };
   floor: HTMLCanvasElement;
-  floorOrigin = 1120;
+  floorOrigin: number;
+  readonly floorOffsetY = TILE.height * 0.75;
   time = 0;
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -17,8 +31,9 @@ export class Renderer {
     this.ctx = canvas.getContext("2d", { alpha: false })!;
     this.ctx.imageSmoothingEnabled = false;
     this.floor = document.createElement("canvas");
-    this.floor.width = 2320;
-    this.floor.height = 1200;
+    this.floorOrigin = (world.size * TILE.width) / 2;
+    this.floor.width = (world.size + 1) * TILE.width;
+    this.floor.height = (world.size + 2) * TILE.height;
     this.makeFloor();
   }
   makeFloor() {
@@ -26,42 +41,36 @@ export class Renderer {
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#070e15";
     c.fillRect(0, 0, this.floor.width, this.floor.height);
-    for (let y = 0; y < 28; y++)
-      for (let x = 0; x < 28; x++) {
+    for (let y = 0; y < this.world.size; y++)
+      for (let x = 0; x < this.world.size; x++) {
         const s = iso({ x, y });
         const sx = s.x + this.floorOrigin,
-          sy = s.y + 30;
+          sy = s.y + this.floorOffsetY;
         c.fillStyle = this.world.tile(x, y) < 3 ? "#222b35" : "#132620";
         c.beginPath();
-        c.moveTo(sx, sy - 20);
-        c.lineTo(sx + 40, sy);
-        c.lineTo(sx, sy + 20);
-        c.lineTo(sx - 40, sy);
+        c.moveTo(sx, sy - TILE.height / 2);
+        c.lineTo(sx + TILE.width / 2, sy);
+        c.lineTo(sx, sy + TILE.height / 2);
+        c.lineTo(sx - TILE.width / 2, sy);
         c.fill();
         c.drawImage(
           this.assets.images.tiles,
-          this.world.tile(x, y) * 80,
+          this.world.tile(x, y) * TILE.width,
           0,
-          80,
-          40,
-          sx - 40,
-          sy - 20,
-          80,
-          40,
+          TILE.width,
+          TILE.height,
+          sx - TILE.width / 2,
+          sy - TILE.height / 2,
+          TILE.width,
+          TILE.height,
         );
       }
   }
   project(p: Point): Point {
-    const s = iso(p);
-    return {
-      x: Math.round(s.x - this.camera.x + 480),
-      y: Math.round(s.y - this.camera.y + 285),
-    };
+    return worldToScreen(p, this.camera);
   }
   worldAt(screen: Point): Point {
-    const x = screen.x + this.camera.x - 480,
-      y = screen.y + this.camera.y - 285;
-    return { x: x / 80 + y / 40, y: y / 40 - x / 80 };
+    return screenToWorld(screen, this.camera);
   }
   snap(p: Point) {
     this.camera = iso(p);
@@ -82,24 +91,39 @@ export class Renderer {
     const c = this.ctx;
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#070d17";
-    c.fillRect(0, 0, 960, 540);
+    c.fillRect(0, 0, VIEW.width, VIEW.height);
     c.drawImage(
       this.floor,
-      Math.round(480 - this.camera.x - this.floorOrigin),
-      Math.round(285 - this.camera.y - 30),
+      VIEW.focus.x - cameraPixels(this.camera).x - this.floorOrigin,
+      VIEW.focus.y - cameraPixels(this.camera).y - this.floorOffsetY,
     );
-    // Entities and tall environment objects share the same feet-depth ordering.
-    const entries: { depth: number; draw: () => void }[] = this.world.props.map(
-      (prop) => ({ depth: prop.x + prop.y, draw: () => this.prop(prop, p) }),
-    );
-    for (const e of enemies)
-      if (e.hp > 0 || e.timer < 2.5)
-        entries.push({ depth: e.x + e.y, draw: () => this.enemy(e) });
-    entries.push({ depth: p.x + p.y, draw: () => this.player(p) });
-    entries.sort((a, b) => a.depth - b.depth);
-    for (const e of entries) e.draw();
-    for (const b of projectiles) this.projectile(b);
-    for (const e of effects) this.effect(e);
+    const entries: WorldDraw[] = this.world.props.map((prop) => ({
+      point: prop,
+      layer: 1,
+      draw: () => this.prop(prop, p),
+    }));
+    for (const enemy of enemies)
+      if (enemy.hp > 0 || enemy.timer < 2.5)
+        entries.push({ point: enemy, layer: 1, draw: () => this.enemy(enemy) });
+    entries.push({ point: p, layer: 1, draw: () => this.player(p) });
+    for (const projectile of projectiles)
+      entries.push({
+        point: projectile,
+        layer: 2,
+        draw: () => this.projectile(projectile),
+      });
+    for (const effect of effects) {
+      const samples = effect.kind === "dash" ? 4 : 1;
+      for (let i = 0; i < samples; i++) {
+        const point = effectPosition(effect, i);
+        entries.push({
+          point,
+          layer: effect.kind === "nova" ? 0 : 2,
+          draw: () => this.effect(effect, point),
+        });
+      }
+    }
+    paintWorld(entries);
     for (const prop of this.world.props.filter((o) => o.kind === "lantern"))
       this.lanternLight(prop);
     for (const t of texts) {
@@ -108,19 +132,19 @@ export class Renderer {
       c.font = "bold 14px monospace";
       c.textAlign = "center";
       c.fillStyle = "#03050a";
-      c.fillText(t.text, s.x + 1, s.y - 64 - t.time * 25 + 1);
+      c.fillText(t.text, s.x + 1, s.y - ACTOR_HEIGHT.text - t.time * 25 + 1);
       c.fillStyle = t.color;
-      c.fillText(t.text, s.x, s.y - 64 - t.time * 25);
+      c.fillText(t.text, s.x, s.y - ACTOR_HEIGHT.text - t.time * 25);
       c.globalAlpha = 1;
     }
     // Pixel-locked foreground vignette, never filtering the sprites.
     for (let i = 0; i < 5; i++) {
       c.fillStyle = `rgba(2,5,12,${0.13 - i * 0.018})`;
       const edge = 12 + i * 8;
-      c.fillRect(0, 0, 960, edge);
-      c.fillRect(0, 540 - edge, 960, edge);
-      c.fillRect(0, edge, edge, 540 - edge * 2);
-      c.fillRect(960 - edge, edge, edge, 540 - edge * 2);
+      c.fillRect(0, 0, VIEW.width, edge);
+      c.fillRect(0, VIEW.height - edge, VIEW.width, edge);
+      c.fillRect(0, edge, edge, VIEW.height - edge * 2);
+      c.fillRect(VIEW.width - edge, edge, edge, VIEW.height - edge * 2);
     }
   }
   shadow(s: Point, rx = 16) {
@@ -143,8 +167,8 @@ export class Renderer {
         "hero",
         index % 12,
         Math.floor(index / 12),
-        96,
-        112,
+        FRAMES.character.width,
+        FRAMES.character.height,
         s.x,
         s.y,
         1,
@@ -156,8 +180,8 @@ export class Renderer {
           p.classId,
           frame(p.action, p.animTime),
           0,
-          96,
-          112,
+          FRAMES.character.width,
+          FRAMES.character.height,
           s.x,
           s.y,
           1,
@@ -172,8 +196,8 @@ export class Renderer {
           `${p.classId}-directions`,
           base + f,
           0,
-          96,
-          112,
+          FRAMES.character.width,
+          FRAMES.character.height,
           s.x,
           s.y,
           1,
@@ -207,12 +231,12 @@ export class Renderer {
         `${p.classId}-combat`,
         col,
         row,
-        96,
-        112,
+        FRAMES.character.width,
+        FRAMES.character.height,
         s.x,
         s.y,
         1,
-        p.direction === "left",
+        false,
       );
     } else
       this.assets.draw(
@@ -220,8 +244,8 @@ export class Renderer {
         "hero",
         index % 12,
         Math.floor(index / 12),
-        96,
-        112,
+        FRAMES.character.width,
+        FRAMES.character.height,
         s.x,
         s.y,
         1,
@@ -255,7 +279,7 @@ export class Renderer {
       }
     }
     if (p.guard > 0) {
-      this.assets.icon(c, 8, s.x - 13, s.y - 88, 26);
+      this.assets.icon(c, 8, s.x - 13, s.y - ACTOR_HEIGHT.head, 26);
     }
   }
   enemy(e: Enemy) {
@@ -276,8 +300,8 @@ export class Renderer {
       "enemies",
       col,
       e.type === "wolf" ? 1 : 0,
-      96,
-      112,
+      FRAMES.character.width,
+      FRAMES.character.height,
       s.x,
       s.y,
       1,
@@ -305,7 +329,8 @@ export class Renderer {
   }
   prop(o: Prop, p: Player) {
     const s = this.project(o);
-    if (s.x < -260 || s.x > 1220 || s.y < -50 || s.y > 800) return;
+    const frame = o.kind === "npc" ? FRAMES.character : FRAMES.prop;
+    if (!onScreen(spriteBounds(s, frame, o.scale))) return;
     const c = this.ctx;
     const objectIndex: Partial<Record<Prop["kind"], number>> = {
       bench: 0,
@@ -319,8 +344,8 @@ export class Renderer {
         "objects",
         objectIndex[o.kind]!,
         0,
-        128,
-        160,
+        FRAMES.prop.width,
+        FRAMES.prop.height,
         s.x,
         s.y,
         o.scale,
@@ -344,11 +369,25 @@ export class Renderer {
       bench: 10,
     };
     if (o.kind === "npc") {
-      this.assets.draw(c, "arcanista", 0, 0, 96, 112, s.x, s.y, 0.84);
+      this.assets.draw(
+        c,
+        "arcanista",
+        0,
+        0,
+        FRAMES.character.width,
+        FRAMES.character.height,
+        s.x,
+        s.y,
+        o.scale,
+      );
       c.fillStyle = "#d5c195";
       c.font = "10px monospace";
       c.textAlign = "center";
-      c.fillText("GUARDIÃ DO ECO", s.x, s.y - 83);
+      c.fillText(
+        "GUARDIÃ DO ECO",
+        s.x,
+        Math.round(s.y - ACTOR_HEIGHT.head * o.scale - 12),
+      );
       return;
     }
     if (
@@ -366,8 +405,8 @@ export class Renderer {
       "props",
       map[o.kind] ?? 0,
       0,
-      128,
-      160,
+      FRAMES.prop.width,
+      FRAMES.prop.height,
       s.x,
       s.y,
       o.scale,
@@ -379,7 +418,9 @@ export class Renderer {
         c.globalAlpha = 0.5 + Math.sin(this.time * 2 + i) * 0.3;
         c.fillRect(
           s.x + Math.round(Math.sin(i * 3.2 + this.time) * 27),
-          s.y - 35 - Math.round((this.time * 12 + i * 8) % 100),
+          s.y -
+            PROP_HEIGHT.portalParticles -
+            Math.round((this.time * 12 + i * 8) % 100),
           2,
           3,
         );
@@ -390,7 +431,7 @@ export class Renderer {
   lanternLight(o: Prop) {
     const s = this.project(o),
       c = this.ctx;
-    if (s.x < -80 || s.x > 1040) return;
+    if (s.x < -80 || s.x > VIEW.width + 80) return;
     const flicker = Math.floor(this.time * 8) % 3;
     for (let ring = 5; ring > 0; ring--) {
       c.fillStyle = `rgba(228,138,55,${0.009 + 0.006 * (6 - ring)})`;
@@ -399,7 +440,7 @@ export class Renderer {
       for (let i = 0; i < 12; i++) {
         const a = (i * Math.PI) / 6;
         const x = Math.round(s.x + Math.cos(a) * r),
-          y = Math.round(s.y - 30 + Math.sin(a) * r * 0.6);
+          y = Math.round(s.y - PROP_HEIGHT.light + Math.sin(a) * r * 0.6);
         if (!i) c.moveTo(x, y);
         else c.lineTo(x, y);
       }
@@ -414,14 +455,14 @@ export class Renderer {
     c.rotate(angle);
     c.drawImage(
       this.assets.images.effects,
-      col * 128,
-      row * 128,
-      128,
-      128,
-      Math.round(-64 * scale),
-      Math.round(-64 * scale),
-      Math.round(128 * scale),
-      Math.round(128 * scale),
+      col * FRAMES.effect.width,
+      row * FRAMES.effect.height,
+      FRAMES.effect.width,
+      FRAMES.effect.height,
+      Math.round(-FRAMES.effect.pivot.x * scale),
+      Math.round(-FRAMES.effect.pivot.y * scale),
+      Math.round(FRAMES.effect.width * scale),
+      Math.round(FRAMES.effect.height * scale),
     );
     c.restore();
   }
@@ -432,83 +473,28 @@ export class Renderer {
       b.color === "#fc8953" ? 0 : 1,
       2 + (Math.floor(this.time * 12) % 3),
       s.x,
-      s.y - 24,
+      s.y - ACTOR_HEIGHT.projectile,
       Math.atan2(screen.y, screen.x),
       0.6,
     );
   }
-  effect(e: Effect) {
-    const s = this.project(e),
+  effect(e: Effect, position = effectPosition(e)) {
+    const s = this.project(position),
       c = this.ctx,
       t = e.time / e.duration,
       col = Math.min(7, Math.floor(t * 8));
     if (e.kind === "slash") {
       const n = iso({ x: Math.cos(e.angle), y: Math.sin(e.angle) });
       const angle = Math.atan2(n.y, n.x);
-      this.vfx(
-        0,
-        col,
-        s.x + Math.cos(angle) * 24,
-        s.y - 27 + Math.sin(angle) * 16,
-        angle,
-        1,
-      );
-    } else if (e.kind === "nova") this.vfx(2, col, s.x, s.y - 30, 0, 1.4);
-    else if (e.kind === "heal") this.vfx(4, col, s.x, s.y - 38);
-    else if (e.kind === "impact") this.vfx(3, col, s.x, s.y - 25, 0, 0.7);
-    else if (e.kind === "death") this.vfx(5, col, s.x, s.y - 30);
-    else if (e.kind === "dash") {
-      for (let i = 0; i < 4; i++) {
-        const p = this.project({
-          x: e.x + (Math.cos(e.angle) * e.range * i) / 4,
-          y: e.y + (Math.sin(e.angle) * e.range * i) / 4,
-        });
-        this.vfx(1, col, p.x, p.y - 25, 0, 0.5);
-      }
-    }
+      this.vfx(0, col, s.x, s.y - ACTOR_HEIGHT.slash, angle, 1);
+    } else if (e.kind === "nova")
+      this.vfx(2, col, s.x, s.y - ACTOR_HEIGHT.nova, 0, 1.4);
+    else if (e.kind === "heal") this.vfx(4, col, s.x, s.y - ACTOR_HEIGHT.heal);
+    else if (e.kind === "impact")
+      this.vfx(3, col, s.x, s.y - ACTOR_HEIGHT.impact, 0, 0.7);
+    else if (e.kind === "death") this.vfx(5, col, s.x, s.y - ACTOR_HEIGHT.nova);
+    else if (e.kind === "dash")
+      this.vfx(1, col, s.x, s.y - ACTOR_HEIGHT.impact, 0, 0.5);
     c.globalAlpha = 1;
-  }
-  drawMini(canvas: HTMLCanvasElement, p: Player, enemies: Enemy[]) {
-    const c = canvas.getContext("2d")!;
-    c.imageSmoothingEnabled = false;
-    c.fillStyle = "#090f19";
-    c.fillRect(0, 0, 160, 160);
-    for (let y = 0; y < 28; y++)
-      for (let x = 0; x < 28; x++) {
-        c.fillStyle =
-          this.world.tile(x, y) < 3
-            ? "#3c4555"
-            : this.world.tile(x, y) === 6
-              ? "#353146"
-              : "#182d2b";
-        c.fillRect(7 + x * 5, 7 + y * 5, 5, 5);
-      }
-    for (const o of this.world.props) {
-      c.fillStyle =
-        o.kind === "portal"
-          ? "#b886de"
-          : o.kind === "npc"
-            ? "#c9d5db"
-            : o.kind === "chest" && !o.opened
-              ? "#cb9c52"
-              : o.solid
-                ? "#101925"
-                : "transparent";
-      c.fillRect(7 + o.x * 5, 7 + o.y * 5, 4, 4);
-    }
-    for (const e of enemies)
-      if (e.hp > 0 && distance(e, p) < 6) {
-        c.fillStyle = "#d76475";
-        c.fillRect(7 + e.x * 5, 7 + e.y * 5, 3, 3);
-      }
-    c.fillStyle = "#e8d69d";
-    c.save();
-    c.translate(7 + 22 * 5, 7 + 7 * 5);
-    c.rotate(Math.PI / 4);
-    c.strokeStyle = "#e8bd68";
-    c.strokeRect(-3, -3, 6, 6);
-    c.restore();
-    c.fillStyle = "#e9edf6";
-    c.fillRect(Math.round(7 + p.x * 5) - 2, Math.round(7 + p.y * 5) - 2, 4, 4);
   }
 }

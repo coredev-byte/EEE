@@ -1,3 +1,4 @@
+import { ACTOR_HEIGHT } from "./spatial";
 import { CLASSES, type ClassId } from "./data";
 import { direction } from "./animation";
 import { Assets } from "./assets";
@@ -96,18 +97,27 @@ export class Game {
       .map((e) => ({ enemy: e, screen: this.renderer.project(e) }))
       .sort(
         (a, b) =>
-          Math.hypot(a.screen.x - pointer.x, a.screen.y - 28 - pointer.y) -
-          Math.hypot(b.screen.x - pointer.x, b.screen.y - 28 - pointer.y),
+          Math.hypot(
+            a.screen.x - pointer.x,
+            a.screen.y - ACTOR_HEIGHT.aim - pointer.y,
+          ) -
+          Math.hypot(
+            b.screen.x - pointer.x,
+            b.screen.y - ACTOR_HEIGHT.aim - pointer.y,
+          ),
       )[0];
     if (
       clicked &&
       Math.hypot(
         clicked.screen.x - pointer.x,
-        clicked.screen.y - 28 - pointer.y,
+        clicked.screen.y - ACTOR_HEIGHT.aim - pointer.y,
       ) < 38
     )
       return { x: clicked.enemy.x, y: clicked.enemy.y };
-    return this.renderer.worldAt({ x: pointer.x, y: pointer.y + 24 });
+    return this.renderer.worldAt({
+      x: pointer.x,
+      y: pointer.y + ACTOR_HEIGHT.aim,
+    });
   }
   start(classId?: ClassId) {
     if (classId) {

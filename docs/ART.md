@@ -48,3 +48,9 @@ As imagens de referência são a direção obrigatória, mas os PNGs gerados sã
 A tela mantém o HUD superior sobre a vila e segue a composição da referência: personagem ampliado em nearest-neighbor com espaços de equipamento à esquerda, mochila com seis colunas no centro, detalhe e ações à direita. As seis abas levam aos menus reais. Armas, armaduras, acessórios e poções têm filtros; os espaços vazios não simulam itens adquiridos. Nível, atributos, quantidades, equipamento e moedas vêm do salvamento. Em celular, as três áreas são empilhadas e roláveis.
 
 A renderização do personagem usa as armas dos frames de animação, sem sobrepor ícones rotacionados de inventário na mão. Os equipamentos elementais mantêm suas partículas de fogo, eletricidade ou runas.
+
+## Contrato espacial e profundidade
+
+`src/spatial.ts` define resolução, diamantes, pivôs, alturas de anexação e conversões mundo/tela. Terreno e entidades usam o mesmo deslocamento de câmera arredondado. `src/render-order.ts` ordena obstáculos, personagens, projéteis e efeitos por posição no chão; cada trecho da investida tem sua própria posição. Novas são desenhadas antes do corpo quando têm a mesma profundidade. A vista esquerda de combate utiliza sua arte própria sem espelhamento adicional. O descarte de objetos fora da janela considera o retângulo do sprite e sua escala, preservando telhados ainda visíveis.
+
+Canvas e HUD compartilham `.game-viewport`, inclusive em tela cheia, mantendo a proporção 16:9. A mira é atualizada no próprio clique. O inventário mede a altura real da HUD para evitar cobrir suas barras em resoluções intermediárias. `src/minimap.ts` renderiza a HUD fora do renderer do mundo, com tamanho e posições derivados do mapa real. Descoberta de regiões e fog permanecem pendentes.

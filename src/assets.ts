@@ -1,3 +1,4 @@
+import { framePivot } from "./spatial";
 export class Assets {
   images: Record<string, HTMLImageElement> = {};
   async load() {
@@ -41,6 +42,7 @@ export class Assets {
   ) {
     const im = this.images[name];
     if (!im) return;
+    const pivot = framePivot(cw, ch);
     ctx.save();
     ctx.translate(Math.round(x), Math.round(y));
     if (flip) ctx.scale(-1, 1);
@@ -50,8 +52,8 @@ export class Assets {
       row * ch,
       cw,
       ch,
-      Math.round((-cw * scale) / 2),
-      Math.round(-(ch - 4) * scale),
+      Math.round(-pivot.x * scale),
+      Math.round(-pivot.y * scale),
       Math.round(cw * scale),
       Math.round(ch * scale),
     );

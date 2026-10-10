@@ -1,3 +1,5 @@
+import { VIEW } from "./spatial";
+import { drawMinimap } from "./minimap";
 import { CLASSES, ITEMS, type ClassId } from "./data";
 import { stats } from "./state";
 import { inventoryPanel } from "./inventory";
@@ -31,13 +33,13 @@ export class UI {
     document.querySelector("#app")!.innerHTML = `
    <header class="topbar"><a class="wordmark" href="#" aria-label="Distrito Zero">DISTRITO <span>ZER<span class="zero">O</span></span></a><span class="edition">CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO I</span><nav aria-label="Menus do jogo"><button data-panel="quests">DIÁRIO <kbd>J</kbd></button><button data-panel="inventory">INVENTÁRIO <kbd>I</kbd></button><button data-panel="settings" aria-label="Configurações">SISTEMA <kbd>M</kbd></button></nav></header>
    <main><div class="scene-label"><span><i class="live-dot"></i> VILA PEDRALTA</span><span>UM MUNDO EM RUÍNAS. SEU PRÓPRIO CAMINHO.</span></div>
-   <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><canvas id="game" width="960" height="540" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
+   <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><div class="game-viewport"><canvas id="game" width="${VIEW.width}" height="${VIEW.height}" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
    <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas><span id="level">1</span></div><div class="bars"><div class="bar-row"><label>HP</label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label>MP</label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label>XP</label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div></section>
    <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
    <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div></section>
    <div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
    <div class="loading" id="loading"><div class="loading-rune"></div><span>DESPERTANDO PEDRALTA</span></div><div class="menu-layer" id="menu-layer"></div><div class="modal-layer" id="modal-layer" hidden></div>
-   </section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
+   </div></section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
    </main><footer><span>DISTRITO ZERO <b> / </b> O ECO DE KHARN</span><span>AS RUÍNAS LEMBRAM. VOCÊ ESCOLHE.</span><span class="build">VERSÃO DE DESENVOLVIMENTO · 0.1</span></footer>`;
     this.minimap = document.querySelector("#minimap")!;
     this.modal = document.querySelector("#modal-layer")!;
@@ -105,6 +107,9 @@ export class UI {
       },
       true,
     );
+    const layout = new ResizeObserver(() => this.layoutInventory());
+    layout.observe(document.querySelector(".game-viewport")!);
+    layout.observe(document.querySelector(".player-hud")!);
     game.onUpdate = () => this.update();
     game.onMenu = (p) => {
       if (this.panel === "death") return;
@@ -249,6 +254,18 @@ export class UI {
     this.game.paused = !this.game.started || this.game.player.hp <= 0;
     this.game.input.keys.clear();
   }
+  layoutInventory() {
+    const viewport = document
+      .querySelector(".game-viewport")!
+      .getBoundingClientRect();
+    const hud = document.querySelector(".player-hud")!.getBoundingClientRect();
+    const level = document.querySelector("#level")!.getBoundingClientRect();
+    const gap = 12;
+    this.modal.style.setProperty(
+      "--inventory-top",
+      `${Math.ceil(Math.max(hud.bottom, level.bottom) - viewport.top + gap)}px`,
+    );
+  }
   renderPanel() {
     const g = this.game,
       p = g.player;
@@ -258,6 +275,7 @@ export class UI {
       .querySelector(".game-shell")!
       .classList.toggle("inventory-open", inventory);
     if (inventory) {
+      this.layoutInventory();
       this.modal.hidden = false;
       this.modal.innerHTML = inventoryPanel(
         g,
@@ -367,6 +385,6 @@ export class UI {
     toast.classList.toggle("show", g.messageTimer > 0);
     document.querySelector("#save-state")!.textContent =
       g.saveStatus.toUpperCase();
-    g.renderer.drawMini(this.minimap, p, g.enemies);
+    drawMinimap(this.minimap, g.world, p, g.enemies);
   }
 }

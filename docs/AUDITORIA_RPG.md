@@ -34,3 +34,20 @@ Pedido integral: [REVISAO_SOLICITADA.md](REVISAO_SOLICITADA.md). Base auditada: 
 ## Limites desta primeira entrega
 
 As etapas 2–6 permanecem pendentes. O mapa não será chamado de mundo aberto, as quatro ativas não serão chamadas de árvore complexa, as partículas não serão chamadas de personalização completa e os tons sintetizados não serão chamados de áudio final. Os limites antigos do mapa e o save v1 são preservados enquanto a estrutura de regiões ainda não existe.
+
+## Entrega da etapa 1
+
+Implementada sem recriar o projeto ou alterar a versão/formato do save. Os controles WASD, mouse e 1–4, inventário, classes, combate, XP, baús, missão, morte e retorno permanecem funcionais.
+
+| Arquivos alterados | Resultado |
+| --- | --- |
+| `spatial.ts`, `assets.ts`, `world.ts` | Coordenadas/pivôs explícitos, limites derivados do tamanho do mapa, câmera compartilhada e movimento em subpassos. |
+| `render-order.ts`, `renderer.ts` | Fila unificada de profundidade; quatro segmentos de investida ordenados separadamente; vista esquerda sem inversão duplicada; escala do NPC e descarte de objetos pelo tamanho real. |
+| `input.ts`, `game.ts` | Clique atualiza a mira imediatamente; alvo corporal usa a mesma altura que a conversão para o chão. |
+| `enemies.ts` | Raio de colisão compartilhado em perseguição, tangentes e patrulha. O planejamento global de caminho fica na etapa 2. |
+| `ui.ts`, `style.css`, `minimap.ts` | Mundo/HUD no mesmo viewport proporcional em tela cheia; inventário abaixo da altura medida da HUD; minimapa independente do renderer do mundo e com marcadores centralizados. |
+| `save.ts` | Bounds compartilhados e direção inválida normalizada, mantendo save v1 e todos os campos de progresso. |
+| `tests/spatial.test.ts`, `tests/renderer.test.ts`, `tests/e2e/game.spec.ts` | Regressões espaciais, colisões, ordenação, direção, compatibilidade, clique/viewport e teste visual por pixels reais. |
+| `README.md`, `ART.md`, `VALIDACAO.md`, capturas em `artifacts/` | Documentação e evidências atualizadas. |
+
+Validação: build de produção, 30 testes Vitest, 9 testes Chromium e 4 testes do importador de sprites. A missão foi novamente concluída por teclado e mouse, com baú/equipamento, evolução e restauração após reload. A primeira etapa está concluída dentro dos critérios definidos acima; os limites e pendências das etapas 2–6 permanecem os descritos neste documento. Colisões circulares ainda aproximam volumes grandes, não há fog/regiões novas, e equipamentos continuam sem variantes de armadura/acessórios. Não foi introduzida a antiga sobreposição de ícones nas mãos.

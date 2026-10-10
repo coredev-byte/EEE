@@ -1,4 +1,4 @@
-import type { Point } from "./world";
+import { clientToScreen, type Point } from "./spatial";
 export class Input {
   keys = new Set<string>();
   pointer: Point = { x: 0, y: 0 };
@@ -18,17 +18,17 @@ export class Input {
       this.keys.delete(e.key.toLowerCase()),
     );
     window.addEventListener("blur", () => this.keys.clear());
-    canvas.addEventListener("pointermove", (e) => {
-      const r = canvas.getBoundingClientRect();
-      this.pointer = {
-        x: ((e.clientX - r.left) * 960) / r.width,
-        y: ((e.clientY - r.top) * 540) / r.height,
-      };
+    const updatePointer = (e: PointerEvent) => {
+      this.pointer = clientToScreen(
+        { x: e.clientX, y: e.clientY },
+        canvas.getBoundingClientRect(),
+      );
       this.pointerActive = true;
-    });
+    };
+    canvas.addEventListener("pointermove", updatePointer);
     canvas.addEventListener("pointerdown", (e) => {
       if (e.button === 0) {
-        this.pointerActive = true;
+        updatePointer(e);
         this.onAttack();
       }
     });
