@@ -40,6 +40,11 @@ export function updateEnemies(
     if (e.state === "attack") {
       if (e.timer > 0.26 && !e.attackHit) {
         e.attackHit = true;
+        combat.emit("enemy.attack", {
+          position: e,
+          enemy: e.type,
+          classId: undefined,
+        });
         if (d < range + 0.3) {
           combat.damagePlayer(
             (e.type === "wolf" ? 19 : 26) * combat.engine.outgoing(e),
@@ -69,6 +74,12 @@ export function updateEnemies(
       continue;
     }
     if (d < range && combat.engine.detection() > 0) {
+      combat.emit("attack.prepare", {
+        position: e,
+        enemy: e.type,
+        classId: undefined,
+        group: `enemy-prepare:${e.id}`,
+      });
       e.state = "attack";
       e.timer = 0;
       e.animTime = 0;
@@ -78,6 +89,11 @@ export function updateEnemies(
     }
     if (d < combat.engine.detection() || !!combat.engine.get(e, "taunt")) {
       if (e.state === "patrol") {
+        combat.emit("enemy.alert", {
+          position: e,
+          enemy: e.type,
+          classId: undefined,
+        });
         e.state = "alert";
         e.timer = 0;
       }
@@ -85,6 +101,17 @@ export function updateEnemies(
       e.state = "chase";
       const n = normalize({ x: p.x - e.x, y: p.y - e.y });
       e.direction = direction(n);
+      if (Math.floor(e.animTime * 3) !== Math.floor((e.animTime - dt) * 3))
+        combat.emit("enemy.step", {
+          position: e,
+          enemy: e.type,
+          owner: `enemy:${e.id}`,
+          classId: undefined,
+          terrain:
+            world.tile(Math.floor(e.x), Math.floor(e.y)) >= 3
+              ? "grass"
+              : "stone",
+        });
       world.move(
         e,
         {

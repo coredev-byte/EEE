@@ -1,3 +1,4 @@
+import { type AudioCue } from "./audio-catalog";
 import { ITEMS } from "./data";
 import { facing } from "./animation";
 import { NODE_BY_ID, has, hybrid, owns, profile, type Node } from "./skills";
@@ -11,6 +12,7 @@ interface Affliction {
   tick: number;
 }
 interface Zone extends Point {
+  audioId?: number;
   node: Node;
   time: number;
   tick: number;
@@ -19,6 +21,50 @@ interface Zone extends Point {
   triggered: boolean;
 }
 export class SkillEngine {
+  zoneSerial = 0;
+  soundOwners = new Map<string, AudioCue>();
+  cancelAudio() {
+    for (const owner of this.soundOwners.keys())
+      this.combat.ctx.audioStopOwner?.(owner);
+    this.soundOwners.clear();
+  }
+  syncAudio() {
+    const current = new Map<string, AudioCue>();
+    for (const [id, time] of Object.entries(this.buffs)) {
+      const n = NODE_BY_ID.get(id);
+      if (
+        time > 0 &&
+        n?.skill &&
+        (n.mechanic !== "stealth" || this.active("stealth")) &&
+        ["buff", "guard", "stealth"].includes(n.mechanic ?? n.skill.kind)
+      )
+        current.set(`skill:buff:${id}`, {
+          skillId: id,
+          position: this.p,
+          duration: time,
+          classId: this.p.classId,
+        });
+    }
+    for (const z of this.zones)
+      if (z.time > 0 && z.node.mechanic !== "trap")
+        current.set(
+          `skill:zone:${z.node.id}:${(z.audioId ??= ++this.zoneSerial)}`,
+          {
+            skillId: z.node.id,
+            position: z,
+            duration: z.time,
+            classId: this.p.classId,
+          },
+        );
+    for (const [owner, cue] of this.soundOwners)
+      if (!current.has(owner)) {
+        this.combat.ctx.audioStopOwner?.(owner);
+        this.combat.emit("skill.end", { ...cue });
+      }
+    for (const [owner, cue] of current)
+      this.combat.ctx.audioSustain?.(owner, cue);
+    this.soundOwners = current;
+  }
   statuses = new Map<number, Affliction[]>();
   zones: Zone[] = [];
   buffs: Record<string, number> = {};
@@ -48,6 +94,7 @@ export class SkillEngine {
   }
   ensure() {
     if (this.player !== this.p || this.classId !== this.p.classId) {
+      this.cancelAudio();
       this.player = this.p;
       this.classId = this.p.classId;
       this.statuses.clear();
@@ -81,6 +128,26 @@ export class SkillEngine {
   }
   apply(e: Enemy, kind: string, time = 4, stacks = 1) {
     if (e.hp <= 0) return;
+    const existing = this.get(e, kind);
+    if (
+      !existing &&
+      [
+        "burn",
+        "poison",
+        "bleed",
+        "corruption",
+        "rune",
+        "root",
+        "stun",
+        "exposed",
+      ].includes(kind)
+    )
+      this.combat.emit(
+        kind === "stun" || kind === "exposed"
+          ? "defense.break"
+          : "status.apply",
+        { position: e, status: kind },
+      );
     if (e.maxHp >= 200 && ["root", "stun", "slow"].includes(kind)) {
       if (this.get(e, "controlResistance")) return;
       time *= 0.25;
@@ -185,6 +252,12 @@ export class SkillEngine {
         (e) => e.hp > 0 && distance(e, z) < z.radius,
       );
       if (z.node.mechanic === "trap" && !z.triggered && enemies.length) {
+        this.combat.emit("skill.activate", {
+          position: z,
+          skillId: z.node.id,
+          element: "fire",
+          group: "device.detonation",
+        });
         z.triggered = true;
         z.time = 0;
         for (const e of enemies) {
@@ -229,6 +302,13 @@ export class SkillEngine {
                   profile(this.p).mastery === "atirador-mastery-1" ? 2 : 1,
                 )
             : enemies;
+        if (z.node.mechanic === "turret" && targets.length)
+          this.combat.emit("attack.swing", {
+            position: z,
+            classId: "atirador",
+            element: "precision",
+            group: `turret:${z.audioId}`,
+          });
         for (const e of targets) {
           if (z.node.element === "steel") this.apply(e, "weaken", 2);
           else if (z.node.element === "rune" && z.node.index === 2)
@@ -263,11 +343,20 @@ export class SkillEngine {
         this.reduceCooldowns(0.8, "device");
     }
     this.zones = this.zones.filter((z) => z.time > 0);
+    this.syncAudio();
   }
   reduceCooldowns(n: number, element?: string) {
     for (const id in this.p.skillCooldowns)
-      if (!element || NODE_BY_ID.get(id)?.element === element)
-        this.p.skillCooldowns[id] = Math.max(0, this.p.skillCooldowns[id] - n);
+      if (!element || NODE_BY_ID.get(id)?.element === element) {
+        const before = this.p.skillCooldowns[id];
+        this.p.skillCooldowns[id] = Math.max(0, before - n);
+        if (
+          before > 0 &&
+          this.p.skillCooldowns[id] === 0 &&
+          profile(this.p).bar.includes(id)
+        )
+          this.combat.emit("skill.ready", { skillId: id });
+      }
   }
   before(n: Node | undefined): boolean {
     this.ensure();
@@ -369,6 +458,7 @@ export class SkillEngine {
     };
     switch (n.mechanic) {
       case "guard":
+        this.buffs[n.id] = 5;
         if (n.classId === "arcanista" && n.index === 8) this.buffs[n.id] = 6;
         p.guard = 5;
         this.buffs.guard = 5;
@@ -378,6 +468,7 @@ export class SkillEngine {
         this.combat.effect("heal", p, n.color, 1, 1);
         return true;
       case "stealth":
+        this.buffs[n.id] = n.index === 8 ? 3 : 6;
         this.buffs.stealth = n.index === 8 ? 3 : 6;
         this.combat.effect("dash", p, n.color, 1, 0.5);
         return true;
@@ -842,8 +933,11 @@ export class SkillEngine {
           )
             this.apply(other, "poison", 4);
     }
-    if (p.classId === "atirador" && this.has(2, 11) && e.type === "wolf")
+    if (p.classId === "atirador" && this.has(2, 11) && e.type === "wolf") {
+      const before = p.potions[2];
       p.potions[2] = Math.min(20, p.potions[2] + 1);
+      if (p.potions[2] > before) this.combat.ctx.pickup?.("potion-2");
+    }
   }
   slow(e: Enemy) {
     if (this.get(e, "root") || this.get(e, "stun")) return 0;

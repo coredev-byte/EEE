@@ -3002,3 +3002,139 @@ h1 > span {
   stroke: #785c91;
   stroke-width: 1;
 }
+.audio-settings {
+  border: 1px solid #334662;
+  padding: 18px;
+  background: #090f1c;
+  max-width: 650px;
+  margin: 0 auto 18px;
+}
+.audio-settings h3 {
+  color: #d6c195;
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+.audio-settings p {
+  color: #9badc6;
+  font-size: 14px;
+}
+.audio-settings label {
+  display: grid;
+  grid-template-columns: 140px minmax(70px, 1fr) 50px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  color: #b9c8de;
+}
+.audio-settings input {
+  accent-color: #c9ae72;
+  width: 100%;
+}
+.audio-settings output {
+  font-size: 12px;
+  text-align: right;
+}
+.audio-settings small {
+  display: block;
+  color: #8fa2bd;
+  font-size: 11px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.loot-notifications {
+  position: absolute;
+  right: 20px;
+  bottom: 100px;
+  display: grid;
+  gap: 6px;
+  max-width: 290px;
+  pointer-events: none;
+}
+.loot-notice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #07101deb;
+  border: 1px solid #41526a;
+  padding: 8px;
+  animation: loot-enter 0.2s steps(4);
+}
+.loot-notice .item-icon {
+  flex-shrink: 0;
+}
+.loot-notice strong {
+  color: #c8d8ed;
+  font-size: 12px;
+}
+.loot-notice small {
+  display: block;
+  color: #94a7c1;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.loot-notice.rare {
+  border-color: #92825d;
+}
+.loot-notice.rare strong {
+  color: #dfc689;
+}
+@keyframes loot-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dialogue-panel p {
+  font-size: 20px;
+  color: #b9c8db;
+  line-height: 1.7;
+  padding: 24px;
+  border-left: 2px solid #ac925d;
+  background: #0a101c;
+}
+.dialogue-panel > div {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .audio-settings {
+    padding: 10px;
+  }
+  .audio-settings label {
+    grid-template-columns: 95px minmax(40px, 1fr) 36px;
+    gap: 5px;
+    font-size: 12px;
+  }
+  .loot-notifications {
+    right: 8px;
+    bottom: 64px;
+    max-width: 190px;
+  }
+  .loot-notice .item-icon {
+    display: none;
+  }
+  .loot-notice small {
+    display: none;
+  }
+  .loot-notice strong {
+    font-size: 10px;
+  }
+  .dialogue-panel p {
+    padding: 12px;
+    font-size: 16px;
+  }
+}
+
+.loot-coin {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #efbf67;
+  font-size: 28px;
+}

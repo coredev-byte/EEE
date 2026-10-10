@@ -1,0 +1,373 @@
+[
+  {
+    "file": "sfx/prepare-0.wav",
+    "seconds": 0.22,
+    "peak": 0.5122,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/blade-0.wav",
+    "seconds": 0.28,
+    "peak": 0.55,
+    "rms": 0.0883,
+    "loop": false
+  },
+  {
+    "file": "sfx/blade-1.wav",
+    "seconds": 0.28,
+    "peak": 0.4714,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/blade-2.wav",
+    "seconds": 0.28,
+    "peak": 0.5406,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/metal-0.wav",
+    "seconds": 0.4,
+    "peak": 0.55,
+    "rms": 0.0816,
+    "loop": false
+  },
+  {
+    "file": "sfx/metal-1.wav",
+    "seconds": 0.4,
+    "peak": 0.55,
+    "rms": 0.074,
+    "loop": false
+  },
+  {
+    "file": "sfx/metal-2.wav",
+    "seconds": 0.4,
+    "peak": 0.55,
+    "rms": 0.0672,
+    "loop": false
+  },
+  {
+    "file": "sfx/body-0.wav",
+    "seconds": 0.22,
+    "peak": 0.4902,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/body-1.wav",
+    "seconds": 0.22,
+    "peak": 0.5444,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/body-2.wav",
+    "seconds": 0.22,
+    "peak": 0.55,
+    "rms": 0.0866,
+    "loop": false
+  },
+  {
+    "file": "sfx/shot-0.wav",
+    "seconds": 0.3,
+    "peak": 0.55,
+    "rms": 0.0641,
+    "loop": false
+  },
+  {
+    "file": "sfx/mechanism-0.wav",
+    "seconds": 0.25,
+    "peak": 0.55,
+    "rms": 0.086,
+    "loop": false
+  },
+  {
+    "file": "sfx/fire-0.wav",
+    "seconds": 0.65,
+    "peak": 0.55,
+    "rms": 0.0588,
+    "loop": false
+  },
+  {
+    "file": "sfx/arcane-0.wav",
+    "seconds": 0.65,
+    "peak": 0.55,
+    "rms": 0.0756,
+    "loop": false
+  },
+  {
+    "file": "sfx/void-0.wav",
+    "seconds": 0.85,
+    "peak": 0.55,
+    "rms": 0.0599,
+    "loop": false
+  },
+  {
+    "file": "sfx/rune-0.wav",
+    "seconds": 0.75,
+    "peak": 0.55,
+    "rms": 0.0659,
+    "loop": false
+  },
+  {
+    "file": "sfx/poison-0.wav",
+    "seconds": 0.5,
+    "peak": 0.5399,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/shield-0.wav",
+    "seconds": 0.6,
+    "peak": 0.55,
+    "rms": 0.0712,
+    "loop": false
+  },
+  {
+    "file": "sfx/dash-0.wav",
+    "seconds": 0.4,
+    "peak": 0.4555,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/interrupt-0.wav",
+    "seconds": 0.3,
+    "peak": 0.5319,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/death-0.wav",
+    "seconds": 0.7,
+    "peak": 0.55,
+    "rms": 0.0706,
+    "loop": false
+  },
+  {
+    "file": "sfx/enemy-0.wav",
+    "seconds": 0.4,
+    "peak": 0.55,
+    "rms": 0.0883,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-stone-0.wav",
+    "seconds": 0.18,
+    "peak": 0.55,
+    "rms": 0.0895,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-stone-1.wav",
+    "seconds": 0.18,
+    "peak": 0.55,
+    "rms": 0.0871,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-stone-2.wav",
+    "seconds": 0.18,
+    "peak": 0.55,
+    "rms": 0.0865,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-grass-0.wav",
+    "seconds": 0.22,
+    "peak": 0.55,
+    "rms": 0.0797,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-grass-1.wav",
+    "seconds": 0.22,
+    "peak": 0.55,
+    "rms": 0.0769,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-grass-2.wav",
+    "seconds": 0.22,
+    "peak": 0.55,
+    "rms": 0.0751,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-wood-0.wav",
+    "seconds": 0.22,
+    "peak": 0.4716,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-wood-1.wav",
+    "seconds": 0.22,
+    "peak": 0.4583,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/step-wood-2.wav",
+    "seconds": 0.22,
+    "peak": 0.55,
+    "rms": 0.0805,
+    "loop": false
+  },
+  {
+    "file": "sfx/coins-0.wav",
+    "seconds": 0.4,
+    "peak": 0.3354,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/item-0.wav",
+    "seconds": 0.55,
+    "peak": 0.4242,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/equip-0.wav",
+    "seconds": 0.32,
+    "peak": 0.55,
+    "rms": 0.0708,
+    "loop": false
+  },
+  {
+    "file": "sfx/unequip-0.wav",
+    "seconds": 0.28,
+    "peak": 0.55,
+    "rms": 0.0786,
+    "loop": false
+  },
+  {
+    "file": "sfx/compare-0.wav",
+    "seconds": 0.16,
+    "peak": 0.44,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/menu-open-0.wav",
+    "seconds": 0.25,
+    "peak": 0.4839,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/menu-close-0.wav",
+    "seconds": 0.22,
+    "peak": 0.55,
+    "rms": 0.0882,
+    "loop": false
+  },
+  {
+    "file": "sfx/select-0.wav",
+    "seconds": 0.12,
+    "peak": 0.4896,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/denied-0.wav",
+    "seconds": 0.2,
+    "peak": 0.5257,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/dialogue-0.wav",
+    "seconds": 0.3,
+    "peak": 0.55,
+    "rms": 0.0742,
+    "loop": false
+  },
+  {
+    "file": "sfx/quest-0.wav",
+    "seconds": 1.1,
+    "peak": 0.55,
+    "rms": 0.0797,
+    "loop": false
+  },
+  {
+    "file": "sfx/level-0.wav",
+    "seconds": 1.2,
+    "peak": 0.55,
+    "rms": 0.0786,
+    "loop": false
+  },
+  {
+    "file": "sfx/supreme-0.wav",
+    "seconds": 1.3,
+    "peak": 0.55,
+    "rms": 0.0609,
+    "loop": false
+  },
+  {
+    "file": "sfx/potion-0.wav",
+    "seconds": 0.45,
+    "peak": 0.5011,
+    "rms": 0.09,
+    "loop": false
+  },
+  {
+    "file": "sfx/chest-0.wav",
+    "seconds": 0.55,
+    "peak": 0.55,
+    "rms": 0.0548,
+    "loop": false
+  },
+  {
+    "file": "ambience/wind.wav",
+    "seconds": 8.0,
+    "peak": 0.2476,
+    "rms": 0.045,
+    "loop": true
+  },
+  {
+    "file": "ambience/water.wav",
+    "seconds": 8.0,
+    "peak": 0.3222,
+    "rms": 0.045,
+    "loop": true
+  },
+  {
+    "file": "ambience/insects.wav",
+    "seconds": 8.0,
+    "peak": 0.5012,
+    "rms": 0.045,
+    "loop": true
+  },
+  {
+    "file": "ambience/structure.wav",
+    "seconds": 8.0,
+    "peak": 0.2176,
+    "rms": 0.045,
+    "loop": true
+  },
+  {
+    "file": "music/pad.wav",
+    "seconds": 16.0,
+    "peak": 0.1422,
+    "rms": 0.045,
+    "loop": true
+  },
+  {
+    "file": "music/pulse.wav",
+    "seconds": 16.0,
+    "peak": 0.2986,
+    "rms": 0.045,
+    "loop": true
+  },
+  {
+    "file": "music/motif.wav",
+    "seconds": 16.0,
+    "peak": 0.1089,
+    "rms": 0.045,
+    "loop": true
+  }
+]

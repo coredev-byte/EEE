@@ -1,0 +1,19 @@
+# Auditoria de áudio — base 14986fe
+
+O projeto usa TypeScript, Vite, Canvas e Web Audio API. `src/audio.ts` cria osciladores por ação e mantém um seno de 55 Hz como ambiente. Não existem WAV, OGG ou MP3 no projeto nesta base. Os sons não representam gravações ou composições.
+
+| Integração                                   | Situação encontrada                                                                                             | Correção necessária                                                                                  |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Combate (`combat.ts`)                        | Som no frame de resolução; impacto genérico em todo dano, inclusive periódico; dano do jogador também usa `hit` | Separar preparação, passagem, impacto, erro e defesa; distinguir fonte/material; controlar repetição |
+| Habilidades (`skill-engine.ts`)              | Frequência por elemento na ativação; sem manutenção/término e sem cancelamento                                  | Conjunto por habilidade, donos de som e ciclo de vida de buffs/dispositivos                          |
+| Inimigos (`enemies.ts`)                      | Sem detecção, passos ou preparação próprios                                                                     | Eventos nas transições de estado, posicionados no mundo                                              |
+| Exploração (`game.ts`)                       | Passo a cada 0,35s sem distinguir terreno; um drone constante                                                   | Passos por deslocamento real e material; ambientes em camadas e transições                           |
+| Inventário/equipamentos (`ui.ts`, `game.ts`) | Mesmo `interact` para equipar, poções e interações; comparação e remoção sem identidade                         | Eventos separados de interface e propriedades do item                                                |
+| Narrativa                                    | Guardiã mostra texto em toast; sem abertura/encerramento de diálogo                                             | Janela textual com respostas, eventos discretos e nenhum áudio fingindo dublagem                     |
+| Coleta                                       | Moedas/itens entram no estado sem aviso individual rico                                                         | Notificações agrupadas com nome, ícone, raridade e descrição                                         |
+| Mixagem                                      | Um volume fixo; toggle apenas nesta sessão; fontes ilimitadas                                                   | Buses, mute persistente, prioridade, limite, deduplicação, compressor e ducking                      |
+| Recursos                                     | Sem cache, arquivos ou carregamento                                                                             | Manifesto de arquivos reais, cache de fetch/decode e falha não bloqueante                            |
+| Música                                       | Não há trilha                                                                                                   | Transporte por stems locais sincronizados; estados sem reiniciar a música                            |
+| Navegador                                    | AudioContext depende de clique, sem tratamento de resume/falha ou visibilidade                                  | Desbloqueio por gesto, catch de erro, suspensão e encerramento de fontes                             |
+
+A revisão preserva regras de combate, inventário, árvore, missões e save. Eventos de áudio ficam centralizados; os componentes apenas solicitam eventos sem criar osciladores ou players próprios.

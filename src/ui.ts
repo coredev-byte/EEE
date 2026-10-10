@@ -1,3 +1,4 @@
+import { type AudioSettings } from "./audio-catalog";
 import { effectFrame } from "./effect-art";
 import { Combat } from "./combat";
 import { skillPanel } from "./skill-panel";
@@ -29,6 +30,7 @@ const titles: Record<string, string> = {
   classes: "Escolha seu caminho",
   settings: "Configurações",
   quests: "Diário de missões",
+  dialogue: "Guardiã de Pedralta",
   pause: "A noite pode esperar",
 };
 export class UI {
@@ -54,18 +56,29 @@ export class UI {
    <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas><span id="level">1</span></div><div class="bars"><div class="bar-row"><label>HP</label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label>MP</label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label>XP</label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div></section>
    <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
    <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div></section>
-   <div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
+   <div class="loot-notifications" id="loot-notifications" role="status" aria-label="Itens coletados"></div><div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
    <div class="loading" id="loading"><div class="loading-rune"></div><span>DESPERTANDO PEDRALTA</span></div><div class="menu-layer" id="menu-layer"></div><div class="modal-layer" id="modal-layer" hidden></div>
    </div></section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
    </main><footer><span>DISTRITO ZERO <b> / </b> O ECO DE KHARN</span><span>AS RUÍNAS LEMBRAM. VOCÊ ESCOLHE.</span><span class="build">VERSÃO DE DESENVOLVIMENTO · 0.1</span></footer>`;
     this.minimap = document.querySelector("#minimap")!;
     this.modal = document.querySelector("#modal-layer")!;
     this.portrait = document.querySelector("#portrait")!;
+    document.addEventListener("input", (e) => {
+      const slider = e.target as HTMLInputElement;
+      if (!slider.dataset.volume) return;
+      game.audio.setVolume(
+        slider.dataset.volume as keyof Omit<AudioSettings, "muted">,
+        Number(slider.value) / 100,
+      );
+      slider.parentElement!.querySelector("output")!.textContent =
+        slider.value + "%";
+    });
     document.addEventListener("click", (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>(
         "[data-action],[data-panel],[data-skill],[data-potion],[data-equip],[data-class],[data-unequip],[data-item],[data-filter],[data-node],[data-tree-action]",
       );
       if (!el) return;
+      game.audio.unlock();
       if (el.dataset.node) {
         this.selectedNode = el.dataset.node;
         this.previewSkill = false;
@@ -85,6 +98,7 @@ export class UI {
       if (el.dataset.potion !== undefined && !game.paused)
         game.potion(Number(el.dataset.potion));
       if (el.dataset.item) {
+        game.audioEvent("ui.select");
         this.selectedItem = el.dataset.item;
         this.confirmingDiscard = false;
         this.renderPanel();
@@ -138,6 +152,7 @@ export class UI {
     const layout = new ResizeObserver(() => this.layoutInventory());
     layout.observe(document.querySelector(".game-viewport")!);
     layout.observe(document.querySelector(".player-hud")!);
+    game.onDialogue = () => this.open("dialogue");
     game.onUpdate = () => this.update();
     game.onMenu = (p) => {
       if (this.panel === "death") return;
@@ -153,6 +168,7 @@ export class UI {
     game.onDeath = () => {
       this.panel = "death";
       game.paused = true;
+      game.audio.setPaused(true);
       this.renderPanel();
     };
   }
@@ -162,6 +178,9 @@ export class UI {
     this.mainMenu();
   }
   mainMenu() {
+    this.game.audio.stopEffects();
+    this.game.audio.setPaused(true);
+    this.game.dialogueOpen = false;
     this.game.started = false;
     const saved = load();
     this.game.paused = true;
@@ -178,6 +197,19 @@ export class UI {
   }
   action(action: string) {
     const g = this.game;
+    if (action.startsWith("dialogue-")) {
+      g.audioEvent(
+        action === "dialogue-next" ? "dialogue.next" : "dialogue.choice",
+      );
+      if (action === "dialogue-accept" && !g.quest.accepted) {
+        g.quest.accepted = true;
+        g.audioEvent("quest.accept");
+        g.save();
+      }
+      g.dialogueStep = 1;
+      this.renderPanel();
+      return;
+    }
     if (
       ["equip-selected", "compare", "discard", "use-potion"].includes(action)
     ) {
@@ -190,7 +222,10 @@ export class UI {
         else if (this.selectedItem.startsWith("potion-"))
           g.potion(Number(this.selectedItem.slice(7)));
       }
-      if (action === "compare") this.comparing = !this.comparing;
+      if (action === "compare") {
+        g.audioEvent("equipment.compare");
+        this.comparing = !this.comparing;
+      }
       if (action === "use-potion") g.potion(Number(this.selectedItem.slice(7)));
       if (action === "discard" && item) {
         if (this.confirmingDiscard) {
@@ -247,6 +282,7 @@ export class UI {
       return;
     }
     if (action === "menu") {
+      g.audio.stopEffects();
       g.save();
       this.modal.hidden = true;
       this.panel = "";
@@ -268,6 +304,8 @@ export class UI {
   }
   open(panel: string) {
     if (this.game.started && this.game.player.hp <= 0) return;
+    this.game.audioEvent(panel === "dialogue" ? "dialogue.open" : "ui.open");
+    this.game.audio.setPaused(true);
     this.panel = panel;
     this.confirmingDiscard = false;
     this.game.paused = true;
@@ -275,11 +313,17 @@ export class UI {
     this.renderPanel();
   }
   close() {
+    this.game.audioEvent(
+      this.panel === "dialogue" ? "dialogue.close" : "ui.close",
+    );
+    this.game.dialogueOpen = false;
     this.panel = "";
     this.modal.hidden = true;
     document.querySelector(".game-shell")!.classList.remove("inventory-open");
     this.modal.classList.remove("inventory-layer", "skills-layer");
+    this.game.audio.stopPreviews();
     this.game.paused = !this.game.started || this.game.player.hp <= 0;
+    this.game.audio.setPaused(this.game.paused);
     this.game.input.keys.clear();
   }
   layoutInventory() {
@@ -340,11 +384,17 @@ export class UI {
           `<div class="tree-confirm">A reconfiguração custa moedas e devolve os pontos. <button data-tree-action="confirm-respec">CONFIRMAR RECONFIGURAÇÃO</button></div>` +
           content;
     }
+    if (this.panel === "dialogue") {
+      title = "Guardiã do Eco";
+      eyebrow = "PEDRALTA / DIÁLOGO";
+      content = `<div class="dialogue-panel"><p>${g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : g.quest.stage === 2 ? "Você trouxe o eco de volta. Pedralta se lembra." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
+    }
     if (this.panel === "quests") {
       content = `<div class="quest-detail"><div class="quest-stamp"><span class="diamond"></span> MISSÃO PRINCIPAL · CAPÍTULO I</div><h3>O Eco de Kharn</h3><p>Há algo vivo sob as pedras de Pedralta. A guardiã fala de um eco — uma memória que a vila tentou enterrar. Encontre o selo nas ruínas a nordeste e descubra o que ainda responde.</p><ol class="quest-steps"><li class="${g.quest.stage >= 1 ? "done" : "active"}">Encontrar a entrada das ruínas <span>${g.quest.stage >= 1 ? "CONCLUÍDO" : "EM ANDAMENTO"}</span></li><li class="${g.quest.kills >= 3 ? "done" : g.quest.stage === 1 ? "active" : ""}">Derrotar três ameaças da vila <span>${Math.min(3, g.quest.kills)} / 3</span></li><li class="${g.quest.stage === 2 ? "done" : g.quest.stage === 1 && g.quest.kills >= 3 ? "active" : ""}">Interagir com o selo de Kharn <span>${g.quest.stage === 2 ? "CONCLUÍDO" : "TECLA F"}</span></li></ol><div class="rewards"><small>RECOMPENSAS</small><span>200 XP</span><span>250 MOEDAS</span><span>${icon(3)} MEMÓRIA DE KHARN</span></div>${g.quest.stage === 2 ? '<div class="completed-banner">O ECO FOI OUVIDO. MISSÃO CONCLUÍDA.</div>' : ""}</div>`;
     }
     if (this.panel === "settings") {
-      content = `<div class="settings-list"><div><span><strong>Áudio de desenvolvimento</strong><small>Sons e drone sintetizados temporários. Não são a trilha final.</small></span>${button(g.audio.enabled ? "LIGADO" : "DESLIGADO", "sound", "secondary")}</div><div><span><strong>Tela cheia</strong><small>Resolução lógica 960 × 540; ampliação nearest-neighbor.</small></span>${button("ALTERNAR", "fullscreen", "secondary")}</div><div><span><strong>Salvamento local</strong><small>Automático a cada 8 segundos e após recompensas e equipamentos.</small></span>${button("SALVAR AGORA", "save", "secondary")}</div></div><p class="subtle">${g.saveStatus}. O progresso pertence a este navegador; limpar os dados do site remove o salvamento.</p>${this.helpContent()}`;
+      const audio = g.audio.snapshot();
+      content = `<div class="audio-settings"><h3>Mixagem de Distrito Zero</h3><p>Controle música, ambiente, combate e interface separadamente.</p>${(["master", "music", "ambience", "combat", "ui"] as const).map((bus, i) => `<label><span>${["Volume principal", "Música", "Ambiente", "Combate", "Interface"][i]}</span><input type="range" min="0" max="100" step="1" value="${Math.round(g.audio.settings[bus] * 100)}" data-volume="${bus}" aria-label="${["Volume principal", "Música", "Ambiente", "Combate", "Interface"][i]}"><output>${Math.round(g.audio.settings[bus] * 100)}%</output></label>`).join("")}${button(g.audio.enabled ? "SILENCIAR ÁUDIO" : "ATIVAR ÁUDIO", "sound", "secondary")}<small>Configurações salvas neste navegador. Sem dublagem nesta versão.${audio.errors.length ? " Alguns arquivos de áudio estão indisponíveis; o jogo continua funcionando." : ""}</small></div><div class="settings-list"><div><span><strong>Tela cheia</strong><small>Amplie o mundo do jogo.</small></span>${button("ALTERNAR", "fullscreen", "secondary")}</div><div><span><strong>Salvamento local</strong><small>Automático e após equipamentos e recompensas.</small></span>${button("SALVAR AGORA", "save", "secondary")}</div></div>${this.helpContent()}`;
     }
     if (this.panel === "pause") {
       content = `<p class="pause-text">O mundo lá fora ainda espera.<br>Sua jornada continua quando você estiver pronto.</p><div class="pause-actions">${button("VOLTAR À JORNADA", "resume", "primary")}${button("SALVAR PROGRESSO", "save", "secondary")}${button("MENU PRINCIPAL", "menu", "text-button")}</div>`;
@@ -365,6 +415,12 @@ export class UI {
       p = g.player;
     let ok = false;
     if (action === "preview") {
+      g.audio.stopOwner(`preview:${this.selectedNode}`);
+      g.audioEvent("skill.activate", {
+        skillId: this.selectedNode,
+        preview: true,
+        owner: `preview:${this.selectedNode}`,
+      });
       this.previewSkill = true;
       this.renderPanel();
       return;
@@ -385,8 +441,10 @@ export class UI {
     if (action.startsWith("load-") && !g.inCombat())
       ok = restoreBuild(p, Number(action.slice(5)));
     if (ok) {
+      g.audioEvent("ui.select");
       if (action === "confirm-respec" || action.startsWith("load-"))
-        g.combat = new Combat(g);
+        g.combat.engine.cancelAudio();
+      g.combat = new Combat(g);
       syncPoints(p);
       p.mp = Math.min(p.mp, stats(p).maxMp);
       g.save();
@@ -504,6 +562,13 @@ export class UI {
         )
         .join("") +
       `<button class="ability menu-key" data-panel="inventory" title="Inventário">${icon(7)}<kbd>I</kbd></button>`;
+    document.querySelector("#loot-notifications")!.innerHTML = g.pickups
+      .slice(-3)
+      .map(
+        (x) =>
+          `<div class="loot-notice ${x.rarity === "Comum" ? "" : "rare"}">${x.id === "coins" ? '<span class="loot-coin">◈</span>' : icon(x.icon)}<div><strong>${x.count > 1 ? `+${x.count} ` : ""}${x.name}</strong><small>${x.rarity} · ${x.description}</small></div></div>`,
+      )
+      .join("");
     const near = g.nearby();
     document.querySelector<HTMLElement>("#interact")!.innerHTML = near
       ? `<kbd>F</kbd> ${near.kind === "npc" ? "CONVERSAR" : near.kind === "chest" ? "ABRIR BAÚ" : "SELO DE KHARN"}`

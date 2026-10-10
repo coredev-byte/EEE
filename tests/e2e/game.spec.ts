@@ -160,6 +160,7 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   page,
 }) => {
   await start(page);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(53);
   await page.keyboard.press("i");
   expect((await state(page)).paused).toBe(true);
   await page.locator('[data-item="brasa"]').first().click();
@@ -171,6 +172,10 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   await expect(page.locator(".attributes")).toContainText("46");
   await page.locator('[data-unequip="weapon"]').click();
   expect((await state(page)).stats.attack).toBe(30);
+  const sounds = (await state(page)).audio.played.map((x: any) => x.event);
+  expect(sounds).toContain("equipment.compare");
+  expect(sounds).toContain("equipment.equip");
+  expect(sounds).toContain("equipment.remove");
   await page.locator('[data-filter="weapon"]').click();
   await expect(page.locator('.bag-grid [data-item="casaco"]')).toHaveCount(0);
   await page.locator('[data-item="raio"]').first().click();
@@ -211,6 +216,14 @@ test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", asyn
   await travel(page, { x: 8, y: 16 });
   await page.keyboard.press("f");
   expect((await state(page)).player.inventory).toContain("couraça");
+  await expect(page.locator("#loot-notifications")).toContainText("Couraça");
+  await expect
+    .poll(async () =>
+      (await state(page)).audio.played.some(
+        (x: any) => x.event === "loot.rare",
+      ),
+    )
+    .toBe(true);
   await page.keyboard.press("i");
   await page.locator('[data-item="couraça"]').first().click();
   await page.locator('[data-equip="couraça"]').click();
@@ -245,8 +258,9 @@ test("HUD de recargas e poções, configurações e pausa", async ({ page }) => 
   const before = (await state(page)).player;
   await page.waitForTimeout(300);
   expect((await state(page)).player).toEqual(before);
-  await page.getByRole("button", { name: "DESLIGADO", exact: true }).count();
-  await page.getByRole("button", { name: "LIGADO", exact: true }).click();
+  await page
+    .getByRole("button", { name: "SILENCIAR ÁUDIO", exact: true })
+    .click();
   await expect(page.locator("#sound-toggle")).toContainText("OFF");
   await page.keyboard.press("Escape");
   expect((await state(page)).paused).toBe(false);

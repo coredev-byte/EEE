@@ -1,6 +1,7 @@
+import { type AudioEvent, type AudioCue } from "./audio-catalog";
 import { syncPoints, learn, profile, equippedSkills } from "./skills";
 import { ACTOR_HEIGHT } from "./spatial";
-import { CLASSES, type ClassId } from "./data";
+import { CLASSES, ITEMS, type ClassId } from "./data";
 import { direction } from "./animation";
 import { Assets } from "./assets";
 import { AudioEngine } from "./audio";
@@ -46,6 +47,18 @@ export class Game {
   messageTimer = 0;
   onUpdate: () => void = () => {};
   onMenu: (panel: string) => void = () => {};
+  onDialogue: () => void = () => {};
+  dialogueOpen = false;
+  dialogueStep = 0;
+  pickups: {
+    id: string;
+    name: string;
+    rarity: string;
+    description: string;
+    icon: number;
+    count: number;
+    time: number;
+  }[] = [];
   onDeath: () => void = () => {};
   onStart: () => void = () => {};
   last = 0;
@@ -65,6 +78,7 @@ export class Game {
   async init() {
     this.canvas = document.querySelector<HTMLCanvasElement>("#game")!;
     this.bindInput(this.canvas);
+    this.audio.prepare();
     await this.assets.load();
     this.renderer = new Renderer(this.canvas, this.assets, this.world);
     const s = load();
@@ -87,9 +101,71 @@ export class Game {
     const index = profile(this.player).bar.indexOf(id);
     return index >= 0 && this.input?.keys.has(String(index + 1));
   };
-  soundSkill = (element: string) => this.audio.skill(element);
+  audioSustain = (owner: string, cue: AudioCue) =>
+    this.audio.sustain(owner, cue);
+  audioStopOwner = (owner: string) => this.audio.stopOwner(owner);
+  audioEvent = (event: AudioEvent, cue: AudioCue = {}) =>
+    this.audio.emit(event, {
+      classId: this.player.classId,
+      weaponId: this.player.equipment.weapon,
+      armorId: this.player.equipment.armor,
+      ...cue,
+    });
   sound = (kind: "attack" | "hit" | "magic" | "death") =>
-    this.audio.sound(kind);
+    this.audioEvent(
+      (
+        {
+          attack: "attack.swing",
+          hit: "impact.hit",
+          magic: "skill.activate",
+          death: "enemy.death",
+        } as const
+      )[kind],
+      { position: this.player },
+    );
+  pickup = (id: string, count = 1) => {
+    const item = ITEMS.find((i) => i.id === id),
+      potion = id.startsWith("potion-") ? Number(id.slice(7)) : -1;
+    const details = item
+      ? {
+          name: item.name,
+          rarity: item.rarity,
+          description: item.description,
+          icon: item.icon,
+        }
+      : id === "coins"
+        ? {
+            name: "Moedas de Pedralta",
+            rarity: "Comum",
+            description: "Moeda usada em equipamentos e reconfigurações.",
+            icon: 8,
+          }
+        : {
+            name:
+              ["Poção de vida", "Poção de mana", "Elixir"][potion] ?? "Recurso",
+            rarity: "Comum",
+            description: "Consumível adicionado à mochila.",
+            icon: potion + 4,
+          };
+    const old = this.pickups.find((x) => x.id === id && x.time < 1);
+    if (old) {
+      old.count += count;
+      old.time = 0;
+    } else this.pickups.push({ id, ...details, count, time: 0 });
+    this.pickups = this.pickups.slice(-4);
+    this.audioEvent(
+      id === "coins"
+        ? "loot.coins"
+        : id === "runa"
+          ? "loot.quest"
+          : details.rarity === "Comum"
+            ? "loot.common"
+            : "loot.rare",
+      {
+        rarity: details.rarity,
+      },
+    );
+  };
   notify = (text: string) => {
     this.message = text;
     this.messageTimer = 4;
@@ -126,7 +202,9 @@ export class Game {
     });
   }
   start(classId?: ClassId) {
+    this.audio.reset();
     if (classId) {
+      this.pickups = [];
       this.player = createPlayer(classId);
       this.enemies = createEnemies();
       this.quest = { stage: 0, kills: 0, rewardClaimed: false };
@@ -178,6 +256,33 @@ export class Game {
       this.time += dt;
       this.update(dt);
     }
+    this.audio.setListener(this.player);
+    const region =
+      distance(this.player, PORTAL) < 5
+        ? "ruins"
+        : this.world.tile(
+              Math.floor(this.player.x),
+              Math.floor(this.player.y),
+            ) >= 3
+          ? "forest"
+          : "village";
+    const mood = !this.started
+      ? "menu"
+      : this.player.hp <= 0
+        ? "defeat"
+        : this.dialogueOpen
+          ? "narrative"
+          : this.inCombat()
+            ? this.enemies.some(
+                (e) =>
+                  e.hp > 0 && e.maxHp >= 200 && distance(e, this.player) < 6,
+              )
+              ? "elite"
+              : "combat"
+            : this.enemies.some((e) => e.hp > 0 && distance(e, this.player) < 8)
+              ? "danger"
+              : "safe";
+    this.audio.scene(region, mood);
     this.renderer.draw(
       this.player,
       this.enemies,
@@ -193,8 +298,16 @@ export class Game {
     const p = this.player;
     p.invulnerable = Math.max(0, p.invulnerable - dt);
     p.guard = Math.max(0, p.guard - dt);
-    for (const id in p.skillCooldowns)
-      p.skillCooldowns[id] = Math.max(0, p.skillCooldowns[id] - dt);
+    for (const id in p.skillCooldowns) {
+      const before = p.skillCooldowns[id];
+      p.skillCooldowns[id] = Math.max(0, before - dt);
+      if (
+        before > 0 &&
+        p.skillCooldowns[id] === 0 &&
+        profile(p).bar.includes(id)
+      )
+        this.audioEvent("skill.ready", { skillId: id });
+    }
     p.cooldowns = equippedSkills(p).map((s) =>
       s ? (p.skillCooldowns[s.id] ?? 0) : 0,
     );
@@ -219,12 +332,17 @@ export class Game {
             stats(p).speed *
             this.combat.engine.speed() *
             (this.input.keys.has("shift") ? 1.45 : 1);
+          const before = { x: p.x, y: p.y };
           this.world.move(p, { x: n.x * speed * dt, y: n.y * speed * dt });
           if (this.input.keys.has("shift")) p.animTime += dt * 0.45;
-          this.stepTimer += dt;
-          if (this.stepTimer > 0.35) {
+          this.stepTimer += distance(p, before);
+          if (this.stepTimer > 0.85) {
             this.stepTimer = 0;
-            this.audio.sound("step");
+            this.audioEvent("step", {
+              position: p,
+              terrain: this.terrain(p),
+              stealth: this.combat.engine.active("stealth"),
+            });
           }
         } else if (p.action !== "idle") {
           p.action = "idle";
@@ -266,6 +384,8 @@ export class Game {
         e.animTime = 0;
       }
     }
+    for (const pickup of this.pickups) pickup.time += dt;
+    this.pickups = this.pickups.filter((x) => x.time < 4);
     for (const e of this.effects) e.time += dt;
     this.effects = this.effects.filter((e) => e.time < e.duration);
     for (const t of this.texts) t.time += dt;
@@ -278,6 +398,7 @@ export class Game {
     }
     if (this.quest.stage === 0 && distance(p, PORTAL) < 2.5) {
       this.quest.stage = 1;
+      this.audioEvent("area.discover", { position: PORTAL });
       this.notify(
         "Entrada encontrada. Elimine três ameaças e atravesse o portal com F.",
       );
@@ -300,7 +421,11 @@ export class Game {
     }
     this.player.action = "interact";
     this.player.animTime = 0;
-    this.audio.sound("interact");
+    if (o.kind === "npc") {
+      this.dialogueOpen = true;
+      this.dialogueStep = 0;
+      this.onDialogue();
+    }
     if (o.kind === "npc")
       this.notify(
         this.quest.stage === 2
@@ -310,12 +435,17 @@ export class Game {
     if (o.kind === "chest") {
       o.opened = true;
       this.player.challenges.chests++;
+      this.audioEvent("object.chest", { position: o });
       this.player.coins += 75;
+      this.pickup("coins", 75);
+      this.pickup("potion-0");
+      this.pickup(o.x < 10 ? "couraça" : "amuleto");
       this.player.potions[0]++;
       this.player.inventory.push(o.x < 10 ? "couraça" : "amuleto");
       this.notify("Baú aberto: +75 moedas, +1 poção e um equipamento raro.");
     }
     if (o.kind === "portal") {
+      this.audioEvent("object.portal", { position: o });
       if (this.quest.kills < 3) {
         this.quest.stage = 1;
         this.notify(
@@ -325,10 +455,16 @@ export class Game {
         this.quest.stage = 2;
         this.quest.rewardClaimed = true;
         this.player.challenges.seal = true;
+        this.audioEvent("quest.complete");
+        this.audio.cue("victory", 4);
         this.player.coins += 250;
-        if (!this.player.inventory.includes("runa"))
+        this.pickup("coins", 250);
+        if (!this.player.inventory.includes("runa")) {
           this.player.inventory.push("runa");
+          this.pickup("runa");
+        }
         const levels = gainXp(this.player, 200);
+        if (levels) this.audioEvent("level.up");
         this.combat.effect("nova", o, "#b790e5", 3, 1.3);
         this.notify(
           `O Eco de Kharn concluído! +200 XP, +250 moedas e Memória de Kharn.${levels ? " Você evoluiu!" : ""}`,
@@ -357,12 +493,13 @@ export class Game {
       p.mp = Math.min(s.maxMp, p.mp + 40);
     }
     this.combat.effect("heal", p, ["#e28291", "#76b9e9", "#88c497"][i], 1, 0.8);
-    this.audio.sound("interact");
+    this.audioEvent("potion.use");
     this.save();
     return true;
   }
   changeClass(id: ClassId) {
     const ratio = this.player.hp / stats(this.player).maxHp;
+    this.audio.stopEffects();
     this.player.classId = id;
     syncPoints(this.player);
     this.player.resource = 0;
@@ -376,10 +513,13 @@ export class Game {
     this.notify(`Caminho escolhido: ${CLASSES[id].name}.`);
   }
   equip(id: string | null, slot?: "weapon" | "armor" | "accessory") {
+    const previous = slot ? this.player.equipment[slot] : null;
     const ok = equip(this.player, id, slot);
     if (ok) {
       this.save();
-      this.audio.sound("interact");
+      this.audioEvent(id === null ? "equipment.remove" : "equipment.equip", {
+        itemId: id ?? previous,
+      });
     }
     return ok;
   }
@@ -402,7 +542,15 @@ export class Game {
       )
     );
   }
+  terrain(point: Point): "stone" | "grass" | "wood" {
+    return this.world.tile(Math.floor(point.x), Math.floor(point.y)) >= 3 &&
+      distance(point, PORTAL) > 5
+      ? "grass"
+      : "stone";
+  }
   respawn() {
+    this.audio.reset();
+    this.pickups = [];
     this.player.x = 12;
     this.player.y = 12;
     this.player.hp = stats(this.player).maxHp;
@@ -458,6 +606,8 @@ export class Game {
       enemies: structuredClone(this.enemies),
       quest: structuredClone(this.quest),
       nearby: this.nearby()?.kind,
+      audio: this.audio.snapshot(),
+      pickups: structuredClone(this.pickups),
       skills: this.combat.engine.snapshot(),
       projectiles: this.projectiles.length,
       effects: this.effects.length,

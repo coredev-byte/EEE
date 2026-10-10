@@ -87,7 +87,8 @@ export function deserialize(raw: string | null): Save | null {
       ![0, 1, 2].includes(s.quest.stage) ||
       !Number.isInteger(s.quest.kills) ||
       s.quest.kills < 0 ||
-      typeof s.quest.rewardClaimed !== "boolean"
+      typeof s.quest.rewardClaimed !== "boolean" ||
+      (s.quest.accepted !== undefined && typeof s.quest.accepted !== "boolean")
     )
       return null;
     if (

@@ -57,7 +57,7 @@ O diamante dourado no minimapa é a entrada das ruínas. Encontre a entrada, der
 | `src/renderer.ts`              | Mundo, profundidade, sprites, iluminação, VFX e minimapa       |
 | `src/ui.ts`                    | HUD e painéis conectados ao estado                             |
 | `src/save.ts`                  | Serialização e validação de salvamentos                        |
-| `src/input.ts`, `src/audio.ts` | Entrada e áudio de desenvolvimento                             |
+| `src/input.ts`, `src/audio.ts` | Entrada e mixer central de áudio                               |
 
 ## Validar
 
@@ -77,6 +77,6 @@ Leia [a documentação de arte](docs/ART.md) para atlas, pivôs e processamento.
 
 O primeiro capítulo e seus sistemas funcionam. A expansão para interiores das ruínas, novos capítulos e inimigos adicionais não está incluída. O selo conclui a missão inicial, sem carregar um segundo mapa. A navegação inimiga usa desvio local de obstáculos, não uma malha global de caminhos. Os efeitos de iluminação são polígonos discretos e não uma simulação de sombras dinâmicas.
 
-O áudio é **temporário**, sintetizado, e está identificado no painel de configurações. A trilha e os efeitos definitivos não foram fornecidos; [o manifesto de áudio](public/assets/audio/manifest.json) documenta os pontos de substituição. A interface se adapta a telas menores, mas a jogabilidade desta entrega usa teclado e mouse, sem controles de toque. Não há sincronização de progresso entre dispositivos.
+O áudio usa **53 arquivos locais sintetizados**, mixer por categorias, manutenção/cancelamento por dono, coleta agrupada e música em três camadas. Em M, ajuste os volumes e mute, salvos neste navegador. As gravações e a trilha definitivas continuam pendentes; [a documentação de áudio](docs/AUDIO_IMPLEMENTACAO.md) descreve o que funciona, o inventário e a produção necessária. A interface se adapta a telas menores, mas a jogabilidade desta entrega usa teclado e mouse, sem controles de toque. Não há sincronização de progresso entre dispositivos.
 
 A evolução estrutural está registrada em [docs/AUDITORIA_RPG.md](docs/AUDITORIA_RPG.md), com causas verificadas, sistemas preservados e critérios das próximas etapas. A primeira entrega estabelece coordenadas e pivôs compartilhados, ordem de profundidade incluindo efeitos, clique correto em tela cheia, minimapa separado e movimento com colisão em subpassos. O mundo conectado, a árvore ramificada, variantes visuais de equipamento, drops e áudio final permanecem no roteiro.

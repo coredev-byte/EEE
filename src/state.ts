@@ -56,6 +56,7 @@ export interface Effect extends Point {
   range: number;
 }
 export interface Projectile extends Point {
+  audioBlocked?: boolean;
   speed?: number;
   vx: number;
   vy: number;
@@ -78,6 +79,7 @@ export interface DamageText extends Point {
   time: number;
 }
 export interface Quest {
+  accepted?: boolean;
   stage: 0 | 1 | 2;
   kills: number;
   rewardClaimed: boolean;
