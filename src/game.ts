@@ -150,11 +150,10 @@ export class Game {
       return;
     }
     if (this.paused) return;
-    if (k === " ") this.combat.attack(this.target());
-    if (["q", "w", "e", "r"].includes(k))
-      this.combat.attack(this.target(), ["q", "w", "e", "r"].indexOf(k));
+    if (["1", "2", "3", "4"].includes(k))
+      this.combat.attack(this.target(), Number(k) - 1);
     if (k === "f") this.interact();
-    if (["1", "2", "3"].includes(k)) this.potion(Number(k) - 1);
+    if (["z", "x", "v"].includes(k)) this.potion(["z", "x", "v"].indexOf(k));
   }
   tick(t: number) {
     const dt = Math.min(0.04, (t - this.last) / 1000 || 0.016);

@@ -35,10 +35,8 @@ export class Input {
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
   }
   movement(): Point {
-    const x =
-      Number(this.keys.has("arrowright")) - Number(this.keys.has("arrowleft"));
-    const y =
-      Number(this.keys.has("arrowdown")) - Number(this.keys.has("arrowup"));
+    const x = Number(this.keys.has("d")) - Number(this.keys.has("a"));
+    const y = Number(this.keys.has("s")) - Number(this.keys.has("w"));
     const n = Math.hypot(x, y) || 1;
     return { x: x / n, y: y / n };
   }

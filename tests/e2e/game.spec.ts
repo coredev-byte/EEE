@@ -30,11 +30,14 @@ async function battle(page: Page, minKills = 3) {
       )[0];
     await aim(page, e);
     if (s.player.hp < s.stats.maxHp * 0.6 && s.player.potions[0])
-      await page.keyboard.press("1");
-    if (s.player.mp < 40 && s.player.potions[1]) await page.keyboard.press("2");
-    if (s.player.cooldowns[0] === 0) await page.keyboard.press("q");
-    else if (s.player.cooldowns[1] === 0) await page.keyboard.press("w");
-    else await page.keyboard.press("Space");
+      await page.keyboard.press("z");
+    if (s.player.mp < 40 && s.player.potions[1]) await page.keyboard.press("x");
+    if (s.player.cooldowns[0] === 0) await page.keyboard.press("1");
+    else if (s.player.cooldowns[1] === 0) await page.keyboard.press("2");
+    else {
+      await page.mouse.down();
+      await page.mouse.up();
+    }
     await page.waitForTimeout(540);
   }
   throw new Error("Combat did not reach the intended kill count");
@@ -110,14 +113,14 @@ async function travel(page: Page, to: { x: number; y: number }) {
       const p = s.player;
       if (distance(p, point) < 0.15) break;
       if (p.hp < s.stats.maxHp * 0.5 && p.potions[0])
-        await page.keyboard.press("1");
+        await page.keyboard.press("z");
       const dx = point.x - p.x,
         dy = point.y - p.y,
         sx = dx - dy,
         sy = (dx + dy) * 0.5;
       const keys: string[] = [];
-      if (Math.abs(sx) > 0.07) keys.push(sx > 0 ? "ArrowRight" : "ArrowLeft");
-      if (Math.abs(sy) > 0.07) keys.push(sy > 0 ? "ArrowDown" : "ArrowUp");
+      if (Math.abs(sx) > 0.07) keys.push(sx > 0 ? "d" : "a");
+      if (Math.abs(sy) > 0.07) keys.push(sy > 0 ? "s" : "w");
       for (const k of keys) await page.keyboard.down(k);
       await page.keyboard.down("Shift");
       await page.waitForTimeout(45);
@@ -134,16 +137,17 @@ test("Inicialização, arte carregada e movimento nas quatro orientações", asy
   page.on("pageerror", (e) => errors.push(e.message));
   await start(page);
   for (const [key, dir] of [
-    ["ArrowUp", "back"],
-    ["ArrowRight", "right"],
-    ["ArrowDown", "front"],
-    ["ArrowLeft", "left"],
+    ["w", "back"],
+    ["d", "right"],
+    ["s", "front"],
+    ["a", "left"],
   ]) {
     await page.keyboard.down(key);
     await page.waitForTimeout(150);
     const s = await state(page);
     expect(s.player.direction).toBe(dir);
     expect(s.player.action).toBe("walk");
+    expect(s.player.mp).toBe(s.stats.maxMp);
     await page.keyboard.up(key);
   }
   await page.keyboard.press("Escape");
@@ -220,11 +224,11 @@ test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", asyn
 });
 test("HUD de recargas e poções, configurações e pausa", async ({ page }) => {
   await start(page);
-  await page.keyboard.press("q");
+  await page.keyboard.press("1");
   await page.waitForTimeout(180);
   expect((await state(page)).player.mp).toBeLessThan(120);
   await expect(page.locator(".cooldown-count")).toHaveCount(1);
-  await page.keyboard.press("2");
+  await page.keyboard.press("x");
   expect((await state(page)).player.potions[1]).toBe(2);
   await page.keyboard.press("m");
   const before = (await state(page)).player;

@@ -15,17 +15,17 @@ O Vite escuta na porta 5173. O jogo funciona inteiramente no navegador; não pre
 
 ## Controles
 
-| Ação                                         | Tecla                                          |
-| -------------------------------------------- | ---------------------------------------------- |
-| Mover / correr                               | Setas / Shift + setas                          |
-| Ataque básico                                | Espaço ou clique esquerdo; mouse aponta o alvo |
-| Habilidades                                  | Q, W, E, R                                     |
-| Vida / mana / elixir                         | 1, 2, 3                                        |
-| Conversar, abrir baú e interagir com o selo  | F                                              |
-| Inventário / classes / habilidades / missões | I / C / K / J                                  |
-| Configurações / pausa                        | M / Esc                                        |
+| Ação                                         | Tecla                                |
+| -------------------------------------------- | ------------------------------------ |
+| Mover / correr                               | WASD / Shift + WASD                  |
+| Ataque básico                                | Clique esquerdo; mouse aponta o alvo |
+| Habilidades                                  | 1, 2, 3, 4                           |
+| Vida / mana / elixir                         | Z, X, V                              |
+| Conversar, abrir baú e interagir com o selo  | F                                    |
+| Inventário / classes / habilidades / missões | I / C / K / J                        |
+| Configurações / pausa                        | M / Esc                              |
 
-As setas evitam conflito entre movimento e a habilidade W. As duas primeiras habilidades começam desbloqueadas. Subir de nível concede pontos para as demais. Os menus pausam o mundo. Clicar em um item o equipa; o × remove o equipamento daquele espaço.
+WASD controla o movimento; as teclas 1–4 ativam habilidades, e Z/X/V usam poções. As duas primeiras habilidades começam desbloqueadas. Subir de nível concede pontos para as demais. Os menus pausam o mundo. Clicar em um item o equipa; o × remove o equipamento daquele espaço.
 
 O diamante dourado no minimapa é a entrada das ruínas. Encontre a entrada, derrote três ameaças e interaja com o selo usando F. Baús podem ser abertos uma vez e concedem moedas, uma poção e equipamentos. As quatro classes podem ser trocadas no painel C, preservando progressão e equipamento. Morrer oferece um retorno à vila, com custo de 25 moedas.
 

@@ -37,6 +37,6 @@ Os PNGs exportados estão versionáveis e são carregados diretamente; executar 
 
 ## Revisão visual
 
-Capturas do navegador em `artifacts/` permitem comparar menu, cena jogável, inventário, morte, telas menores e missão concluída. A composição mantém HUD superior esquerda, localização e objetivo abaixo, minimapa superior direita, QWER inferior esquerda e poções inferior direita.
+Capturas do navegador em `artifacts/` permitem comparar menu, cena jogável, inventário, morte, telas menores e missão concluída. A composição mantém HUD superior esquerda, localização e objetivo abaixo, minimapa superior direita, habilidades 1–4 na parte inferior esquerda e poções inferior direita.
 
 As imagens de referência são a direção obrigatória, mas os PNGs gerados são uma aproximação: existe repetição de peças ambientais, diferença de texturas e iluminação e alguma variação de anatomia entre frames. A cena foi revisada para remover resíduos magenta, preservar direções reais e manter proporções legíveis. A aprovação de fidelidade exata não foi afirmada.
