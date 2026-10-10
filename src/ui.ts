@@ -1,5 +1,6 @@
 import { CLASSES, ITEMS, type ClassId } from "./data";
 import { stats } from "./state";
+import { inventoryPanel } from "./inventory";
 import { load } from "./save";
 import type { Game } from "./game";
 const icon = (index: number, extra = "") =>
@@ -17,6 +18,10 @@ const titles: Record<string, string> = {
 export class UI {
   panel = "";
   lastHUD = 0;
+  selectedItem = "brasa";
+  inventoryFilter = "all";
+  comparing = false;
+  confirmingDiscard = false;
   selectedClass: ClassId = "guerreiro";
   newGameSelection = false;
   minimap: HTMLCanvasElement;
@@ -39,7 +44,7 @@ export class UI {
     this.portrait = document.querySelector("#portrait")!;
     document.addEventListener("click", (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>(
-        "[data-action],[data-panel],[data-skill],[data-potion],[data-equip],[data-class],[data-unequip]",
+        "[data-action],[data-panel],[data-skill],[data-potion],[data-equip],[data-class],[data-unequip],[data-item],[data-filter]",
       );
       if (!el) return;
       if (el.dataset.panel) {
@@ -49,6 +54,15 @@ export class UI {
         game.combat.attack(game.target(), Number(el.dataset.skill));
       if (el.dataset.potion !== undefined && !game.paused)
         game.potion(Number(el.dataset.potion));
+      if (el.dataset.item) {
+        this.selectedItem = el.dataset.item;
+        this.confirmingDiscard = false;
+        this.renderPanel();
+      }
+      if (el.dataset.filter) {
+        this.inventoryFilter = el.dataset.filter;
+        this.renderPanel();
+      }
       if (el.dataset.equip) {
         game.equip(el.dataset.equip);
         this.renderPanel();
@@ -75,6 +89,22 @@ export class UI {
       game.audio.toggle();
       this.updateSound();
     });
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (!["inventory", "equipment"].includes(this.panel) || e.repeat)
+          return;
+        const action = { e: "equip-selected", c: "compare", r: "discard" }[
+          e.key.toLowerCase()
+        ];
+        if (action) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          this.action(action);
+        }
+      },
+      true,
+    );
     game.onUpdate = () => this.update();
     game.onMenu = (p) => {
       if (this.panel === "death") return;
@@ -115,6 +145,33 @@ export class UI {
   }
   action(action: string) {
     const g = this.game;
+    if (
+      ["equip-selected", "compare", "discard", "use-potion"].includes(action)
+    ) {
+      const item = ITEMS.find(
+        (item) =>
+          item.id === this.selectedItem && g.player.inventory.includes(item.id),
+      );
+      if (action === "equip-selected") {
+        if (item) g.equip(item.id);
+        else if (this.selectedItem.startsWith("potion-"))
+          g.potion(Number(this.selectedItem.slice(7)));
+      }
+      if (action === "compare") this.comparing = !this.comparing;
+      if (action === "use-potion") g.potion(Number(this.selectedItem.slice(7)));
+      if (action === "discard" && item) {
+        if (this.confirmingDiscard) {
+          if (g.player.equipment[item.slot] === item.id)
+            g.equip(null, item.slot);
+          g.player.inventory.splice(g.player.inventory.indexOf(item.id), 1);
+          this.selectedItem = "";
+          this.confirmingDiscard = false;
+          g.save();
+        } else this.confirmingDiscard = true;
+      } else this.confirmingDiscard = false;
+      this.renderPanel();
+      return;
+    }
     if (action === "continue") {
       g.start();
       return;
@@ -179,6 +236,7 @@ export class UI {
   open(panel: string) {
     if (this.game.started && this.game.player.hp <= 0) return;
     this.panel = panel;
+    this.confirmingDiscard = false;
     this.game.paused = true;
     this.game.input.keys.clear();
     this.renderPanel();
@@ -186,13 +244,31 @@ export class UI {
   close() {
     this.panel = "";
     this.modal.hidden = true;
+    document.querySelector(".game-shell")!.classList.remove("inventory-open");
+    this.modal.classList.remove("inventory-layer");
     this.game.paused = !this.game.started || this.game.player.hp <= 0;
     this.game.input.keys.clear();
   }
   renderPanel() {
     const g = this.game,
-      p = g.player,
-      s = stats(p);
+      p = g.player;
+    const inventory = ["inventory", "equipment"].includes(this.panel);
+    this.modal.classList.toggle("inventory-layer", inventory);
+    document
+      .querySelector(".game-shell")!
+      .classList.toggle("inventory-open", inventory);
+    if (inventory) {
+      this.modal.hidden = false;
+      this.modal.innerHTML = inventoryPanel(
+        g,
+        this.selectedItem,
+        this.inventoryFilter,
+        this.comparing,
+        this.confirmingDiscard,
+        this.panel === "equipment",
+      );
+      return;
+    }
     let content = "",
       title = titles[this.panel] ?? "Antes de entrar na noite",
       eyebrow = "DISTRITO ZERO / PEDRALTA";
@@ -207,29 +283,6 @@ export class UI {
         .join(
           "",
         )}</div>${this.newGameSelection ? button("ENTRAR EM PEDRALTA →", "begin", "primary begin-button") : '<p class="subtle">Trocar de classe preserva inventário, nível e missão.</p>'}`;
-    }
-    if (this.panel === "inventory") {
-      content = `<div class="inventory-layout"><div><div class="section-heading">PERTENCES <span>${p.inventory.length} ITENS · ${p.coins} MOEDAS</span></div><div class="inventory-grid">${p.inventory
-        .map((id) => {
-          const i = ITEMS.find((i) => i.id === id)!;
-          const current = ITEMS.find((item) => item.id === p.equipment[i.slot]);
-          const signed = (value: number) =>
-            value >= 0 ? `+${value}` : String(value);
-          const comparison = `VS. ATUAL: ATQ ${signed(i.attack - (current?.attack ?? 0))} · DEF ${signed(i.defense - (current?.defense ?? 0))} · HP ${signed(i.hp - (current?.hp ?? 0))}`;
-          return `<button class="inventory-item ${Object.values(p.equipment).includes(id) ? "equipped" : ""}" data-equip="${id}" title="${i.description}" style="--rarity:${i.rarity === "Comum" ? "#a3b0c1" : i.rarity === "Rara" ? "#6fafe0" : "#c291da"}">${icon(i.icon)}<span><small>${i.rarity}</small><strong>${i.name}</strong><em>ATQ +${i.attack} · DEF +${i.defense} · HP +${i.hp}</em><em class="comparison">${comparison}</em><small>${Object.values(p.equipment).includes(id) ? "EQUIPADO" : "CLIQUE PARA EQUIPAR"}</small></span></button>`;
-        })
-        .join(
-          "",
-        )}</div><p class="subtle">Equipar substitui o item do mesmo espaço. Os modificadores são aplicados imediatamente.</p></div><div class="equipment"><div class="section-heading">EQUIPAMENTO</div><div class="paperdoll ${p.classId}"></div>${(
-        ["weapon", "armor", "accessory"] as const
-      )
-        .map((slot, n) => {
-          const i = ITEMS.find((i) => i.id === p.equipment[slot]);
-          return `<div class="equipment-row"><small>${["ARMA", "ARMADURA", "ACESSÓRIO"][n]}</small><span>${i ? i.name : "Não equipado"}</span>${i ? `<button data-unequip="${slot}" aria-label="Remover ${i.name}">×</button>` : ""}</div>`;
-        })
-        .join(
-          "",
-        )}<div class="attributes"><span>ATAQUE <b>${s.attack}</b></span><span>DEFESA <b>${s.defense}</b></span><span>VIDA MÁX. <b>${s.maxHp}</b></span></div></div></div>`;
     }
     if (this.panel === "skills") {
       content = `<div class="section-heading">${CLASSES[p.classId].name.toUpperCase()} <span>${p.skillPoints} PONTOS DISPONÍVEIS</span></div><p class="panel-intro">A cada nível, um novo ponto. As primeiras duas habilidades já estão disponíveis.</p><div class="skill-list">${CLASSES[p.classId].skills.map((skill, i) => `<div class="skill-detail ${i >= p.unlocked ? "locked" : ""}">${icon(skill.icon)}<div><small>HABILIDADE ${i + 1} <kbd>${"1234"[i]}</kbd></small><h3>${skill.name}</h3><p>${skill.description}</p><span>${skill.cost} MP · ${skill.cooldown}s RECARGA · ${skill.damage ? `${skill.damage} ${skill.kind === "heal" ? "CURA" : "DANO BASE"}` : "75% REDUÇÃO DE DANO"}</span></div><span class="skill-state">${i < p.unlocked ? "DESBLOQUEADA" : "BLOQUEADA"}</span></div>`).join("")}</div>${button(p.unlocked >= 4 ? "TODAS DESBLOQUEADAS" : p.skillPoints > 0 ? "DESBLOQUEAR PRÓXIMA HABILIDADE" : "EVOLUA PARA GANHAR UM PONTO", "unlock", "primary")}`;

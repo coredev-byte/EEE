@@ -3,7 +3,7 @@
 - Instalação repetida com `npm ci --no-audit --no-fund --cache /workspace/.npm`: concluída com lockfile preservado.
 - `npm run build`: TypeScript e bundle de produção aprovados.
 - `npm test`: 17 testes de lógica executados e aprovados.
-- `npm run test:e2e`: 6 testes de Chromium executados e aprovados. Após ajustes de menus e sincronização de ataques, os testes afetados foram repetidos e aprovados.
+- `npm run test:e2e`: 7 testes de Chromium executados e aprovados. A revisão do inventário verificou seleção, filtros, comparação, equipar/remover, atalhos E/C/R, descarte confirmado com persistência, uso de poções, abas e layout móvel.
 - A missão inicial foi concluída por entrada real de teclado e mouse: combate, XP, desbloqueio, baú, equipamento, percurso até o portal, interação e recompensa. O reload confirmou persistência.
 - Foram verificados quatro sentidos de movimento, animação durante o movimento, dano e morte, retorno à vila, recargas, poções, pausa, troca de classe, equipamento/remover, restauração do salvamento e redimensionamento.
 - A primeira inicialização monitorada não apresentou exceções JavaScript. Vite respondeu HTTP 200 na porta 5173.

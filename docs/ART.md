@@ -42,3 +42,7 @@ Os PNGs exportados estão versionáveis e são carregados diretamente; executar 
 Capturas do navegador em `artifacts/` permitem comparar menu, cena jogável, inventário, morte, telas menores e missão concluída. A composição mantém HUD superior esquerda, localização e objetivo abaixo, minimapa superior direita, habilidades 1–4 na parte inferior esquerda e poções inferior direita.
 
 As imagens de referência são a direção obrigatória, mas os PNGs gerados são uma aproximação: existe repetição de peças ambientais, diferença de texturas e iluminação e alguma variação de anatomia entre frames. A cena foi revisada para remover resíduos magenta, preservar direções reais e manter proporções legíveis. A aprovação de fidelidade exata não foi afirmada.
+
+## Inventário
+
+A tela mantém o HUD superior sobre a vila e segue a composição da referência: personagem ampliado em nearest-neighbor com espaços de equipamento à esquerda, mochila com seis colunas no centro, detalhe e ações à direita. As seis abas levam aos menus reais. Armas, armaduras, acessórios e poções têm filtros; os espaços vazios não simulam itens adquiridos. Nível, atributos, quantidades, equipamento e moedas vêm do salvamento. Em celular, as três áreas são empilhadas e roláveis.

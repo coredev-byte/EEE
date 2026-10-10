@@ -162,12 +162,20 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   await start(page);
   await page.keyboard.press("i");
   expect((await state(page)).paused).toBe(true);
-  await page.locator('[data-equip="brasa"]').click();
+  await page.locator('[data-item="brasa"]').first().click();
+  await page.keyboard.press("c");
+  await expect(page.locator(".item-comparison")).toContainText("ATAQUE +12");
+  expect((await state(page)).player.equipment.weapon).toBe("ferro");
+  await page.keyboard.press("e");
   expect((await state(page)).stats.attack).toBe(46);
   await expect(page.locator(".attributes")).toContainText("46");
   await page.locator('[data-unequip="weapon"]').click();
   expect((await state(page)).stats.attack).toBe(30);
+  await page.locator('[data-filter="weapon"]').click();
+  await expect(page.locator('.bag-grid [data-item="casaco"]')).toHaveCount(0);
+  await page.locator('[data-item="raio"]').first().click();
   await page.locator('[data-equip="raio"]').click();
+  await page.locator('[data-filter="all"]').click();
   await page.screenshot({ path: "artifacts/inventory.png", fullPage: true });
   await page.keyboard.press("Escape");
   await page.keyboard.press("c");
@@ -202,6 +210,7 @@ test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", asyn
   await page.keyboard.press("f");
   expect((await state(page)).player.inventory).toContain("couraça");
   await page.keyboard.press("i");
+  await page.locator('[data-item="couraça"]').first().click();
   await page.locator('[data-equip="couraça"]').click();
   await page.keyboard.press("Escape");
   await travel(page, { x: 22, y: 7 });
@@ -283,4 +292,52 @@ test("Dano, animação de morte e retorno à vila", async ({ page }) => {
   expect(alive.player.coins).toBe(100);
   expect(alive.player.x).toBe(12);
   expect(alive.paused).toBe(false);
+});
+
+test("Inventário: abas, descarte confirmado, poções e layout móvel", async ({
+  page,
+}) => {
+  await start(page);
+  await page.keyboard.press("1");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("i");
+  await page.getByRole("button", { name: "Equipamento", exact: true }).click();
+  await expect(page.locator('.bag-grid [data-item="brasa"]')).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Inventário", exact: true })
+    .last()
+    .click();
+  await page.locator('.bag-grid [data-item="brasa"]').click();
+  await page.keyboard.press("r");
+  expect((await state(page)).player.inventory).toContain("brasa");
+  await expect(page.locator(".discard-note")).toBeVisible();
+  await page.keyboard.press("r");
+  expect((await state(page)).player.inventory).not.toContain("brasa");
+  await page.locator('[data-filter="potions"]').click();
+  await expect(page.locator('.bag-grid [data-item="ferro"]')).toHaveCount(0);
+  await page.locator('[data-item="potion-0"]').click();
+  await expect(page.locator(".item-pane")).toContainText("Restaura 100");
+  await page.getByRole("button", { name: "Habilidades", exact: true }).click();
+  await expect(page.locator(".panel-skills")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.keyboard.press("i");
+  await expect(page.locator(".inventory-screen")).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.locator('.bag-grid [data-item="potion-1"]').click();
+  await expect(page.locator(".item-pane")).toContainText("Restaura 70");
+  await page.keyboard.press("e");
+  expect((await state(page)).player.potions[1]).toBe(2);
+  expect((await state(page)).player.mp).toBe((await state(page)).stats.maxMp);
+  await page.screenshot({
+    path: "artifacts/inventory-mobile.png",
+    fullPage: true,
+  });
+  await page.locator(".inventory-close").click();
+  expect((await state(page)).paused).toBe(false);
+  await page.reload();
+  await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
+  expect((await state(page)).player.inventory).not.toContain("brasa");
 });
