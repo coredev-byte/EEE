@@ -1,0 +1,36 @@
+# Auditoria e evolução de Distrito Zero
+
+Pedido integral: [REVISAO_SOLICITADA.md](REVISAO_SOLICITADA.md). Base auditada: `c62d249`. A evolução será entregue em etapas, preservando o jogo existente.
+
+## Sistemas e causas encontradas
+
+| Sistema / arquivos | Implementação preservada | Causa ou limitação comprovada |
+| --- | --- | --- |
+| Renderização: `renderer.ts`, `assets.ts`, `animation.ts` | Quatro classes, atlas direcionais, pés alinhados, pixel art, sombras, partículas | Objetos/personagens já usam x+y; projéteis e efeitos eram desenhados depois de todos os obstáculos. A trilha de investida inteira tinha uma só profundidade. Animações laterais de combate eram espelhadas apesar de haver frames específicos. NPC ignorava sua escala no mapa. |
+| Coordenadas: `world.ts`, `input.ts`, `game.ts`, `style.css` | Projeção isométrica 80×40 e Canvas 960×540 | Constantes duplicadas; câmera arredondada de formas diferentes; clique não atualizava posição sem pointermove; tela cheia usa object-fit, mas o mouse e a HUD usavam toda a caixa. |
+| Colisões / IA: `world.ts`, `enemies.ts`, `combat.ts` | Obstáculos reais, deslizamento por eixo, perseguição, tangentes, investida | Movimento testa só destino, permitindo atravessar obstáculos com deslocamentos longos. Colisões de casas são círculos aproximados. IA não possui planejamento de caminho global. |
+| Mundo / história: `world.ts`, `game.ts` | Vila composta, guardiã, dois baús, portal, missão e recompensa | Limite invisível 1..26, tamanho 28 duplicado no terreno, minimapa e save. Não há mapa conectado, interiores nem próximo capítulo após o selo. Abrir a borda sem criar regiões deixaria terreno vazio. |
+| Personalização: `state.ts`, `data.ts`, `inventory.ts` | Equipamento aplica atributos imediatamente, comparação e partículas por elemento | Armas das animações são fixas; armaduras e acessórios não mudam o atlas. Existem três espaços funcionais; capacetes e mantos ainda não existem como itens. Ícones sobrepostos na mão foram removidos corretamente e não serão reintroduzidos. |
+| Habilidades: `data.ts`, `game.ts`, `ui.ts` | Quatro classes, quatro ativas por classe, duas iniciais, desbloqueio com pontos | Não é uma árvore: `unlocked` libera sequencialmente. Faltam ramificações, passivas, requisitos, melhorias e especializações. |
+| Combate: `combat.ts`, `enemies.ts`, `renderer.ts` | Preparação antes do impacto, cone/alcance, projéteis, invulnerabilidade, defesa, cura, XP | Estados distintos de crítico, bloqueio/esquiva e efeitos persistentes não existem. Cura não produz número próprio; dano é texto simples. Velocidade dos projéteis é única. |
+| Áudio: `audio.ts`, `game.ts`, `combat.ts`, `ui.ts` | Web Audio desbloqueado por interação, passos, seis sons sintetizados, toggle | Um drone e tons provisórios. Não há canais de volume, limite de vozes, sons por superfície/raridade, nem eventos próprios de nível, missão e menus. |
+| Drops: `combat.ts`, `game.ts`, `ui.ts` | Mortes concedem XP/moedas; baús entregam itens reais e persistentes | Não há item no chão ou coleta identificável. Aviso textual único substitui o anterior. Raridade mistura elemento e categoria. |
+| HUD / minimapa: `ui.ts`, `inventory.ts`, `style.css`, `renderer.ts` | HP/MP/XP reais, recargas, quest, seis menus, inventário inspirado na referência | Minimap usa constantes e marcadores deslocados da célula; sem descoberta/fog. Renderização do minimapa ainda pertence ao renderer do mundo. |
+| Persistência: `save.ts` | Save v1 validado, inventário, XP, habilidades, missão, baús e inimigos derrotados | Limites do mapa fixos. Direção salva sem validação. Próximos sistemas precisarão de migração, não descarte do save. |
+
+## Histórico inspecionado
+
+`git log --all`, histórico de `data.ts`, `state.ts`, `save.ts` e `ui.ts`, mais a versão inicial `f3e7da1`. O checkout não é superficial; após atualizar as referências do origin, o histórico disponível contém cinco commits e apenas main. Não existe árvore complexa anterior recuperável nesse histórico. Não foi removida nenhuma funcionalidade para simplificar esta entrega.
+
+## Etapas e critérios de conclusão
+
+1. **Base espacial e renderização**: um contrato para mundo/tela/pivôs; mouse correto sem movimento prévio e em tela cheia; mundo e HUD em viewport comum sem distorção; fila de profundidade incluindo efeitos e projéteis; movimento sem atravessar obstáculos com passos longos; minimapa fora do renderer do mundo e com coordenadas comuns. Verificar inversão de coordenadas, ordem real de desenho, colisões, sprites, save v1 e Chromium.
+2. **Regiões e continuidade**: substituir bordas arbitrárias por conexões a regiões pequenas com identidade; colisões por footprints; caminhos de IA; diálogos e missão posterior ao selo. Concluir com percurso real entre regiões, objetivos claros e restauração da região no save.
+3. **Árvore e migração**: árvores ramificadas das quatro classes, passivas/ativas, custos, requisitos e especializações; migração de `unlocked`/pontos existentes sem perda; testes de caminhos válidos/invalidos e combate afetado pelas escolhas.
+4. **Equipamentos visuais**: manifest de variantes/camadas com pivôs de mão por direção/ação; armas, armaduras e acessórios iniciais com aparência realmente diferente. Validar troca durante exploração/combate em todas as classes; não anunciar capacetes/mantos concluídos sem arte e itens funcionais.
+5. **Combate e áudio**: números/eventos próprios, estados, trajetórias, impacto sincronizado; efeitos legíveis; áudio com canais, volumes, limite de vozes e eventos reais. Verificar bloqueio/esquiva/crítico/cura, efeitos persistentes e controle de áudio no navegador.
+6. **Drops e exploração na HUD**: drops no chão, coleta, categorias de raridade, fila de notificações com imagem, requisitos de equipamento; minimapa com regiões/descoberta persistente. Verificar múltiplos drops/notificações, posições e retomada do save.
+
+## Limites desta primeira entrega
+
+As etapas 2–6 permanecem pendentes. O mapa não será chamado de mundo aberto, as quatro ativas não serão chamadas de árvore complexa, as partículas não serão chamadas de personalização completa e os tons sintetizados não serão chamados de áudio final. Os limites antigos do mapa e o save v1 são preservados enquanto a estrutura de regiões ainda não existe.
