@@ -6,7 +6,7 @@ Resolução lógica: **960 × 540**. Diamante do terreno: **80 × 40** pixels. F
 
 O Canvas desativa `imageSmoothingEnabled` e arredonda coordenadas de renderização. A apresentação CSS usa `image-rendering: pixelated`. Sprites do protagonista são renderizados em escala lógica 1:1. O layout responsivo pode usar ampliação física fracionária nearest-neighbor quando a tela não comporta escala inteira. Objetos maiores e alguns efeitos também usam redimensionamento nearest-neighbor. Não se aplica interpolação bilinear.
 
-Os atlases exportados compartilham **63 cores de materiais e transparência**. A paleta é extraída das ilustrações e aplicada sem dithering. Contornos e sombreamento vêm dos assets, não de retângulos desenhados no renderer.
+Os atlases exportados compartilham **63 cores de materiais e transparência**. A paleta foi extraída das ilustrações, está preservada em `animations/palette.json` e é aplicada sem dithering. Contornos e sombreamento vêm dos assets, não de retângulos desenhados no renderer.
 
 ## Atlas
 
@@ -31,11 +31,13 @@ A corrida reutiliza os frames de caminhada, com deslocamento e cadência acelera
 
 ## Produção dos assets
 
-A ferramenta de imagem gerou folhas seguindo as imagens anexadas, com fundo chromakey. `scripts/compile_assets.py` faz recorte, remoção do chromakey, ajuste nearest-neighbor, alinhamento dos pivôs e quantização. As coordenadas de recorte foram examinadas nos arquivos gerados; as folhas não seguem todas as dimensões pedidas perfeitamente, por isso os limites de linha são explícitos no script.
+A ferramenta de imagem gerou folhas seguindo as imagens anexadas, com fundo chromakey. `scripts/compile_assets.py` remove o chromakey e extrai as silhuetas conectadas de cada linha de personagens, preservando armas que atravessavam os antigos limites de coluna. Fragmentos soltos são descartados, e poses que se tocam provocam erro de importação. Cada frame recebe alpha binário, margem transparente mínima de 2 pixels, ajuste nearest-neighbor, alinhamento pelos pés e quantização. A folha de combate foi limpa para separar poses e remover efeitos soltos; os efeitos de habilidades continuam no atlas próprio. As coordenadas de recorte foram examinadas nos arquivos gerados; as folhas não seguem todas as dimensões pedidas perfeitamente, por isso os limites de linha são explícitos no script.
 
-Os PNGs exportados estão versionáveis e são carregados diretamente; executar o compilador não é requisito para desenvolver ou publicar. Para reexportar, Python e Pillow são necessários. Os originais preservados em `public/assets/spritesheets` permitem reexportação em outra máquina.
+Os PNGs exportados estão versionáveis e são carregados diretamente; executar o compilador não é requisito para desenvolver ou publicar. Para reexportar, Python e Pillow são necessários. As fontes preservadas em `public/assets/spritesheets` permitem reexportação em outra máquina. Use `python scripts/compile_assets.py --characters-only` para atualizar somente personagens e retrato. Execute `python scripts/test_sprite_frames.py` para verificar isolamento, margens e rejeição de poses sobrepostas.
 
 ## Revisão visual
+
+`node scripts/inspect-sprites.mjs` produz `artifacts/sprites-clean.png`, com os 192 frames sobre fundo quadriculado para verificar transparência e contaminação entre poses. Requer o servidor de desenvolvimento na porta 5173.
 
 Capturas do navegador em `artifacts/` permitem comparar menu, cena jogável, inventário, morte, telas menores e missão concluída. A composição mantém HUD superior esquerda, localização e objetivo abaixo, minimapa superior direita, habilidades 1–4 na parte inferior esquerda e poções inferior direita.
 

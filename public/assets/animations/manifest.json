@@ -38,5 +38,5 @@
     "source-5.png",
     "source-6.png"
   ],
-  "processing": "nearest-neighbor; chromakey; selective crop; no drawn replacement art"
+  "processing": "nearest-neighbor; chromakey; connected character silhouettes; transparent 2px frame gutters; feet-aligned pivots"
 }
