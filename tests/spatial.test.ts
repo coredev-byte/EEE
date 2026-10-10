@@ -4,6 +4,7 @@ import {
   screenToWorld,
   clientToScreen,
   minimapPoint,
+  minimapPadding,
   VIEW,
   FRAMES,
   spriteBounds,
@@ -223,4 +224,18 @@ describe("Colisões e compatibilidade estrutural", () => {
     expect(restored.opened).toEqual(old.opened);
     expect(restored.killed).toEqual(old.killed);
   });
+});
+
+it("mantém todos os cantos e seus marcadores dentro do minimapa circular", () => {
+  for (const size of [28, 40])
+    for (const width of [100, 160, 240]) {
+      const padding = minimapPadding(width, width, true);
+      for (const x of [0, size - 1])
+        for (const y of [0, size - 1]) {
+          const at = minimapPoint({ x, y }, size, width, width, padding);
+          expect(
+            Math.hypot(at.x - width / 2, at.y - width / 2) + 7,
+          ).toBeLessThan(width / 2);
+        }
+    }
 });

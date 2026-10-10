@@ -1,3 +1,4 @@
+import { hudIcon } from "./hud-icons";
 import { REGIONS, ANCHORS } from "./regions";
 import { type AudioSettings } from "./audio-catalog";
 import { effectFrame } from "./effect-art";
@@ -55,9 +56,9 @@ export class UI {
    <header class="topbar"><a class="wordmark" href="#" aria-label="Distrito Zero">DISTRITO <span>ZER<span class="zero">O</span></span></a><span class="edition">CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO I</span><nav aria-label="Menus do jogo"><button data-panel="quests">DIÁRIO <kbd>J</kbd></button><button data-panel="inventory">INVENTÁRIO <kbd>I</kbd></button><button data-panel="settings" aria-label="Configurações">SISTEMA <kbd>M</kbd></button></nav></header>
    <main><div class="scene-label"><span id="region-caption"><i class="live-dot"></i> VILA PEDRALTA</span><span>UM MUNDO EM RUÍNAS. SEU PRÓPRIO CAMINHO.</span></div>
    <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><div class="game-viewport"><canvas id="game" width="${VIEW.width}" height="${VIEW.height}" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
-   <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas><span id="level">1</span></div><div class="bars"><div class="bar-row"><label>HP</label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label>MP</label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label>XP</label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div></section>
+   <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas></div><span class="level-medallion" aria-label="Nível"><b id="level">1</b></span><div class="bars"><div class="bar-row"><label title="Vida">${hudIcon("life")}<span class="hud-accessible">HP</span></label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label title="Mana">${hudIcon("mana")}<span class="hud-accessible">MP</span></label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label title="Experiência">${hudIcon("xp")}<span class="hud-accessible">XP</span></label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div><nav class="hud-tools" aria-label="Acessos rápidos"><button data-panel="inventory" aria-label="Abrir inventário" title="Inventário · I">${hudIcon("inventory")}</button><button data-panel="quests" aria-label="Abrir missões" title="Missões · J">${hudIcon("quests")}</button><button data-panel="settings" aria-label="Abrir configurações" title="Configurações · M">${hudIcon("settings")}</button></nav></section>
    <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
-   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" width="160" height="160" aria-label="Minimapa da vila"></canvas><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div><div class="map-legend" aria-label="Legenda do minimapa"><span>➤ Você</span><span class="legend-goal">◇ Objetivo</span><span class="legend-exit">▪ Passagem</span></div></section>
+   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" data-shape="circular" width="160" height="160" aria-label="Minimapa da vila"></canvas><details class="map-key"><summary aria-label="Legenda do minimapa" title="Legenda do minimapa">?</summary><div class="map-legend" aria-label="Legenda do minimapa"><strong>MINIMAPA</strong><span>${hudIcon("main")} Objetivo principal</span><span>${hudIcon("secondary")} Objetivo secundário</span><span>${hudIcon("player")} Você · posição e direção</span><span>${hudIcon("exit")} Saída / Passagem</span><span>${hudIcon("xp")} Ponto de interesse</span><span>${hudIcon("enemy")} Inimigo / Chefe</span><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div></div></details></section>
    <div class="loot-notifications" id="loot-notifications" role="status" aria-label="Itens coletados"></div><div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
    <div class="loading" id="loading"><div class="loading-rune"></div><span>DESPERTANDO PEDRALTA</span></div><div class="menu-layer" id="menu-layer"></div><div class="modal-layer" id="modal-layer" hidden></div>
    </div></section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
@@ -350,7 +351,9 @@ export class UI {
       .querySelector(".game-viewport")!
       .getBoundingClientRect();
     const hud = document.querySelector(".player-hud")!.getBoundingClientRect();
-    const level = document.querySelector("#level")!.getBoundingClientRect();
+    const level = document
+      .querySelector(".level-medallion")!
+      .getBoundingClientRect();
     const gap = 12;
     this.modal.style.setProperty(
       "--inventory-top",
@@ -483,7 +486,20 @@ export class UI {
     this.renderPanel();
   }
   helpContent() {
-    return `<div class="section-heading">CONTROLES DA JORNADA</div><div class="help-grid"><div><kbd>W A S D</kbd><span>Mover o personagem</span></div><div><kbd>SHIFT</kbd><span>Correr</span></div><div><kbd>CLIQUE ESQUERDO</kbd><span>Ataque básico · mire com o mouse</span></div><div><kbd>1 2 3 4</kbd><span>Habilidades da classe</span></div><div><kbd>Z / X / V</kbd><span>Vida / mana / elixir</span></div><div><kbd>F</kbd><span>Conversar, abrir baú, entrar nas ruínas</span></div><div><kbd>I / C / K / J</kbd><span>Inventário / classes / habilidades / diário</span></div><div><kbd>M / ESC</kbd><span>Configurações / pausar</span></div></div><p class="subtle">O diamante dourado do minimapa marca a entrada das ruínas. Baús guardam equipamentos. Inimigos concedem experiência e moedas. WASD move o personagem; 1–4 ativa habilidades; Z, X e V usam poções.</p>`;
+    return `<div class="section-heading">CONTROLES DA JORNADA</div><div class="help-grid"><div><kbd>W A S D</kbd><span>Mover o personagem</span></div><div><kbd>SHIFT</kbd><span>Correr</span></div><div><kbd>CLIQUE ESQUERDO</kbd><span>Ataque básico · mire com o mouse</span></div><div><kbd>1 2 3 4</kbd><span>Habilidades da classe</span></div><div><kbd>Z / X / V</kbd><span>Vida / mana / elixir</span></div><div><kbd>F</kbd><span>Conversar, abrir baú, entrar nas ruínas</span></div><div><kbd>I / C / K / J</kbd><span>Inventário / classes / habilidades / diário</span></div><div><kbd>M / ESC</kbd><span>Configurações / pausar</span></div></div><div class="hud-icon-guide"><strong>ÍCONES DA HUD</strong>${(
+      [
+        ["life", "Vida"],
+        ["mana", "Mana"],
+        ["xp", "XP"],
+        ["inventory", "Inventário"],
+        ["quests", "Missões"],
+        ["settings", "Configurações"],
+      ] as const
+    )
+      .map(([name, label]) => `<span>${hudIcon(name)} ${label}</span>`)
+      .join(
+        "",
+      )}</div><p class="subtle">A seta dourada do minimapa marca o objetivo ativo; a seta azul mostra sua posição e direção. Baús guardam equipamentos. Inimigos concedem experiência e moedas. WASD move o personagem; 1–4 ativa habilidades; Z, X e V usam poções.</p>`;
   }
   drawSkillPreview() {
     const canvas = document.querySelector<HTMLCanvasElement>(
@@ -589,7 +605,7 @@ export class UI {
     document.querySelector(".location")!.innerHTML =
       `<span class="location-mark"></span> ${region.name.toUpperCase()} <span>— ${region.subtitle.toUpperCase()}</span>`;
     document.querySelector(".map-label")!.innerHTML =
-      `${region.short} <span>N</span>`;
+      `<span class="map-region">${region.short}</span><b>N</b>`;
     this.minimap.setAttribute("aria-label", `Minimapa de ${region.name}`);
     document.querySelector("#map-connection")!.textContent =
       `${g.quest.rewardClaimed ? "SELO →" : "SELO FECHADO →"} ${REGIONS[region.destination].short}`;
@@ -646,6 +662,7 @@ export class UI {
       g.enemies,
       g.exploration,
       g.activeObjective(),
+      true,
     );
   }
 }

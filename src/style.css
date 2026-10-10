@@ -3179,3 +3179,530 @@ h1 > span {
     gap: 2px;
   }
 }
+
+/* HUD direction: dark forged metal, bronze seams and cut corners from the reference. */
+.player-hud {
+  width: 36%;
+  min-width: 300px;
+  height: 17%;
+  padding: 8px 9px 8px 5px;
+  gap: 8px;
+  border: 0;
+  background: linear-gradient(
+    135deg,
+    #a47343 0%,
+    #30292c 18%,
+    #554034 50%,
+    #161c28 72%,
+    #98714b 100%
+  );
+  clip-path: polygon(
+    4% 0,
+    94% 0,
+    100% 14%,
+    100% 85%,
+    95% 100%,
+    4% 100%,
+    0 85%,
+    0 16%
+  );
+  box-shadow: none;
+  isolation: isolate;
+  overflow: visible;
+}
+.player-hud::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  background:
+    repeating-linear-gradient(116deg, transparent 0 13px, #91817413 14px 15px),
+    linear-gradient(#121924, #080d16 58%, #171923);
+  clip-path: polygon(
+    4% 0,
+    94% 0,
+    100% 14%,
+    100% 85%,
+    95% 100%,
+    4% 100%,
+    0 85%,
+    0 16%
+  );
+  box-shadow:
+    inset 0 0 0 2px #050810,
+    inset 0 5px 0 #776554;
+}
+.portrait-frame {
+  width: 27%;
+  height: 100%;
+  border: 0;
+  padding: 4px;
+  background: linear-gradient(
+    140deg,
+    #ad7945,
+    #273344 25%,
+    #817569 44%,
+    #321f24 72%,
+    #b07f4c
+  );
+  clip-path: polygon(
+    15% 0,
+    85% 0,
+    100% 15%,
+    100% 82%,
+    82% 100%,
+    15% 100%,
+    0 83%,
+    0 16%
+  );
+  overflow: visible;
+}
+.portrait-frame canvas {
+  background: #101927;
+  clip-path: polygon(
+    12% 0,
+    86% 0,
+    100% 14%,
+    100% 84%,
+    84% 100%,
+    13% 100%,
+    0 84%,
+    0 14%
+  );
+}
+/* The medallion is outside the clipped portrait so its lower point remains visible. */
+.level-medallion {
+  position: absolute;
+  z-index: 3;
+  left: 22%;
+  bottom: -10%;
+  width: 14%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  color: #f2ce8c;
+  background: linear-gradient(135deg, #ab7648, #483529, #b28356);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  padding: 3px;
+}
+.level-medallion::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: #0c1019;
+  clip-path: inherit;
+}
+.level-medallion #level {
+  position: relative;
+  background: none;
+  border: 0;
+  padding: 0;
+  font:
+    700 clamp(12px, 1.6vw, 23px) "Barlow Condensed",
+    sans-serif;
+}
+.bars {
+  height: 100%;
+  padding: 2px 0;
+  gap: 5px;
+}
+.bar-row {
+  gap: 4px;
+  height: 27%;
+}
+.bar-row label {
+  width: 19px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.hud-pictogram {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  filter: drop-shadow(1px 1px 0 #000);
+}
+.hud-accessible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.bar {
+  height: 100%;
+  max-height: 23px;
+  border: 0;
+  background: linear-gradient(#59606d, #252a39 45%, #656170);
+  clip-path: polygon(0 0, 95% 0, 100% 50%, 95% 100%, 0 100%, 3% 50%);
+  padding: 3px;
+  box-shadow: none;
+  isolation: isolate;
+}
+.bar::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  background: #090e1a;
+  clip-path: inherit;
+}
+.bar i {
+  clip-path: polygon(0 0, 96% 0, 100% 50%, 96% 100%, 0 100%);
+  box-shadow:
+    inset 0 2px #ffffff45,
+    inset 0 -2px #0007;
+}
+.hp i {
+  background: linear-gradient(#ef4350, #b81530);
+}
+.mp i {
+  background: linear-gradient(#39c6ed, #067caf);
+}
+.xp i {
+  background: linear-gradient(#b969dc, #673095);
+}
+.bar span {
+  left: 10px;
+  right: auto;
+  font-size: clamp(6px, 0.85vw, 11px);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.hud-tools {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 24px;
+  align-self: stretch;
+  border-left: 1px solid #675240;
+  padding-left: 4px;
+}
+.hud-tools button {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #373940;
+  background: #080e19;
+  padding: 1px;
+}
+.hud-tools button:hover,
+.hud-tools button:focus-visible {
+  background: #252b34;
+  border-color: #ba8750;
+}
+.hud-tools .hud-pictogram {
+  width: 18px;
+  height: 18px;
+}
+.player-hud > .level-medallion {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.location {
+  top: 24%;
+  width: 30%;
+  border-color: #54483d;
+  font-size: 8px;
+}
+.quest-hud {
+  top: 30%;
+  width: 30%;
+  border-color: #54483d;
+  border-left-color: #ba8750;
+}
+.minimap-box {
+  left: 39.5%;
+  right: auto;
+  top: 3.5%;
+  width: 12%;
+  min-width: 0;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #615140;
+  background: radial-gradient(#182332, #080e18 72%);
+  box-shadow:
+    0 0 0 2px #080b12,
+    inset 0 0 0 2px #0a101b,
+    0 0 0 4px #30343e;
+}
+.minimap-box::before {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border: 1px dashed #655746;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+.minimap-box canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+.map-label {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.map-label b {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  transform: translateX(-50%);
+  font:
+    700 clamp(8px, 1.1vw, 15px) "IBM Plex Mono",
+    monospace;
+  color: #e4b04f;
+  text-shadow: 1px 1px #000;
+}
+.map-label .map-region {
+  position: absolute;
+  top: 101%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 6px;
+  letter-spacing: 1px;
+  color: #baac95;
+}
+.map-coordinates,
+.map-connection {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+.map-key {
+  position: absolute;
+  right: -8%;
+  bottom: 2%;
+  z-index: 5;
+}
+.map-key summary {
+  list-style: none;
+  cursor: pointer;
+  background: #121a27;
+  border: 1px solid #7b624b;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  text-align: center;
+  font:
+    12px "IBM Plex Mono",
+    monospace;
+  color: #c3ae88;
+}
+.map-key summary::-webkit-details-marker {
+  display: none;
+}
+.map-legend {
+  position: absolute;
+  left: 24px;
+  top: -8px;
+  width: 190px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  background: #080e19f5;
+  border: 1px solid #645c58;
+  box-shadow:
+    inset 0 0 0 3px #141d2b,
+    3px 3px #030711;
+  color: #a7c5e3;
+  font:
+    11px "Barlow Condensed",
+    sans-serif;
+}
+.map-legend strong {
+  color: #b8b6b8;
+  font-size: 12px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #313b48;
+  padding-bottom: 6px;
+}
+.map-legend span {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.map-legend .hud-pictogram {
+  width: 17px;
+  height: 17px;
+}
+@media (max-width: 600px) {
+  .player-hud {
+    width: 60%;
+    min-width: 0;
+    height: 26%;
+    gap: 3px;
+    padding: 4px;
+  }
+  .portrait-frame {
+    width: 24%;
+    padding: 2px;
+  }
+  .bar-row label {
+    width: 11px;
+  }
+  .bar-row .hud-pictogram {
+    width: 11px;
+    height: 11px;
+  }
+  .bars {
+    gap: 2px;
+    padding: 1px 0;
+  }
+  .bar {
+    padding: 2px;
+  }
+  .bar span {
+    left: 5px;
+    font-size: 6px;
+    letter-spacing: 0;
+  }
+  .hud-tools {
+    width: 15px;
+    padding-left: 2px;
+  }
+  .hud-tools .hud-pictogram {
+    width: 11px;
+    height: 11px;
+  }
+  .level-medallion {
+    width: 14%;
+    left: 18%;
+    bottom: -9%;
+  }
+  .level-medallion #level {
+    font-size: 12px;
+  }
+  .minimap-box {
+    left: 66%;
+    width: 22%;
+    top: 4%;
+  }
+  .location {
+    top: 36%;
+    min-width: 0;
+    width: 44%;
+    font-size: 6px;
+    padding: 3px 5px;
+  }
+  .quest-hud {
+    top: 46%;
+    min-width: 0;
+    width: 44%;
+    padding: 4px;
+    gap: 1px;
+  }
+  .map-label b {
+    font-size: 8px;
+  }
+  .map-label .map-region {
+    font-size: 4px;
+  }
+  .map-key summary {
+    width: 12px;
+    height: 12px;
+    font-size: 9px;
+  }
+  .map-legend {
+    left: auto;
+    right: 0;
+    top: 18px;
+    width: 150px;
+    font-size: 10px;
+    padding: 10px;
+    gap: 5px;
+  }
+}
+.player-hud {
+  clip-path: none;
+  background: transparent;
+}
+.player-hud::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(
+    135deg,
+    #a47343 0%,
+    #30292c 18%,
+    #554034 50%,
+    #161c28 72%,
+    #98714b 100%
+  );
+  clip-path: polygon(
+    4% 0,
+    94% 0,
+    100% 14%,
+    100% 85%,
+    95% 100%,
+    4% 100%,
+    0 85%,
+    0 16%
+  );
+}
+.map-key {
+  pointer-events: auto;
+}
+.level-medallion {
+  left: 20%;
+  width: 12%;
+  bottom: -20%;
+}
+@media (max-width: 600px) {
+  .level-medallion {
+    left: 17%;
+    width: 12%;
+    bottom: -20%;
+  }
+}
+.map-key .map-coordinates,
+.map-key .map-connection {
+  position: static;
+  visibility: visible;
+  padding: 3px 0;
+  letter-spacing: 0.4px;
+  font-size: 8px;
+}
+.map-legend {
+  max-height: 260px;
+  overflow: auto;
+}
+@media (max-width: 600px) {
+  .map-legend {
+    max-height: 110px;
+  }
+}
+.hud-icon-guide {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  border: 1px solid #54483d;
+  background: #080e19;
+  padding: 16px;
+  margin: 16px 0;
+  color: #a7c5e3;
+}
+.hud-icon-guide strong {
+  grid-column: 1/-1;
+  color: #b8b6b8;
+  letter-spacing: 1px;
+  font-size: 12px;
+}
+.hud-icon-guide span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .hud-icon-guide {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

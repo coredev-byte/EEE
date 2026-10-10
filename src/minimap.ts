@@ -1,8 +1,9 @@
-import { edgeIndicator, objectiveIcon, type Objective } from "./objectives";
+import { paintHudIcon } from "./hud-icons";
+import { edgeIndicator, type Objective } from "./objectives";
 import type { Point } from "./spatial";
 import { REGIONS, ANCHORS, type Exploration } from "./regions";
 import { has } from "./skills";
-import { minimapPoint } from "./spatial";
+import { minimapPoint, minimapPadding } from "./spatial";
 import { distance, PORTAL, type World } from "./world";
 import type { Enemy, Player } from "./state";
 /** HUD renderer: shares world positions, never world-camera transforms. */
@@ -13,9 +14,10 @@ export function drawMinimap(
   enemies: Enemy[],
   exploration?: Exploration,
   objective: Objective | Point | null = PORTAL,
+  circular = false,
 ) {
   const ctx = canvas.getContext("2d")!;
-  const padding = 7,
+  const padding = minimapPadding(canvas.width, canvas.height, circular),
     cellX = (canvas.width - padding * 2) / world.size,
     cellY = (canvas.height - padding * 2) / world.size;
   const point = (p: { x: number; y: number }) =>
@@ -33,6 +35,27 @@ export function drawMinimap(
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = "#090f19";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (circular) {
+    ctx.strokeStyle = "#263344";
+    ctx.lineWidth = 1;
+    for (const radius of [canvas.width * 0.43, canvas.width * 0.32]) {
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      ctx.fillStyle = i % 2 ? "#4b4540" : "#8d7151";
+      ctx.fillRect(
+        Math.round(canvas.width / 2 + Math.cos(a) * (canvas.width / 2 - 12)) -
+          1,
+        Math.round(canvas.height / 2 + Math.sin(a) * (canvas.height / 2 - 12)) -
+          1,
+        3,
+        3,
+      );
+    }
+  }
   const discovered = exploration
     ? new Set(exploration.regions[world.region].discovered)
     : null;
@@ -82,16 +105,18 @@ export function drawMinimap(
       (enemy.statusKinds?.includes("mark") ||
         distance(enemy, player) <
           (player.classId === "atirador" && has(player, 2, 1) ? 12 : 6))
-    )
-      marker(enemy, 3, "#d76475");
-  marker(REGIONS[world.region].connection, 6, "#70c8d4");
+    ) {
+      const at = point(enemy);
+      paintHudIcon(ctx, "enemy", at.x, at.y, 8);
+    }
+  const passage = point(REGIONS[world.region].connection);
+  paintHudIcon(ctx, "exit", passage.x, passage.y, 10);
   if (world.region === "kharn")
-    for (const a of ANCHORS)
-      marker(
-        a,
-        4,
-        exploration?.campaign.attuned.includes(a.id) ? "#80c393" : "#a48ac8",
-      );
+    for (const a of ANCHORS) {
+      const at = point(a);
+      if (exploration?.campaign.attuned.includes(a.id)) marker(a, 4, "#80c393");
+      else paintHudIcon(ctx, "xp", at.x, at.y, 8);
+    }
   if (objective) {
     const raw = point(objective),
       goal = edgeIndicator(raw, canvas.width, canvas.height, {
@@ -105,10 +130,11 @@ export function drawMinimap(
     ctx.rotate(Math.PI / 4);
     ctx.strokeStyle = "#e8bd68";
     ctx.lineWidth = 2;
-    ctx.strokeRect(-4, -4, 8, 8);
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
-    if ("kind" in objective)
-      objectiveIcon(ctx, objective.kind, goal.x, goal.y, 5);
+    paintHudIcon(ctx, "main", goal.x, goal.y, 9);
     if (goal.outside) {
       ctx.save();
       ctx.translate(goal.x, goal.y);
@@ -134,7 +160,7 @@ export function drawMinimap(
   ctx.save();
   ctx.translate(Math.round(at.x), Math.round(at.y));
   ctx.rotate(Math.atan2(dy * cellY, dx * cellX));
-  ctx.fillStyle = "#e9edf6";
+  ctx.fillStyle = "#35bddb";
   ctx.strokeStyle = "#090f19";
   ctx.lineWidth = 1;
   ctx.beginPath();

@@ -31,6 +31,8 @@ O diamante dourado no minimapa marca o objetivo atual. Encontre a entrada, derro
 
 Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Converse com Iria, derrote os vigias e afine os três marcos com F. Volte pelo selo ao sul e entregue as memórias à Guardiã de Pedralta. O diário (J) mostra ambos os capítulos; o minimapa revela áreas e indica passagens e objetivos. Região, encontros, baús e campanha são persistidos em save v3, com migração de v1/v2. Veja [a implementação das regiões](docs/REGIOES_IMPLEMENTACAO.md).
 
+A HUD segue a referência metálica com detalhes em bronze: nível em losango, vida/coração vermelho, mana/gota azul, XP/estrela roxa, três atalhos e minimapa circular com legenda no botão **?**. Veja [o modelo aplicado e as capturas](docs/HUD_REFERENCIA.md).
+
 ## Sistemas implementados
 
 - Duas regiões de 28 × 28 conectadas por selo interativo: Vila Pedralta e Margem de Kharn. Terrenos, pontos de interesse, encontros e descoberta próprios; câmera e colisões compartilhadas, canal com passagens e ordenação por posição dos pés.

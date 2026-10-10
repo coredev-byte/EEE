@@ -182,7 +182,9 @@ test("Movimento real atrás da casa, minimapa orientado e objetivo concluído se
       after.player.y - before.player.y,
     ),
   ).toBeGreaterThan(0.2);
+  await page.locator(".map-key summary").click();
   await expect(page.locator(".map-legend")).toContainText("Você");
+  await page.locator(".map-key summary").click();
   const gold = await page.locator("#minimap").evaluate((el) => {
     const c = el as HTMLCanvasElement,
       d = c.getContext("2d")!.getImageData(0, 0, c.width, c.height).data;
@@ -194,6 +196,27 @@ test("Movimento real atrás da casa, minimapa orientado e objetivo concluído se
   expect(gold).toBe(0);
   await page.screenshot({
     path: "artifacts/objectives-hud.png",
+    fullPage: true,
+  });
+  for (const panel of ["inventory", "quests", "settings"]) {
+    await page.locator(`.hud-tools [data-panel="${panel}"]`).click();
+    await expect(page.locator("#modal-layer")).toBeVisible();
+    await page.keyboard.press("Escape");
+    expect(
+      (await page.evaluate(() => (window as any).__DZ.snapshot())).paused,
+    ).toBe(false);
+  }
+  await page.screenshot({
+    path: "artifacts/hud-reference.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(200);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.screenshot({
+    path: "artifacts/hud-reference-mobile.png",
     fullPage: true,
   });
 });
@@ -304,8 +327,15 @@ test("Marcador de combate acompanha o inimigo vivo no minimapa", async ({
       goal = s.activeObjective;
     const enemy = s.enemies.find((e: any) => `enemy:${e.id}` === goal.id);
     const c = document.querySelector<HTMLCanvasElement>("#minimap")!;
-    const x = Math.round(7 + ((goal.x + 0.5) * (c.width - 14)) / 28),
-      y = Math.round(7 + ((goal.y + 0.5) * (c.height - 14)) / 28);
+    const padding = Math.ceil(
+      (Math.min(c.width, c.height) * (1 - 1 / Math.SQRT2)) / 2 + 9,
+    );
+    const x = Math.round(
+        padding + ((goal.x + 0.5) * (c.width - padding * 2)) / 28,
+      ),
+      y = Math.round(
+        padding + ((goal.y + 0.5) * (c.height - padding * 2)) / 28,
+      );
     const d = c.getContext("2d")!.getImageData(x - 8, y - 8, 16, 16).data;
     let gold = 0;
     for (let i = 0; i < d.length; i += 4)

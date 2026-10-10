@@ -111,3 +111,14 @@ export function onScreen(bounds: {
     bounds.y <= VIEW.height
   );
 }
+
+/** A square regional map fits entirely inside the round dial, including corner markers. */
+export function minimapPadding(
+  width: number,
+  height: number,
+  circular = false,
+) {
+  return circular
+    ? Math.ceil((Math.min(width, height) * (1 - 1 / Math.SQRT2)) / 2 + 9)
+    : 7;
+}
