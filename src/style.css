@@ -663,6 +663,47 @@ footer b {
   inset: 0;
   pointer-events: none;
 }
+.menu-layer:has(.cover-menu) {
+  pointer-events: auto;
+  background: #080f25;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.cover-menu {
+  position: relative;
+  width: min(100cqw, calc(100cqh * 16 / 9));
+  aspect-ratio: 16 / 9;
+}
+.cover-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cover-action {
+  position: absolute;
+  left: 40%;
+  width: 21%;
+  height: 5%;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+.cover-action:not(:disabled):hover,
+.cover-action:focus-visible {
+  background: #e8ac2520;
+  border-color: #d6a22b;
+  outline: 2px solid #f6cf75;
+  outline-offset: 2px;
+}
+.cover-action:disabled {
+  cursor: not-allowed;
+  background: #080f2580;
+}
+.cover-continue { top: 51.5%; }
+.cover-new { top: 57%; }
+.cover-settings { top: 62.5%; }
+.cover-exit { top: 68%; }
 .menu-layer:has(.main-menu) {
   background: linear-gradient(
     90deg,

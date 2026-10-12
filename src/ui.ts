@@ -34,6 +34,7 @@ const titles: Record<string, string> = {
   skills: "Árvore de habilidades",
   classes: "Escolha seu caminho",
   settings: "Configurações",
+  exit: "Até a próxima jornada",
   quests: "Diário de missões",
   dialogue: "Guardiã de Pedralta",
   pause: "A noite pode esperar",
@@ -201,7 +202,13 @@ export class UI {
     this.game.paused = true;
     document.querySelector("#hud")!.classList.remove("visible");
     document.querySelector("#menu-layer")!.innerHTML =
-      `<div class="main-menu"><div class="menu-eyebrow"><span class="tiny-line"></span> UM NOVO ECO DESPERTA</div><h1>DISTRITO<br><span>ZERO<span class="title-dot">.</span></span></h1><p class="tagline">Um mundo em ruínas.<br>Novas escolhas. Seu próprio caminho.</p><div class="chapter"><span class="diamond"></span><div><small>CAPÍTULO I</small><strong>O Eco de Kharn</strong></div></div><div class="menu-actions">${saved ? button("CONTINUAR JORNADA <span>→</span>", "continue", "primary") : button("INICIAR JORNADA <span>→</span>", "new", "primary")}${saved ? button("NOVA JORNADA", "new", "secondary") : ""}${button("COMO JOGAR", "help", "text-button")}</div><span class="menu-note">RPG DE AÇÃO · PIXEL ART · QUATRO CAMINHOS</span></div><div class="menu-right"><div class="vertical-line"></div><span>VILA PEDRALTA — SETOR LESTE</span></div><div class="menu-version">CONSTRUÍDO NAS SOMBRAS. FORJADO EM ESCOLHAS.</div>`;
+      `<nav class="cover-menu" aria-label="Menu principal de Distrito Zero">
+        <img class="cover-art" src="/assets/interface/Design%20sem%20nome.jpg" alt="Distrito Zero: cidade em ruínas sob o luar, iluminada por lanternas" width="1920" height="1080" fetchpriority="high">
+        <button class="cover-action cover-continue" data-action="continue" aria-label="CONTINUAR JORNADA" ${saved ? "" : 'disabled title="Nenhuma jornada salva neste navegador"'}></button>
+        <button class="cover-action cover-new" data-action="new" aria-label="${saved ? "NOVA JORNADA" : "INICIAR JORNADA"}"></button>
+        <button class="cover-action cover-settings" data-action="cover-settings" aria-label="CONFIGURAÇÕES"></button>
+        <button class="cover-action cover-exit" data-action="exit" aria-label="SAIR"></button>
+      </nav>`;
   }
   drawPortrait() {
     const c = this.portrait.getContext("2d")!;
@@ -212,6 +219,14 @@ export class UI {
   }
   action(action: string) {
     const g = this.game;
+    if (action === "cover-settings") {
+      this.open("settings");
+      return;
+    }
+    if (action === "exit") {
+      this.open("exit");
+      return;
+    }
     if (
       action.startsWith("mission-accept:") ||
       action.startsWith("mission-track:") ||
@@ -277,7 +292,7 @@ export class UI {
       return;
     }
     if (action === "continue") {
-      g.start();
+      if (load()) g.start();
       return;
     }
     if (action === "new") {
@@ -444,7 +459,7 @@ export class UI {
     }
     if (this.panel === "settings") {
       const audio = g.audio.snapshot();
-      content = `<div class="audio-settings"><h3>Mixagem de Distrito Zero</h3><p>Controle música, ambiente, combate e interface separadamente.</p>${(["master", "music", "ambience", "combat", "ui"] as const).map((bus, i) => `<label><span>${["Volume principal", "Música", "Ambiente", "Combate", "Interface"][i]}</span><input type="range" min="0" max="100" step="1" value="${Math.round(g.audio.settings[bus] * 100)}" data-volume="${bus}" aria-label="${["Volume principal", "Música", "Ambiente", "Combate", "Interface"][i]}"><output>${Math.round(g.audio.settings[bus] * 100)}%</output></label>`).join("")}${button(g.audio.enabled ? "SILENCIAR ÁUDIO" : "ATIVAR ÁUDIO", "sound", "secondary")}<small>Configurações salvas neste navegador. Sem dublagem nesta versão.${audio.errors.length ? " Alguns arquivos de áudio estão indisponíveis; o jogo continua funcionando." : ""}</small></div><div class="settings-list"><div><span><strong>Tela cheia</strong><small>Amplie o mundo do jogo.</small></span>${button("ALTERNAR", "fullscreen", "secondary")}</div><div><span><strong>Salvamento local</strong><small>Automático e após equipamentos e recompensas.</small></span>${button("SALVAR AGORA", "save", "secondary")}</div></div>${this.helpContent()}`;
+      content = `<div class="audio-settings"><h3>Mixagem de Distrito Zero</h3><p>Controle música, ambiente, combate e interface separadamente.</p>${(["master", "music", "ambience", "combat", "ui"] as const).map((bus, i) => `<label><span>${["Volume principal", "Música", "Ambiente", "Combate", "Interface"][i]}</span><input type="range" min="0" max="100" step="1" value="${Math.round(g.audio.settings[bus] * 100)}" data-volume="${bus}" aria-label="${["Volume principal", "Música", "Ambiente", "Combate", "Interface"][i]}"><output>${Math.round(g.audio.settings[bus] * 100)}%</output></label>`).join("")}${button(g.audio.enabled ? "SILENCIAR ÁUDIO" : "ATIVAR ÁUDIO", "sound", "secondary")}<small>Configurações salvas neste navegador. Sem dublagem nesta versão.${audio.errors.length ? " Alguns arquivos de áudio estão indisponíveis; o jogo continua funcionando." : ""}</small></div><div class="settings-list"><div><span><strong>Tela cheia</strong><small>Amplie o mundo do jogo.</small></span>${button("ALTERNAR", "fullscreen", "secondary")}</div><div><span><strong>Salvamento local</strong><small>Automático e após equipamentos e recompensas.</small></span>${g.started ? button("SALVAR AGORA", "save", "secondary") : ""}</div></div>${this.helpContent()}`;
     }
     if (this.panel === "pause") {
       content = `<p class="pause-text">O mundo lá fora ainda espera.<br>Sua jornada continua quando você estiver pronto.</p><div class="pause-actions">${button("VOLTAR À JORNADA", "resume", "primary")}${button("SALVAR PROGRESSO", "save", "secondary")}${button("MENU PRINCIPAL", "menu", "text-button")}</div>`;
@@ -455,6 +470,8 @@ export class UI {
       content = `<p class="pause-text">Pedralta ainda guarda o seu nome.<br>Retorne à vila. O custo do despertar é de 25 moedas.</p><div class="pause-actions">${button("DESPERTAR EM PEDRALTA", "respawn", "primary")}${button("MENU PRINCIPAL", "menu", "text-button")}</div>`;
     }
     if (this.panel === "help") content = this.helpContent();
+    if (this.panel === "exit")
+      content = `<p class="pause-text">Para sair do jogo, feche esta aba.<br>Seu progresso salvo permanece neste navegador.</p>${button("VOLTAR AO MENU", "close", "primary")}`;
     this.modal.hidden = false;
     this.modal.innerHTML = `<section class="panel panel-${this.panel}" role="dialog" aria-modal="true" aria-label="${title}"><div class="panel-top"><div><small>${eyebrow}</small><h2>${title}</h2></div>${this.panel === "death" ? "" : button("×", "close", "close-button")}</div>${content}<div class="panel-footer"><span>${REGIONS[g.world.region].name.toUpperCase()} — ${REGIONS[g.world.region].subtitle.toUpperCase()}</span><span>${this.game.started ? "O MUNDO ESTÁ PAUSADO" : "ESCOLHA O SEU CAMINHO"}</span></div></section>`;
     const tree = this.modal.querySelector(".panel-skills");
