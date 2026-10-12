@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1] / 'public/audio'
 class AudioAssets(unittest.TestCase):
     def test_inventory_and_decode(self):
         manifest = json.loads((ROOT / 'inventory.json').read_text())
-        self.assertEqual(len(manifest), 54)
+        self.assertEqual(len(manifest), 55)
         self.assertEqual({x['file'] for x in manifest}, {str(p.relative_to(ROOT)) for p in ROOT.rglob('*.wav')})
         for item in manifest:
             with self.subTest(file=item['file']), wave.open(str(ROOT / item['file'])) as f:

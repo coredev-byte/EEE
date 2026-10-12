@@ -100,14 +100,26 @@ async function engine(fail = false) {
 }
 afterEach(() => vi.useRealTimers());
 describe("Áudio central", () => {
+  it("troca o tema da capa pela música do jogo e o restaura no menu", async () => {
+    const { a } = await engine();
+    a.scene("ruins", "menu");
+    expect(a.snapshot().loopLevels["title-theme"]).toBeGreaterThan(0);
+    expect(a.snapshot().loopLevels.pad).toBe(0);
+    a.scene("village", "safe");
+    expect(a.snapshot().loopLevels["title-theme"]).toBe(0);
+    expect(a.snapshot().loopLevels.pad).toBeGreaterThan(0);
+    a.scene("ruins", "menu");
+    expect(a.snapshot().loopLevels["title-theme"]).toBeGreaterThan(0);
+    a.dispose();
+  });
   it("cacheia arquivos reais uma única vez e libera após gesto", async () => {
     const { a, fetch, ctx } = await engine();
     a.prepare();
     a.unlock();
     await a.ready();
-    expect(fetch).toHaveBeenCalledTimes(54);
-    expect(a.snapshot().loaded).toBe(54);
-    expect(ctx.sources).toHaveLength(8);
+    expect(fetch).toHaveBeenCalledTimes(55);
+    expect(a.snapshot().loaded).toBe(55);
+    expect(ctx.sources).toHaveLength(9);
     a.dispose();
     expect(ctx.state).toBe("closed");
     expect(a.snapshot().loops).toBe(0);
@@ -115,7 +127,7 @@ describe("Áudio central", () => {
   it("falha parcial não bloqueia outros efeitos", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { a } = await engine(true);
-    expect(a.snapshot().loaded).toBe(53);
+    expect(a.snapshot().loaded).toBe(54);
     expect(a.errors[0]).toContain("fire-0");
     expect(a.emit("ui.open")).toBe(true);
     a.dispose();
@@ -177,7 +189,7 @@ describe("Áudio central", () => {
     a.scene("industrial", "combat");
     expect(a.snapshot().region).toBe("industrial");
     a.scene("ruins", "boss");
-    expect(ctx.sources).toHaveLength(8);
+    expect(ctx.sources).toHaveLength(9);
     expect(a.snapshot().transport).toBe(transport);
     expect(a.snapshot().music).toBe("boss");
     a.emit("attack.swing");
@@ -189,7 +201,7 @@ describe("Áudio central", () => {
     a.dispose();
     a.unlock();
     await a.ready();
-    expect(a.snapshot().loaded).toBe(54);
+    expect(a.snapshot().loaded).toBe(55);
     a.dispose();
   });
   it("persiste volumes, mute e rejeita configuração inválida", async () => {

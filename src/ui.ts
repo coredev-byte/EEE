@@ -25,6 +25,7 @@ import { stats } from "./state";
 import { inventoryPanel } from "./inventory";
 import { load } from "./save";
 import type { Game } from "./game";
+import { CoverScene } from "./cover";
 const icon = (index: number, extra = "") =>
   `<span class="item-icon ${extra}" style="background-position:-${index * 48}px 0" aria-hidden="true"></span>`;
 const button = (text: string, action: string, cls = "") =>
@@ -49,6 +50,7 @@ export class UI {
   confirmRespec = false;
   lastHUD = 0;
   private hudLayoutDirty = true;
+  private coverScene: CoverScene | null = null;
   selectedItem = "brasa";
   inventoryFilter = "all";
   comparing = false;
@@ -88,7 +90,13 @@ export class UI {
         "[data-action],[data-panel],[data-skill],[data-potion],[data-equip],[data-class],[data-unequip],[data-item],[data-filter],[data-node],[data-tree-action]",
       );
       if (!el) return;
+      const unlockWasNeeded = !game.audio.context;
       game.audio.unlock();
+      if (el.dataset.action === "cover-audio") {
+        if (!unlockWasNeeded || !game.audio.enabled) game.audio.toggle();
+        this.syncCoverAudio();
+        return;
+      }
       if (el.dataset.node) {
         this.selectedNode = el.dataset.node;
         this.previewSkill = false;
@@ -138,6 +146,7 @@ export class UI {
         }
       }
       if (el.dataset.action) this.action(el.dataset.action);
+      this.syncCoverAudio();
     });
     document.querySelector("#sound-toggle")!.addEventListener("click", () => {
       game.audio.toggle();
@@ -159,7 +168,11 @@ export class UI {
             e.preventDefault();
             e.stopImmediatePropagation();
             if (next) next.focus();
-            else options[index]?.click();
+            else {
+              const focused = document.activeElement;
+              if (focused instanceof HTMLButtonElement && focused.matches(".cover-audio")) focused.click();
+              else options[index]?.click();
+            }
             return;
           }
         }
@@ -201,13 +214,19 @@ export class UI {
     ])
       layout.observe(document.querySelector(selector)!);
     game.onDialogue = () => this.open("dialogue");
-    game.onUpdate = () => this.update();
+    game.onUpdate = () => {
+      this.update();
+      this.syncCoverAudio();
+    };
     game.onMenu = (p) => {
       if (this.panel === "death") return;
       if (this.panel) this.close();
       else this.open(p);
     };
     game.onStart = () => {
+      this.coverScene?.dispose();
+      this.coverScene = null;
+      document.body.classList.remove("cover-active");
       document.querySelector("#menu-layer")!.innerHTML = "";
       this.modal.hidden = true;
       this.panel = "";
@@ -226,6 +245,8 @@ export class UI {
     this.mainMenu();
   }
   mainMenu() {
+    this.coverScene?.dispose();
+    document.body.classList.add("cover-active");
     this.game.audio.stopEffects();
     this.game.audio.setPaused(true);
     this.game.dialogueOpen = false;
@@ -235,14 +256,31 @@ export class UI {
     document.querySelector("#hud")!.classList.remove("visible");
     document.querySelector("#menu-layer")!.innerHTML =
       `<nav class="cover-menu" aria-label="Menu principal de Distrito Zero">
-        <img class="cover-art" src="/assets/interface/distrito-zero-cover.png" alt="Distrito Zero: cidade em ruínas sob o luar, iluminada por lanternas" width="1672" height="941" fetchpriority="high">
+        <img class="cover-art" src="/assets/interface/distrito-zero-background.png" alt="Distrito Zero: cidade em ruínas sob o luar, iluminada por lanternas" width="1672" height="941" fetchpriority="high">
+        <canvas class="cover-scene" aria-hidden="true"></canvas>
+        <div class="cover-content">
+        <div class="cover-title"><h1>DISTRITO<span>ZERO<b>.</b></span></h1><div class="cover-divider" aria-hidden="true"><i></i></div></div>
         <div class="cover-actions">
           ${coverButton("CONTINUAR", "continue", "CONTINUAR JORNADA", !!saved, !saved)}
           ${coverButton("NOVO JOGO", "new", saved ? "NOVA JORNADA" : "INICIAR JORNADA", !saved)}
           ${coverButton("CONFIGURAÇÕES", "cover-settings", "CONFIGURAÇÕES")}
           ${coverButton("SAIR", "exit", "SAIR")}
         </div>
+        </div>
+        <button class="cover-audio" data-action="cover-audio" aria-label="Ativar música temática" aria-pressed="false">♫ ATIVAR MÚSICA</button>
       </nav>`;
+    this.coverScene = new CoverScene(document.querySelector(".cover-scene")!, this.game.assets);
+    this.syncCoverAudio();
+  }
+  private syncCoverAudio() {
+    const button = document.querySelector<HTMLButtonElement>(".cover-audio");
+    if (!button) return;
+    const unlocked = !!this.game.audio.context;
+    const text = !unlocked ? "♫ ATIVAR MÚSICA" : this.game.audio.enabled ? "♫ MÚSICA · ON" : "♫ MÚSICA · OFF";
+    if (button.textContent === text) return;
+    button.textContent = text;
+    button.setAttribute("aria-label", !unlocked || !this.game.audio.enabled ? "Ativar música temática" : "Silenciar música temática");
+    button.setAttribute("aria-pressed", String(unlocked && this.game.audio.enabled));
   }
   drawPortrait() {
     const c = this.portrait.getContext("2d")!;

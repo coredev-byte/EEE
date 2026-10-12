@@ -4,6 +4,7 @@ Mono PCM16/22050Hz; bounded levels and faded tails. Loops use periodic spectra.
 """
 from pathlib import Path
 from create_machinery import generate as generate_machinery
+from create_cover_music import generate as generate_cover_music
 import json, wave
 import numpy as np
 ROOT=Path(__file__).resolve().parents[1]/'public/audio'
@@ -69,5 +70,6 @@ for i,f in enumerate([293.66,220,261.63,174.61,293.66,349.23,220,146.83]):
     j=i*2*RATE;u=np.arange(min(2*RATE,n-j))/RATE
     motif[j:j+len(u)]+=np.sin(2*np.pi*f*u)*np.sin(np.pi*u/2)**2*.15+np.sin(2*np.pi*f*2*u)*np.sin(np.pi*u/2)**2*.03
 for name,x in [('pad',pad),('pulse',pulse),('motif',motif)]:manifest.append(write(ROOT/'music'/f'{name}.wav',x,True))
+manifest.append(generate_cover_music(ROOT))
 (ROOT/'inventory.json').write_text(json.dumps(manifest,indent=2)+'\n')
 print(f'{len(manifest)} assets, {sum(p.stat().st_size for p in ROOT.rglob("*.wav"))/1024/1024:.2f} MiB')

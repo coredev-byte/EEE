@@ -1,4 +1,35 @@
 import { test, expect, type Page } from "@playwright/test";
+test("Capa inteira, animação, tema após gesto e transição ao jogar", async ({ page }) => {
+  await page.goto("/");
+  const canvas = page.locator(".cover-scene");
+  await expect(canvas).toHaveAttribute("data-active", "true");
+  const bounds = await page.locator(".cover-menu").boundingBox();
+  expect(bounds!.x).toBe(0);
+  expect(bounds!.y).toBe(0);
+  expect(bounds!.width).toBe(page.viewportSize()!.width);
+  expect(bounds!.height).toBe(page.viewportSize()!.height);
+  await page.getByRole("button", { name: "Ativar música temática" }).click();
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(55);
+  await expect.poll(async () => (await state(page)).audio.loopLevels["title-theme"]).toBeGreaterThan(0);
+  const frames = Number(await canvas.getAttribute("data-frames"));
+  await expect.poll(async () => Number(await canvas.getAttribute("data-frames"))).toBeGreaterThan(frames + 2);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(canvas).toHaveAttribute("data-active", "false");
+  const stopped = await canvas.getAttribute("data-frames");
+  await page.waitForTimeout(150);
+  expect(await canvas.getAttribute("data-frames")).toBe(stopped);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(canvas).toHaveAttribute("data-active", "true");
+  await page.getByRole("button", { name: "INICIAR JORNADA" }).click();
+  await page.getByRole("button", { name: "ENTRAR EM PEDRALTA →" }).click();
+  await expect(canvas).toHaveCount(0);
+  expect(await page.locator("body").evaluate((el) => el.classList.contains("cover-active"))).toBe(false);
+  await expect.poll(async () => (await state(page)).audio.loopLevels["title-theme"]).toBeLessThan(0.001);
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "MENU PRINCIPAL", exact: true }).click();
+  await expect(page.locator(".cover-scene")).toHaveAttribute("data-active", "true");
+  await expect.poll(async () => (await state(page)).audio.loopLevels["title-theme"]).toBeGreaterThan(0.01);
+});
 import { createPlayer } from "../../src/state";
 import { serialize, SAVE_KEY } from "../../src/save";
 async function start(page: Page, safe = true) {
@@ -29,7 +60,7 @@ test("Chromium decodifica todos os arquivos; ataque no vazio separa preparação
   page,
 }) => {
   await start(page);
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(54);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(55);
   expect((await state(page)).audio.errors).toEqual([]);
   const box = (await page.locator("#game").boundingBox())!;
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.5);
@@ -43,13 +74,15 @@ test("Chromium decodifica todos os arquivos; ataque no vazio separa preparação
   const events = (await state(page)).audio.played;
   const prep = events.find((x: any) => x.event === "attack.prepare"),
     swing = events.find((x: any) => x.event === "attack.swing");
-  expect(swing.time - prep.time).toBeGreaterThanOrEqual(0.14);
+  // AudioContext timestamps are quantized to one 128-sample render quantum.
+  const quantum = 128 / (await state(page)).audio.sampleRate;
+  expect(swing.time - prep.time).toBeGreaterThanOrEqual(0.14 - quantum);
   expect(events.some((x: any) => x.event === "impact.hit")).toBe(false);
   await page.keyboard.press("i");
   expect((await state(page)).audio.paused).toBe(true);
   await page.keyboard.press("Escape");
   expect((await state(page)).audio.paused).toBe(false);
-  expect((await state(page)).audio.loops).toBe(8);
+  expect((await state(page)).audio.loops).toBe(9);
 });
 test("Sliders e mute persistem após recarregar; jogo mantém WASD", async ({
   page,
@@ -93,7 +126,7 @@ test("Arquivo ausente e WAV inválido não impedem movimento ou outros sons", as
     route.fulfill({ status: 200, body: "invalid WAV" }),
   );
   await start(page);
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(52);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(53);
   expect((await state(page)).audio.errors).toHaveLength(2);
   await page.keyboard.press("i");
   await expect(page.locator("#modal-layer")).toBeVisible();
@@ -136,7 +169,7 @@ test("Web Audio real: rajadas, regiões, manutenção, teardown e cache", async 
   });
   expect(result.burst.effects).toBe(18);
   expect(result.paused.effects).toBe(0);
-  expect(result.transitioned.loops).toBe(8);
+  expect(result.transitioned.loops).toBe(9);
   expect(result.transitioned.transport).toBe(result.initial.transport);
   expect(result.transitioned.region).toBe("ruins");
   expect(result.sustain.effects).toBe(1);
@@ -196,7 +229,7 @@ test("Conversa real em Pedralta: abertura, resposta, missão aceita e encerramen
   });
   await page.goto("/");
   await page.getByRole("button", { name: "CONTINUAR JORNADA" }).click();
-  await expect.poll(async () => (await state(page)).audio.loaded).toBe(54);
+  await expect.poll(async () => (await state(page)).audio.loaded).toBe(55);
   await page.keyboard.press("f");
   await expect(page.locator(".dialogue-panel")).toBeVisible();
   await page.getByRole("button", { name: "ACEITAR O CHAMADO" }).click();

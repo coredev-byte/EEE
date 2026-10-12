@@ -148,7 +148,7 @@ export const AUDIO_FILES: Record<string, string[]> = Object.fromEntries(
 );
 for (const id of ["wind", "water", "insects", "structure", "machinery"])
   AUDIO_FILES[id] = [`/audio/ambience/${id}.wav`];
-for (const id of ["pad", "pulse", "motif"])
+for (const id of ["pad", "pulse", "motif", "title-theme"])
   AUDIO_FILES[id] = [`/audio/music/${id}.wav`];
 const elementFamily: Record<string, string> = {
   steel: "blade",

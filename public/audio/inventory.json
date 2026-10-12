@@ -376,5 +376,12 @@
     "peak": 0.1589,
     "rms": 0.0319,
     "loop": true
+  },
+  {
+    "file": "music/title-theme.wav",
+    "seconds": 48,
+    "peak": 0.4107,
+    "rms": 0.09,
+    "loop": true
   }
 ]

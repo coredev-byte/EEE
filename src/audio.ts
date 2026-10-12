@@ -445,9 +445,10 @@ export class AudioEngine {
             : this.region === "village"
               ? 0.11
               : 0,
-      pad: MUSIC_LEVELS[this.music][0],
-      pulse: MUSIC_LEVELS[this.music][1],
-      motif: MUSIC_LEVELS[this.music][2],
+      "title-theme": this.music === "menu" ? 0.8 : 0,
+      pad: this.music === "menu" ? 0 : MUSIC_LEVELS[this.music][0],
+      pulse: this.music === "menu" ? 0 : MUSIC_LEVELS[this.music][1],
+      motif: this.music === "menu" ? 0 : MUSIC_LEVELS[this.music][2],
     };
     for (const [id, level] of Object.entries(targets)) {
       let v = this.loops.get(id);
@@ -456,7 +457,7 @@ export class AudioEngine {
         if (!buffer) continue;
         const source = c.createBufferSource(),
           gain = c.createGain(),
-          bus: AudioBus = ["pad", "pulse", "motif"].includes(id)
+          bus: AudioBus = ["pad", "pulse", "motif", "title-theme"].includes(id)
             ? "music"
             : "ambience";
         source.buffer = buffer;
@@ -499,12 +500,14 @@ export class AudioEngine {
   snapshot() {
     return {
       context: this.context?.state ?? "locked",
+      sampleRate: this.context?.sampleRate ?? null,
       settings: { ...this.settings },
       loaded: this.buffers.size,
       total: Object.values(AUDIO_FILES).flat().length,
       errors: [...this.errors],
       effects: this.voices.size,
       loops: this.loops.size,
+      loopLevels: Object.fromEntries(Array.from(this.loops, ([id, voice]) => [id, voice.gain.gain.value])),
       region: this.region,
       music: this.music,
       transport: this.transport,
