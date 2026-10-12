@@ -161,7 +161,7 @@ moedas pela missão. Seus atributos são moderados: ataque 2, defesa 3 e vida 24
 | `game.ts`, `renderer.ts`, `spatial.ts` | Coordenação, profundidade, câmera e pivôs |
 | `cinematics.ts`, `prologue-ui.ts`, `audio*.ts` | Infraestrutura reutilizada e música por fase |
 
-## Validação
+## Validação da primeira entrega
 
 - `npm test`: 159 testes passaram, em 12 arquivos.
 - `npm run build`: TypeScript e build de produção passaram.
@@ -187,3 +187,7 @@ para todas as builds possíveis ainda depende de sessões de jogo humanas.
 ## Evidência visual
 
 Capturas do jogo real com os atlas refinados: [apresentação](../artifacts/chapter-kharn-intro.png) e [combate](../artifacts/chapter-kharn-fight.png).
+
+## Atualização visual
+
+As três imagens adicionadas posteriormente foram aplicadas aos diálogos, ao modelo de Kharn e ao cenário. Veja [a implementação e a validação atuais](REFERENCIAS_DIALOGO_KHARN.md).

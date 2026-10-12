@@ -16,6 +16,7 @@ export class Assets {
         kharn: "enemies/kharn.png",
         "chapter-enemies": "enemies/chapter-enemies.png",
         "ruin-props": "scenery/ruins-objects.png",
+        "dialogue-reference": "interface/Diálogo nas Ruínas de Pedralta.png",
         props: "scenery/props.png",
         tiles: "scenery/tiles.png",
         icons: "icons/icons.png",

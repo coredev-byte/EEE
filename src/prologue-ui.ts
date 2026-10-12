@@ -1,7 +1,9 @@
+import { dialoguePortrait } from "./dialogue-art";
 import type { Game } from "./game";
 /** DOM narrative layer leaves canvas pixels, world hit testing and the regular HUD intact. */
 export class PrologueUI {
   element = document.createElement("section");
+  private lastPortrait = "";
   private text(selector: string, value: string) {
     const element = this.element.querySelector(selector)!;
     if (element.textContent !== value) element.textContent = value;
@@ -10,7 +12,7 @@ export class PrologueUI {
     this.element.className = "prologue-layer";
     this.element.setAttribute("aria-label", "Prólogo e tutorial");
     this.element.innerHTML =
-      '<div class="cinematic-caption" aria-live="polite"><small></small><strong></strong><p></p></div><button class="skip-cinematic">Pular cena · Enter</button><aside class="tutorial-hint" role="status"><p></p><button aria-label="Ocultar dica">×</button></aside>';
+      '<div class="cinematic-caption" aria-live="polite"><canvas class="dialogue-portrait" width="160" height="196" aria-hidden="true"></canvas><div class="dialogue-nameplate"><small></small><strong></strong></div><p></p></div><button class="skip-cinematic">Pular cena · Enter</button><aside class="tutorial-hint" role="status"><p></p><button aria-label="Ocultar dica">×</button></aside>';
     document.querySelector(".game-viewport")!.append(this.element);
     this.element
       .querySelector(".skip-cinematic")!
@@ -42,6 +44,11 @@ export class PrologueUI {
       this.text(".cinematic-caption small", frame.title);
       this.text(".cinematic-caption strong", frame.speaker);
       this.text(".cinematic-caption p", frame.text);
+      const portraitKey = `${frame.speaker}:${this.game.player.classId}:${this.game.enemies.find(e => e.id === 310)?.phase ?? 1}`;
+      if (portraitKey !== this.lastPortrait) {
+        this.lastPortrait = portraitKey;
+        dialoguePortrait(this.element.querySelector<HTMLCanvasElement>(".dialogue-portrait")!, frame.speaker, this.game);
+      }
     }
     hint.hidden = !!frame || !p.hints.active;
     this.text(".tutorial-hint p", p.hints.active?.text ?? "");

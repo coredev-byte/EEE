@@ -1,3 +1,4 @@
+import { paintRuinsFloor } from "./ruins-scenery";
 import { paintChapterEnemy, paintTelegraph, paintRune } from "./chapter-art";
 import type { CinematicFrame } from "./cinematics";
 import { Occlusion, type VisibilityTarget } from "./occlusion";
@@ -60,6 +61,10 @@ export class Renderer {
     this.floor.height = (this.world.size + 2) * TILE.height;
     const c = this.floor.getContext("2d")!;
     c.imageSmoothingEnabled = false;
+    if (this.world.region === "ruins") {
+      paintRuinsFloor(c, this.world, this.assets, this.floorOrigin, this.floorOffsetY);
+      return;
+    }
     c.fillStyle = "#070e15";
     c.fillRect(0, 0, this.floor.width, this.floor.height);
     for (let y = 0; y < this.world.size; y++)
@@ -85,16 +90,6 @@ export class Renderer {
           TILE.width,
           TILE.height,
         );
-        if (this.world.region === "ruins") {
-          c.fillStyle =
-            this.world.tile(x, y) === 7 ? "#080a23" : "rgba(52,35,94,.35)";
-          c.beginPath();
-          c.moveTo(sx, sy - TILE.height / 2);
-          c.lineTo(sx + TILE.width / 2, sy);
-          c.lineTo(sx, sy + TILE.height / 2);
-          c.lineTo(sx - TILE.width / 2, sy);
-          c.fill();
-        }
         if (this.world.region === "ferrugem") {
           c.fillStyle = "rgba(112,58,26,.22)";
           c.beginPath();
@@ -458,8 +453,8 @@ export class Renderer {
         "kharn",
         col,
         (e.phase ?? 1) - 1,
-        256,
-        224,
+        FRAMES.guardian.width,
+        FRAMES.guardian.height,
         s.x,
         s.y,
         1.1,
@@ -612,7 +607,7 @@ export class Renderer {
       ["statue", "portal", "wall", "fountain", "bench"].includes(o.kind)
     ) {
       const col =
-        o.kind === "portal"
+        o.kind === "portal" || o.name === "Arco do Núcleo" || o.interaction === "arena"
           ? 3
           : o.kind === "wall"
             ? 4

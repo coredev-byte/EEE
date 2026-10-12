@@ -11,7 +11,7 @@ export const VIEW = {
 export const TILE = { width: 80, height: 40 } as const;
 export const FRAMES = {
   character: { width: 96, height: 112, pivot: { x: 48, y: 108 } },
-  guardian: { width: 256, height: 224, pivot: { x: 128, y: 188 } },
+  guardian: { width: 320, height: 256, pivot: { x: 160, y: 220 } },
   chapterCharacter: { width: 96, height: 96, pivot: { x: 48, y: 92 } },
   prop: { width: 128, height: 160, pivot: { x: 64, y: 156 } },
   effect: { width: 128, height: 128, pivot: { x: 64, y: 64 } },

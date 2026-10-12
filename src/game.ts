@@ -850,6 +850,10 @@ export class Game {
       }
     }
     this.chapter.mount();
+    if (id === "ruins" && this.world.blocked(this.player)) {
+      const at = this.world.nearestFree(this.player);
+      this.player.x = at.x; this.player.y = at.y;
+    }
     this.syncMissions();
     this.renderer?.makeFloor();
   }

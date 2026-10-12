@@ -1,3 +1,4 @@
+import { dialoguePortrait } from "./dialogue-art";
 import { ChapterUI } from "./chapter-ui";
 import { PrologueUI } from "./prologue-ui";
 import { guardianPrologueLine } from "./prologue-story";
@@ -172,6 +173,14 @@ export class UI {
     window.addEventListener(
       "keydown",
       (e) => {
+        if (this.panel === "dialogue" && ["ArrowUp", "ArrowDown", "Enter"].includes(e.key) && !e.repeat) {
+          const choices = Array.from(this.modal.querySelectorAll<HTMLButtonElement>(".dialogue-panel button:not(:disabled)"));
+          const at = Math.max(0, choices.indexOf(document.activeElement as HTMLButtonElement));
+          e.preventDefault(); e.stopImmediatePropagation();
+          if (e.key === "Enter") choices[at]?.click();
+          else choices[(at + (e.key === "ArrowDown" ? 1 : -1) + choices.length) % choices.length]?.focus();
+          return;
+        }
         const menu = document.querySelector(".cover-menu");
         if (menu && !this.panel && !game.started && !e.repeat) {
           const options = Array.from(
@@ -520,7 +529,7 @@ export class UI {
     this.panel = "";
     this.modal.hidden = true;
     document.querySelector(".game-shell")!.classList.remove("inventory-open");
-    this.modal.classList.remove("inventory-layer", "skills-layer");
+    this.modal.classList.remove("inventory-layer", "skills-layer", "dialogue-layer");
     this.game.audio.stopPreviews();
     this.game.paused = !this.game.started || this.game.player.hp <= 0;
     this.game.audio.setPaused(this.game.paused);
@@ -546,6 +555,7 @@ export class UI {
     const treeScroll =
       this.modal.querySelector(".panel-skills")?.scrollTop ?? 0;
     this.modal.classList.toggle("skills-layer", this.panel === "skills");
+    this.modal.classList.toggle("dialogue-layer", this.panel === "dialogue");
     const inventory = ["inventory", "equipment"].includes(this.panel);
     this.modal.classList.toggle("inventory-layer", inventory);
     document
@@ -607,10 +617,6 @@ export class UI {
             : "Guardiã do Eco";
       content = `<div class="dialogue-panel"><p>${g.chapter.dialogue()}</p>${button("VOLTAR À EXPLORAÇÃO", "close", "primary")}</div>`;
     }
-    if (this.panel === "dialogue")
-      content =
-        `<div class="dialogue-speaker"><canvas class="dialogue-portrait" width="64" height="64" aria-label="Retrato de ${title}"></canvas><strong>${title}</strong></div>` +
-        content;
     if (this.panel === "quests") content = missionJournal(g);
     if (this.panel === "dialogue" && g.world.region === "ferrugem") {
       title =
@@ -636,12 +642,11 @@ export class UI {
       content = `<p class="pause-text">Para sair do jogo, feche esta aba.<br>Seu progresso salvo permanece neste navegador.</p>${button("VOLTAR AO MENU", "close", "primary")}`;
     this.modal.hidden = false;
     this.modal.innerHTML = `<section class="panel panel-${this.panel}" role="dialog" aria-modal="true" aria-label="${title}"><div class="panel-top"><div><small>${eyebrow}</small><h2>${title}</h2></div>${this.panel === "death" ? "" : button("×", "close", "close-button")}</div>${content}<div class="panel-footer"><span>${REGIONS[g.world.region].name.toUpperCase()} — ${REGIONS[g.world.region].subtitle.toUpperCase()}</span><span>${this.game.started ? "O MUNDO ESTÁ PAUSADO" : "ESCOLHA O SEU CAMINHO"}</span></div></section>`;
-    const portrait =
-      this.modal.querySelector<HTMLCanvasElement>(".dialogue-portrait");
-    if (portrait && g.assets.images.arcanista) {
-      const ctx = portrait.getContext("2d")!;
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(g.assets.images.arcanista, 24, 26, 48, 50, 0, 0, 64, 64);
+    if (this.panel === "dialogue") {
+      const speakerName = title.split(/\s*[·,]\s*/)[0];
+      this.modal.innerHTML = `<section class="panel panel-dialogue" role="dialog" aria-modal="true" aria-label="${title}"><div class="dialogue-speaker"><canvas class="dialogue-portrait" width="160" height="196" aria-hidden="true"></canvas><div class="dialogue-nameplate"><strong>${speakerName}</strong></div></div>${content}</section>`;
+      dialoguePortrait(this.modal.querySelector<HTMLCanvasElement>(".dialogue-portrait")!, title, g);
+      this.modal.querySelector<HTMLButtonElement>(".dialogue-panel button")?.focus({ preventScroll: true });
     }
     const tree = this.modal.querySelector(".panel-skills");
     if (tree) tree.scrollTop = treeScroll;

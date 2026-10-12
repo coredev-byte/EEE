@@ -74,6 +74,19 @@ function use(g: Game, id: string) {
   return g.interact();
 }
 describe("Continuidade e Ruínas Esquecidas", () => {
+  it("reposiciona um save da planta antiga em chão seguro sem reiniciar o capítulo", () => {
+    const g=ruins();
+    Object.assign(g.player,{x:18.4,y:20.4,coins:317});
+    const events=[...g.exploration.journal.events], inventory=[...g.player.inventory];
+    expect(g.world.blocked(g.player)).toBe(true);
+    g.mountRegion("ruins");
+    expect(g.world.blocked(g.player)).toBe(false);
+    expect(g.player.coins).toBe(317);
+    expect(g.player.inventory).toEqual(inventory);
+    expect(g.exploration.journal.events).toEqual(events);
+    expect(g.exploration.changes).toEqual(["prism-blue","prism-violet"]);
+  });
+
   it("nova campanha encaminha ao capítulo; legado mantém a estrada e rastreamento industrial", () => {
     const g = game(),
       old = game(true);

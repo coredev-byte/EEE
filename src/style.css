@@ -4180,3 +4180,38 @@ h1 > span {
 @media(prefers-reduced-motion:reduce) { .boss-hud,.boss-hit .boss-life { animation:none; } .boss-life i { transition:none; } }
 .arena-prompt { position:absolute; left:50%; bottom:110px; transform:translateX(-50%); padding:14px 24px; border:1px solid #b9a069; background:#080e24ee; color:#ead2a2; font:12px "IBM Plex Mono",monospace; pointer-events:auto; }
 .arena-prompt[hidden] { display:none!important; }
+
+/* Shared dialogue skin, derived from Diálogo nas Ruínas de Pedralta.png. */
+.modal-layer.dialogue-layer { align-items:flex-end; padding:3vh 2vw; background:linear-gradient(transparent 45%,rgba(2,5,13,.45)); backdrop-filter:none; }
+.panel.panel-dialogue { position:relative; width:min(1180px,96vw); max-height:76dvh; padding:20px 0 0; border:0; box-shadow:none; background:transparent; overflow:auto; }
+.panel-dialogue .dialogue-speaker { position:absolute; top:20px; left:0; margin:0; display:block; z-index:1; }
+.dialogue-portrait { width:160px; height:196px; object-fit:contain; background:#07101d; border:18px solid transparent; border-image:url('/assets/interface/dialogue-frame.png') 180 200 180 200 / 18px stretch; image-rendering:pixelated; box-sizing:border-box; }
+.dialogue-nameplate { width:max-content; position:absolute; left:172px; top:-19px; min-width:170px; max-width:calc(96vw - 205px); padding:8px 18px; border:2px solid #c99944; background:#07101d; color:#f4ce80; text-align:left; font:700 19px/1.25 "IBM Plex Mono",monospace; }
+.panel-dialogue .dialogue-panel { display:flex; flex-direction:column; gap:12px; margin-left:172px; padding-top:22px; }
+.panel-dialogue .dialogue-panel > p, .cinematic-caption > p { position:relative; min-height:115px; margin:0; padding:24px 38px 24px 28px; color:#eee5d7; background:rgba(4,11,24,.97); border:18px solid transparent; border-image:url('/assets/interface/dialogue-frame.png') 180 200 180 200 / 18px stretch; font:18px/1.65 "IBM Plex Mono",monospace; box-sizing:border-box; }
+.panel-dialogue .dialogue-panel > p::after { content:""; position:absolute; right:17px; bottom:11px; border:7px solid transparent; border-top-color:#e4d7b4; }
+.panel-dialogue .dialogue-panel > div { display:flex; flex-direction:column; gap:7px; padding:15px 18px; background:rgba(4,11,24,.97); border:18px solid transparent; border-image:url('/assets/interface/dialogue-frame.png') 180 200 180 200 / 18px stretch; }
+.panel-dialogue .dialogue-panel button { position:relative; width:100%; min-height:42px; padding:12px 20px 12px 34px; margin:0; text-align:left; color:#b7c9e8; background:#081120; border:1px solid #3e5879; border-radius:0; font:14px/1.45 "IBM Plex Mono",monospace; clip-path:polygon(0 5px,5px 0,calc(100% - 5px) 0,100% 5px,100% calc(100% - 5px),calc(100% - 5px) 100%,5px 100%,0 calc(100% - 5px)); }
+.panel-dialogue .dialogue-panel button:is(:hover,:focus-visible) { color:#ffd36a; border-color:#e6ad3b; background:#16170f; outline:0; box-shadow:inset 0 0 0 1px #d99a31; }
+.panel-dialogue .dialogue-panel button:is(:hover,:focus-visible)::before { content:""; position:absolute; left:12px; top:50%; transform:translateY(-50%); border:5px solid transparent; border-left:7px solid #f1ce84; }
+.panel-dialogue .mission-offers p { margin:0; font:12px/1.6 "IBM Plex Mono",monospace; }
+.cinematic-caption { bottom:6%; width:min(1080px,94%); min-height:185px; padding:20px 0 0 172px; background:none; border:0; text-align:left; box-sizing:border-box; }
+.cinematic-caption > .dialogue-portrait { position:absolute; top:20px; left:0; }
+.cinematic-caption > .dialogue-nameplate { z-index:1; top:0; }
+.cinematic-caption small { font:9px/1.3 "IBM Plex Mono",monospace; color:#a9b9cb; margin:0 0 4px; }
+.cinematic-caption strong { color:#f4ce80; font:700 18px/1.25 "IBM Plex Mono",monospace; }
+.cinematic-caption > p { min-height:165px; font-size:17px; }
+@media(max-width:650px) {
+ .modal-layer.dialogue-layer { padding:2vh 2vw; }
+ .panel.panel-dialogue { max-height:82dvh; }
+ .dialogue-portrait { width:90px; height:118px; border-width:12px; border-image-width:12px; }
+ .dialogue-nameplate { left:99px; min-width:95px; max-width:calc(96vw - 120px); font-size:12px; padding:7px 9px; }
+ .panel-dialogue .dialogue-panel { margin-left:99px; gap:8px; }
+ .panel-dialogue .dialogue-panel > p { min-height:100px; font-size:12px; padding:14px 16px; border-width:12px; border-image-width:12px; }
+ .panel-dialogue .dialogue-panel > div { padding:9px; border-width:12px; border-image-width:12px; gap:5px; }
+ .panel-dialogue .dialogue-panel button { font-size:11px; padding:10px 9px 10px 24px; }
+ .cinematic-caption { padding-left:99px; min-height:140px; }
+ .cinematic-caption > p { min-height:135px; padding:16px 17px; font-size:12px; border-width:12px; border-image-width:12px; }
+ .cinematic-caption strong { font-size:12px; }
+ .cinematic-caption small { font-size:8px; }
+}

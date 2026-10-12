@@ -3,14 +3,15 @@ import type { Prop, Point } from "./world";
 export function ruinsFloor(x: number, y: number) {
   const box = (a: number, b: number, c: number, d: number) =>
     x >= a && x <= b && y >= c && y <= d;
+  const disk = (cx: number, cy: number, r: number) => Math.hypot(x-cx, y-cy) <= r;
   return (
-    box(9, 19, 21, 26) ||
-    box(10, 18, 10, 22) ||
-    box(2, 7, 17, 22) ||
+    (box(9, 19, 21, 26) && disk(14,23.5,5.2)) ||
+    (box(9,19,10,21) && disk(14,15.5,5)) || box(13,15,9,24) ||
+    (box(2,7,17,22) && disk(4.5,19.5,3.4)) ||
     box(7, 11, 20, 21) ||
-    box(21, 25, 12, 17) ||
+    (box(21,25,12,17) && disk(23,14.5,3.05)) ||
     box(18, 21, 14, 15) ||
-    box(9, 19, 2, 9)
+    (box(9, 19, 2, 9) && x+y>=12 && x-y<=16 && y-x<=-1 && x+y<=27)
   );
 }
 export function ruinProps(): Prop[] {
@@ -56,6 +57,7 @@ export function ruinProps(): Prop[] {
   add("crate", 22, 16, "Registro do Núcleo", "core-record");
   add("fountain", 14, 12, "Fonte de preparação · descansar", "rest");
   add("bench", 14, 11, "Porta monumental · entrar no salão", "arena");
+  add("statue", 14, 2.7, "Arco do Núcleo", undefined, false, undefined, 1.7);
   add("statue", 14, 3, "Selo do fragmento", "fragment", false, undefined, 1.6);
   add("chest", 3, 21, "Baú do condutor");
   add("chest", 25, 16, "Baú do arquivo");
@@ -76,14 +78,14 @@ export function ruinProps(): Prop[] {
       );
     }
   for (const [x, y] of [
-    [9, 9],
-    [19, 9],
+    [10, 9],
+    [18, 9],
     [10, 2],
     [18, 2],
-    [2, 17],
-    [7, 17],
-    [21, 12],
-    [25, 12],
+    [3, 17],
+    [6, 17],
+    [22, 12],
+    [24, 12],
     [9, 24],
     [19, 24],
   ]) {

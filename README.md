@@ -35,6 +35,8 @@ Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Con
 
 A HUD usa os moldes enviados em `HUD.JPG`, `MAPAA.PNG` e `MISSOES.PNG`: quadros dourados para itens e habilidades, retrato em losango, vida vermelha, mana azul, XP em faixa fina ciano, objetivos em lista e minimapa isométrico retangular. Os valores e marcadores acompanham o jogo real; a legenda abre no botão **?**. Veja [a implementação dos moldes](docs/HUD_REFERENCIA.md).
 
+As novas referências de diálogo, Kharn e mapa foram aplicadas às conversas e cenas de todo o jogo, ao atlas do golem e às Ruínas Esquecidas. Os balões inferiores têm retrato, nome, moldura dourada e opções que respondem ao mouse, às setas e a Enter. As ruínas agora têm plataformas arredondadas, faces de pedra suspensas, arcos e círculos rúnicos, mantendo colisões e mecanismos reais. Veja [a aplicação das referências](docs/REFERENCIAS_DIALOGO_KHARN.md).
+
 ## Sistemas implementados
 
 - Quatro regiões de 28 × 28 conectadas por passagens: Vila Pedralta, Margem de Kharn, Ruínas Esquecidas e Bairro da Ferrugem. Terrenos, pontos de interesse, encontros e descoberta próprios; câmera e colisões compartilhadas, canal com passagens e ordenação por posição dos pés.
