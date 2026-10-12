@@ -1,4 +1,20 @@
 import type { Assets } from "./assets";
+import type { Point } from "./spatial";
+
+// Foot paths measured on the actual bridge decks in the 1672 × 941 backdrop.
+export const COVER_BRIDGES: Point[][] = [
+  [{ x: 1128, y: 309 }, { x: 1190, y: 319 }, { x: 1260, y: 330 }, { x: 1325, y: 342 }],
+  [{ x: 1008, y: 488 }, { x: 1060, y: 498 }, { x: 1115, y: 509 }, { x: 1175, y: 520 }],
+];
+export function coverBridgePoint(path: Point[], progress: number): Point {
+  const position = Math.max(0, Math.min(1, progress)) * (path.length - 1);
+  const index = Math.min(path.length - 2, Math.floor(position));
+  const fraction = position - index;
+  return {
+    x: path[index].x + (path[index + 1].x - path[index].x) * fraction,
+    y: path[index].y + (path[index + 1].y - path[index].y) * fraction,
+  };
+}
 
 // Decorative title scene only: no combat entities or saved game state are changed.
 export class CoverScene {
@@ -71,18 +87,19 @@ export class CoverScene {
     c.restore();
   }
 
-  private battle(left: number, right: number, y: number, offset: number) {
+  private battle(path: Point[], offset: number, scale: number) {
     const c = this.ctx;
     const phase = (this.time + offset) % 18;
     const approach = phase < 5 ? phase / 5 : phase < 12 ? 1 : Math.max(0, 1 - (phase - 12) / 6);
-    const center = (left + right) / 2;
-    const a = left + (center - 15 - left) * approach;
-    const b = right - (right - center - 15) * approach;
+    const a = coverBridgePoint(path, .47 * approach);
+    const b = coverBridgePoint(path, 1 - .47 * approach);
+    const center = (a.x + b.x) / 2;
+    const y = (a.y + b.y) / 2;
     const fighting = phase >= 5 && phase < 12;
     const swing = Math.floor(this.time * 5) % 4;
     const walk = 1 + Math.floor(this.time * 6) % 2;
-    this.enemy(a, y, fighting ? (swing < 2 ? 3 : 4) : walk, false);
-    this.enemy(b, y + 3, fighting ? (swing < 2 ? 2 : 3) : walk, true);
+    this.enemy(a.x, a.y, fighting ? (swing < 2 ? 3 : 4) : walk, false, scale);
+    this.enemy(b.x, b.y, fighting ? (swing < 2 ? 2 : 3) : walk, true, scale);
     if (fighting) {
       c.save();
       c.strokeStyle = "#ffe39c";
@@ -131,8 +148,8 @@ export class CoverScene {
     c.fillStyle = glow;
     c.fillRect(1080, 0, 240, 170);
     c.restore();
-    this.battle(1128, 1325, 340, 0);
-    this.battle(1010, 1170, 510, 8);
+    this.battle(COVER_BRIDGES[0], 0, .32);
+    this.battle(COVER_BRIDGES[1], 8, .38);
     this.canvas.dataset.scene = this.time % 18 >= 5 && this.time % 18 < 12 ? "combat" : "patrol";
     // Wind-borne dust and embers add motion without obscuring the menu.
     c.fillStyle = "#f3c778";

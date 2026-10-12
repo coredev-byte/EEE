@@ -17,6 +17,7 @@ export class Assets {
         icons: "icons/icons.png",
         effects: "effects/effects.png",
         objects: "objects/objects.png",
+        "reference-portrait": "interface/MISSOES.PNG",
         "arcanista-combat": "characters/arcanista-combat.png",
         "assassino-combat": "characters/assassino-combat.png",
         "atirador-combat": "characters/atirador-combat.png",

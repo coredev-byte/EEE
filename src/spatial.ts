@@ -76,6 +76,14 @@ export function minimapPoint(
     y: padding + ((p.y + 0.5) * (height - padding * 2)) / size,
   };
 }
+export function minimapIsoPoint(p: Point, size: number, width: number, height: number, padding = 7): Point {
+  const cellX = (width - padding * 2) / (size * 2);
+  const cellY = (height - padding * 2) / (size * 2);
+  return {
+    x: width / 2 + (p.x - p.y) * cellX,
+    y: padding + (p.x + p.y + 1) * cellY,
+  };
+}
 
 export function framePivot(width: number, height: number): Point {
   const frame = Object.values(FRAMES).find(

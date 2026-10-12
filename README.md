@@ -31,7 +31,7 @@ O diamante dourado no minimapa marca o objetivo atual. Encontre a entrada, derro
 
 Depois de romper o selo, use F novamente para viajar à **Margem de Kharn**. Converse com Iria, derrote os vigias e afine os três marcos com F. Volte pelo selo ao sul e entregue as memórias à Guardiã de Pedralta. Depois da entrega, retorne a Kharn e siga pela Estrada das Caldeiras (24,18) até Ferrugem. Converse com Elcio, recupere componentes, restaure a bomba, leia o manifesto e enfrente o Mestre da Fornalha. Resgatar Nara e restaurar a passarela são missões opcionais. O diário (J) reúne as missões, estados, recompensas, registros e rastreamento; o minimapa revela áreas e indica passagens e objetivos. Região, encontros, baús e campanha são persistidos em save v4, com migração de v1/v2/v3 e cópia local dos saves antigos antes da primeira gravação. Veja [a expansão industrial](docs/EXPANSAO_IMPLEMENTACAO.md). Veja [a implementação das regiões](docs/REGIOES_IMPLEMENTACAO.md).
 
-A HUD segue a referência metálica com detalhes em bronze: nível em losango, vida/coração vermelho, mana/gota azul, XP/estrela roxa, três atalhos e minimapa circular com legenda no botão **?**. Veja [o modelo aplicado e as capturas](docs/HUD_REFERENCIA.md).
+A HUD usa os moldes enviados em `HUD.JPG`, `MAPAA.PNG` e `MISSOES.PNG`: quadros dourados para itens e habilidades, retrato em losango, vida vermelha, mana azul, XP em faixa fina ciano, objetivos em lista e minimapa isométrico retangular. Os valores e marcadores acompanham o jogo real; a legenda abre no botão **?**. Veja [a implementação dos moldes](docs/HUD_REFERENCIA.md).
 
 ## Sistemas implementados
 

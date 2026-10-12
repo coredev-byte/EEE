@@ -65,9 +65,9 @@ export class UI {
    <header class="topbar"><a class="wordmark" href="#" aria-label="Distrito Zero">DISTRITO <span>ZER<span class="zero">O</span></span></a><span class="edition">CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO I</span><nav aria-label="Menus do jogo"><button data-panel="quests">DIÁRIO <kbd>J</kbd></button><button data-panel="inventory">INVENTÁRIO <kbd>I</kbd></button><button data-panel="settings" aria-label="Configurações">SISTEMA <kbd>M</kbd></button></nav></header>
    <main><div class="scene-label"><span id="region-caption"><i class="live-dot"></i> VILA PEDRALTA</span><span>UM MUNDO EM RUÍNAS. SEU PRÓPRIO CAMINHO.</span></div>
    <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><div class="game-viewport"><canvas id="game" width="${VIEW.width}" height="${VIEW.height}" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
-   <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas></div><span class="level-medallion" aria-label="Nível"><b id="level">1</b></span><div class="bars"><div class="bar-row"><label title="Vida">${hudIcon("life")}<span class="hud-accessible">HP</span></label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label title="Mana">${hudIcon("mana")}<span class="hud-accessible">MP</span></label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label title="Experiência">${hudIcon("xp")}<span class="hud-accessible">XP</span></label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div><nav class="hud-tools" aria-label="Acessos rápidos"><button data-panel="inventory" aria-label="Abrir inventário" title="Inventário · I">${hudIcon("inventory")}</button><button data-panel="quests" aria-label="Abrir missões" title="Missões · J">${hudIcon("quests")}</button><button data-panel="settings" aria-label="Abrir configurações" title="Configurações · M">${hudIcon("settings")}</button></nav></section>
-   <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
-   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" data-shape="circular" width="160" height="160" aria-label="Minimapa da vila"></canvas><details class="map-key"><summary aria-label="Legenda do minimapa" title="Legenda do minimapa">?</summary><div class="map-legend" aria-label="Legenda do minimapa"><strong>MINIMAPA</strong><span>${hudIcon("main")} Objetivo principal</span><span>${hudIcon("secondary")} Objetivo secundário</span><span>${hudIcon("player")} Você · posição e direção</span><span>${hudIcon("exit")} Saída / Passagem</span><span>${hudIcon("xp")} Ponto de interesse</span><span>${hudIcon("enemy")} Inimigo / Chefe</span><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div></div></details></section>
+   <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas></div><span class="level-medallion" aria-label="Nível">Nv. <b id="level">1</b></span><div class="bars"><div class="bar-row"><label title="Vida">${hudIcon("life")}<span class="hud-accessible">HP</span></label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label title="Mana">${hudIcon("mana")}<span class="hud-accessible">MP</span></label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label title="Experiência">${hudIcon("xp")}<span class="hud-accessible">XP</span></label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div><nav class="hud-tools" aria-label="Acessos rápidos"><button data-panel="inventory" aria-label="Abrir inventário" title="Inventário · I">${hudIcon("inventory")}</button><button data-panel="quests" aria-label="Abrir missões" title="Missões · J">${hudIcon("quests")}</button><button data-panel="settings" aria-label="Abrir configurações" title="Configurações · M">${hudIcon("settings")}</button></nav></section>
+   <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><span class="quest-checklist" id="quest-checklist"></span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
+   <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" data-shape="isometric" width="192" height="144" aria-label="Minimapa da vila"></canvas><details class="map-key"><summary aria-label="Legenda do minimapa" title="Legenda do minimapa">?</summary><div class="map-legend" aria-label="Legenda do minimapa"><strong>MINIMAPA</strong><span>${hudIcon("main")} Objetivo principal</span><span>${hudIcon("secondary")} Objetivo secundário</span><span>${hudIcon("player")} Você · posição e direção</span><span>${hudIcon("exit")} Saída / Passagem</span><span>${hudIcon("xp")} Ponto de interesse</span><span>${hudIcon("enemy")} Inimigo / Chefe</span><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div></div></details></section>
    <div class="loot-notifications" id="loot-notifications" role="status" aria-label="Itens coletados"></div><div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
    <div class="loading" id="loading"><div class="loading-rune"></div><span>DESPERTANDO PEDRALTA</span></div><div class="menu-layer" id="menu-layer"></div><div class="modal-layer" id="modal-layer" hidden></div>
    </div></section><div class="underbar"><span class="connection"><i class="live-dot"></i> <span id="save-state">SALVAMENTO LOCAL</span></span><div class="controls"><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> MOVER</span><span><kbd>SHIFT</kbd> CORRER</span><span><kbd>MOUSE</kbd> ATACAR</span><span><kbd>F</kbd> INTERAGIR</span><span><kbd>ESC</kbd> PAUSA</span></div><button id="sound-toggle" aria-label="Alternar áudio">ÁUDIO · ON</button></div>
@@ -287,7 +287,7 @@ export class UI {
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#101728";
     c.fillRect(0, 0, 64, 64);
-    c.drawImage(this.game.assets.images.hero, 25, 32, 44, 40, 0, 0, 64, 64);
+    c.drawImage(this.game.assets.images["reference-portrait"], 32, 68, 82, 82, 0, 0, 64, 64);
   }
   action(action: string) {
     const g = this.game;
@@ -732,6 +732,15 @@ export class UI {
     document.querySelector(".quest-name")!.innerHTML =
       `<span class="diamond"></span> ${selectedMission(g.exploration, g.quest)?.definition.name.toUpperCase() ?? "FERRUGEM · EXPLORAÇÃO"}`;
     document.querySelector("#quest-objective")!.textContent = g.objective();
+    const mission = selectedMission(g.exploration, g.quest);
+    document.querySelector("#quest-checklist")!.innerHTML = mission
+      ? mission.definition.steps
+          .map((step, i) => ({ text: step.text, done: mission.done[i], active: i === mission.stage }))
+          .filter((step) => !step.active)
+          .slice(0, 2)
+          .map((step) => `<span class="quest-check ${step.done ? "done" : "pending"}"><span aria-hidden="true">${step.done ? "◆" : "□"}</span>${step.text}</span>`)
+          .join("")
+      : "";
     document.querySelector("#quest-progress")!.textContent = g.exploration
       .campaign.rewardClaimed
       ? (selectedMission(
@@ -783,7 +792,9 @@ export class UI {
       g.enemies,
       g.exploration,
       g.activeObjective(),
+      false,
       true,
+      g.assets,
     );
   }
 }

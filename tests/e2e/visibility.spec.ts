@@ -191,14 +191,12 @@ test("Movimento real atrás da casa, minimapa orientado e campanha continua pela
         radius: getComputedStyle(el).borderRadius,
       };
     });
-    expect(Math.abs(geometry.width - geometry.height)).toBeLessThan(1);
-    expect(Math.abs(geometry.canvasWidth - geometry.canvasHeight)).toBeLessThan(
-      1,
-    );
+    expect(geometry.width / geometry.height).toBeCloseTo(4 / 3, 1);
+    expect(geometry.canvasWidth / geometry.canvasHeight).toBeCloseTo(4 / 3, 1);
     expect(geometry.right).toBeCloseTo(0.02, 2);
     expect(geometry.top).toBeGreaterThan(0.03);
     expect(geometry.top).toBeLessThan(0.05);
-    expect(geometry.radius).toBe("50%");
+    expect(geometry.radius).toBe("0px");
   };
   await checkMinimap();
   await page.keyboard.down("w");
@@ -358,14 +356,12 @@ test("Marcador de combate acompanha o inimigo vivo no minimapa", async ({
       goal = s.activeObjective;
     const enemy = s.enemies.find((e: any) => `enemy:${e.id}` === goal.id);
     const c = document.querySelector<HTMLCanvasElement>("#minimap")!;
-    const padding = Math.ceil(
-      (Math.min(c.width, c.height) * (1 - 1 / Math.SQRT2)) / 2 + 9,
-    );
+    const padding = 7;
     const x = Math.round(
-        padding + ((goal.x + 0.5) * (c.width - padding * 2)) / 28,
+        c.width / 2 + ((goal.x - goal.y) * (c.width - padding * 2)) / 56,
       ),
       y = Math.round(
-        padding + ((goal.y + 0.5) * (c.height - padding * 2)) / 28,
+        padding + ((goal.x + goal.y + 1) * (c.height - padding * 2)) / 56,
       );
     const d = c.getContext("2d")!.getImageData(x - 8, y - 8, 16, 16).data;
     let gold = 0;

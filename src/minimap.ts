@@ -10,7 +10,8 @@ import {
   type Exploration,
 } from "./regions";
 import { has } from "./skills";
-import { minimapPoint, minimapPadding } from "./spatial";
+import { minimapPoint, minimapIsoPoint, minimapPadding } from "./spatial";
+import type { Assets } from "./assets";
 import { distance, PORTAL, type World } from "./world";
 import type { Enemy, Player } from "./state";
 /** HUD renderer: shares world positions, never world-camera transforms. */
@@ -22,13 +23,16 @@ export function drawMinimap(
   exploration?: Exploration,
   objective: Objective | Point | null = PORTAL,
   circular = false,
+  isometric = false,
+  assets?: Assets,
 ) {
   const ctx = canvas.getContext("2d")!;
   const padding = minimapPadding(canvas.width, canvas.height, circular),
-    cellX = (canvas.width - padding * 2) / world.size,
-    cellY = (canvas.height - padding * 2) / world.size;
+    cellX = (canvas.width - padding * 2) / world.size / (isometric ? 2 : 1),
+    cellY = (canvas.height - padding * 2) / world.size / (isometric ? 2 : 1);
   const point = (p: { x: number; y: number }) =>
-    minimapPoint(p, world.size, canvas.width, canvas.height, padding);
+    isometric ? minimapIsoPoint(p, world.size, canvas.width, canvas.height, padding)
+      : minimapPoint(p, world.size, canvas.width, canvas.height, padding);
   const marker = (p: { x: number; y: number }, size: number, color: string) => {
     const at = point(p);
     ctx.fillStyle = color;
@@ -78,6 +82,17 @@ export function drawMinimap(
             : tile === 7
               ? "#173848"
               : "#182d2b";
+      if (isometric) {
+        const at = point({ x, y });
+        ctx.beginPath();
+        ctx.moveTo(at.x, at.y - cellY);
+        ctx.lineTo(at.x + cellX, at.y);
+        ctx.lineTo(at.x, at.y + cellY);
+        ctx.lineTo(at.x - cellX, at.y);
+        ctx.closePath();
+        ctx.fill();
+        continue;
+      }
       const x0 = Math.round(padding + x * cellX),
         y0 = Math.round(padding + y * cellY);
       ctx.fillRect(
@@ -87,7 +102,7 @@ export function drawMinimap(
         Math.round(padding + (y + 1) * cellY) - y0,
       );
     }
-  for (const prop of world.props) {
+  for (const prop of [...world.props].sort((a, b) => a.x + a.y - b.x - b.y)) {
     const passage = PASSAGES.find(
       (p) => p.region === world.region && p.id === prop.id,
     );
@@ -103,6 +118,13 @@ export function drawMinimap(
       prop.kind !== "portal"
     )
       continue;
+    if (isometric && assets) {
+      const columns: Record<string, number> = { house: 0, ruinHouse: 1, portal: 2, wall: 3, tree: 4, deadTree: 5, pine: 6, rock: 7, lantern: 8, barrel: 9, crate: 10, chest: 11 };
+      if (prop.kind in columns) {
+        const at = point(prop);
+        assets.draw(ctx, "props", columns[prop.kind], 0, 128, 160, at.x, at.y, prop.scale * cellX / 40);
+      }
+    }
     const color =
       prop.kind === "portal"
         ? prop.locked
@@ -210,7 +232,7 @@ export function drawMinimap(
   const [dx, dy] = vectors[player.direction];
   ctx.save();
   ctx.translate(Math.round(at.x), Math.round(at.y));
-  ctx.rotate(Math.atan2(dy * cellY, dx * cellX));
+  ctx.rotate(Math.atan2((isometric ? dx + dy : dy) * cellY, (isometric ? dx - dy : dx) * cellX));
   ctx.fillStyle = "#35bddb";
   ctx.strokeStyle = "#090f19";
   ctx.lineWidth = 1;
