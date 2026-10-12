@@ -11,6 +11,8 @@ npm ci
 npm run dev
 ```
 
+O jogo e a capa ocupam toda a janela, sem cabeçalho, rodapé ou legendas de teclas na HUD. Teclado, mouse e os botões continuam funcionando; os controles podem ser consultados nas configurações.
+
 O Vite escuta na porta 5173. O jogo funciona inteiramente no navegador; não precisa de banco, conta, API ou credenciais. Fontes e sprites são locais. `npm run build` produz `dist/`; `npm run preview` serve esse resultado.
 
 ## Controles

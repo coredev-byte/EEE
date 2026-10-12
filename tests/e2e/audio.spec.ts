@@ -88,7 +88,7 @@ test("Sliders e mute persistem após recarregar; jogo mantém WASD", async ({
   page,
 }) => {
   await start(page);
-  await page.locator('[data-panel="settings"]').first().click();
+  await page.getByRole("button", { name: "Abrir configurações" }).click();
   const slider = page.getByRole("slider", { name: "Música", exact: true });
   await slider.evaluate((el: any) => {
     el.value = "23";

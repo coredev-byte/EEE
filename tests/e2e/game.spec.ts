@@ -391,7 +391,14 @@ test("Clique sem pointermove e viewport/HUD alinhados em tela cheia", async ({
     await page.locator(".close-button").click();
     const canvas = await page.locator("#game").boundingBox();
     const hud = await page.locator("#hud").boundingBox();
-    expect(canvas!.width / canvas!.height).toBeCloseTo(16 / 9, 2);
+    const windowSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    expect(canvas!.x).toBeCloseTo(0, 1);
+    expect(canvas!.y).toBeCloseTo(0, 1);
+    expect(canvas!.width).toBeCloseTo(windowSize.width, 1);
+    expect(canvas!.height).toBeCloseTo(windowSize.height, 1);
+    await expect(page.locator(".underbar")).toBeHidden();
+    await expect(page.locator(".topbar")).toBeHidden();
+    await expect(page.locator("#hud kbd").first()).toBeHidden();
     expect(hud!.x).toBeCloseTo(canvas!.x, 1);
     expect(hud!.y).toBeCloseTo(canvas!.y, 1);
     expect(hud!.width).toBeCloseTo(canvas!.width, 1);
