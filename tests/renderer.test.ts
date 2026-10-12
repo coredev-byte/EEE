@@ -58,7 +58,7 @@ describe("Fila completa do mundo", () => {
     player.x = 10;
     player.y = 10;
     Object.assign(renderer, {
-      ctx: { fillRect: vi.fn(), drawImage: vi.fn() },
+      ctx: { fillRect: vi.fn(), drawImage: vi.fn(), save: vi.fn(), restore: vi.fn() },
       camera: { x: 0, y: 400 },
       time: 0,
       floorOrigin: 1120,

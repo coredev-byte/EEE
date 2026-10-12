@@ -49,7 +49,9 @@ import {
   type Point,
   type Prop,
 } from "./world";
+import { Prologue, freshPrologue } from "./prologue";
 export class Game {
+  prologue = new Prologue();
   world = new World();
   exploration = freshExploration();
   player: Player = createPlayer();
@@ -98,7 +100,8 @@ export class Game {
     this.combat = new Combat(this);
     this.input.onAttack = () => {
       this.audio.unlock();
-      if (!this.paused) this.combat.attack(this.target());
+      if (!this.paused && !this.prologue.locked)
+        this.combat.attack(this.target());
     };
     this.input.onKey = (k) => this.key(k);
   }
@@ -113,6 +116,7 @@ export class Game {
       this.player = s.player;
       this.quest = s.quest;
       this.exploration = s.exploration;
+      this.prologue = new Prologue(s.prologue);
       this.mountRegion(this.exploration.region);
     }
     this.renderer.snap(this.player);
@@ -125,13 +129,18 @@ export class Game {
   audioSustain = (owner: string, cue: AudioCue) =>
     this.audio.sustain(owner, cue);
   audioStopOwner = (owner: string) => this.audio.stopOwner(owner);
-  audioEvent = (event: AudioEvent, cue: AudioCue = {}) =>
-    this.audio.emit(event, {
+  audioEvent = (event: AudioEvent, cue: AudioCue = {}) => {
+    if (event === "skill.activate" && cue.skillId && !cue.preview) {
+      const slot = profile(this.player).bar.indexOf(cue.skillId);
+      if (slot >= 0) this.prologue.event(`skill:${slot}`);
+    }
+    return this.audio.emit(event, {
       classId: this.player.classId,
       weaponId: this.player.equipment.weapon,
       armorId: this.player.equipment.armor,
       ...cue,
     });
+  };
   sound = (kind: "attack" | "hit" | "magic" | "death") =>
     this.audioEvent(
       (
@@ -226,6 +235,7 @@ export class Game {
     this.audio.reset();
     if (classId) {
       this.pickups = [];
+      this.prologue = new Prologue(freshPrologue());
       this.player = createPlayer(classId);
       this.exploration = freshExploration();
       this.mountRegion("pedralta");
@@ -240,6 +250,7 @@ export class Game {
     this.paused = false;
     this.audio.unlock();
     this.onStart();
+    this.prologue.begin();
     if (this.player.hp <= 0) this.onDeath();
     else this.notify(this.objective());
     this.save();
@@ -250,6 +261,10 @@ export class Game {
       return;
     }
     if (!this.started) return;
+    if (this.prologue.locked) {
+      if (!this.paused && (k === "enter" || k === " ")) this.skipCinematic();
+      return;
+    }
     const panels: Record<string, string> = {
       i: "inventory",
       c: "classes",
@@ -272,7 +287,37 @@ export class Game {
     this.last = t;
     if (!this.paused) {
       this.time += dt;
-      this.update(dt);
+      if (!this.prologue.locked) this.update(dt);
+      else this.player.animTime += dt;
+      const previousScene = this.prologue.cinematic.id;
+      const p = this.player,
+        max = stats(p);
+      this.prologue.movement(p, this.input.keys.has("shift"));
+      if (p.hp > 0)
+        this.prologue.update(dt, {
+          kills: this.quest.kills,
+          foundSeal: this.quest.stage > 0,
+          seal: this.quest.rewardClaimed,
+          accepted: !!this.quest.accepted || this.quest.rewardClaimed,
+          chests: p.challenges.chests,
+          skills:
+            this.prologue.seen("skill:0") && this.prologue.seen("skill:1"),
+          resourcesFull: p.hp >= max.maxHp && p.mp >= max.maxMp - 1,
+          potion: this.prologue.seen("potion"),
+          inventory: this.prologue.seen("inventory-action"),
+          journal: this.prologue.seen("panel:quests"),
+          classes: this.prologue.seen("panel:classes"),
+          tree: this.prologue.seen("panel:skills"),
+        });
+      if (previousScene !== this.prologue.cinematic.id) {
+        this.input.keys.clear();
+        if (["signal", "evidence"].includes(this.prologue.cinematic.id ?? ""))
+          this.audioEvent("object.portal", { position: PORTAL });
+      }
+      if (this.prologue.dirty) {
+        this.prologue.dirty = false;
+        this.save();
+      }
     }
     this.audio.setListener(this.player);
     const region =
@@ -292,7 +337,7 @@ export class Game {
       ? "menu"
       : this.player.hp <= 0
         ? "defeat"
-        : this.dialogueOpen
+        : this.dialogueOpen || this.prologue.locked
           ? "narrative"
           : this.inCombat()
             ? this.enemies.some(
@@ -309,6 +354,10 @@ export class Game {
               ? "danger"
               : "safe";
     this.audio.scene(region, mood);
+    this.renderer.cinematic = this.prologue.cinematic.frame(
+      matchMedia("(prefers-reduced-motion: reduce)").matches,
+      this.player,
+    );
     this.renderer.draw(
       this.player,
       this.enemies,
@@ -316,7 +365,7 @@ export class Game {
       this.texts,
       this.projectiles,
       this.paused ? 0 : dt,
-      this.activeObjective(),
+      this.prologue.locked ? null : this.activeObjective(),
     );
     this.onUpdate();
     requestAnimationFrame((n) => this.tick(n));
@@ -471,7 +520,15 @@ export class Game {
           this.world.canInteract(this.player, o),
       );
   }
+  skipCinematic() {
+    if (!this.prologue.locked) return;
+    this.prologue.finishScene();
+    this.input.keys.clear();
+    this.renderer.snap(this.player);
+    this.save();
+  }
   interact() {
+    if (this.prologue.locked) return false;
     const o = this.nearby();
     if (!o) {
       this.notify(
@@ -573,6 +630,7 @@ export class Game {
     return true;
   }
   potion(i: number) {
+    if (this.prologue.locked) return false;
     const p = this.player;
     if (p.hp <= 0 || p.potions[i] <= 0) return false;
     const s = stats(p);
@@ -582,7 +640,9 @@ export class Game {
       );
       return false;
     }
+    if (i === 2 && p.hp >= s.maxHp && p.mp >= s.maxMp) return false;
     p.potions[i]--;
+    this.prologue.event("potion");
     if (i === 0) p.hp = Math.min(s.maxHp, p.hp + 100);
     if (i === 1) p.mp = Math.min(s.maxMp, p.mp + 70);
     if (i === 2) {
@@ -613,6 +673,7 @@ export class Game {
     const previous = slot ? this.player.equipment[slot] : null;
     const ok = equip(this.player, id, slot);
     if (ok) {
+      this.prologue.event("inventory-action");
       this.save();
       this.audioEvent(id === null ? "equipment.remove" : "equipment.equip", {
         itemId: id ?? previous,
@@ -1058,6 +1119,22 @@ export class Game {
     return `${alive ? "Derrote o vigia do" : "Afine o"} ${next.name} · ${c.attuned.length}/3`;
   }
   activeObjective(): Objective | null {
+    if (
+      this.prologue.active &&
+      ["guardian", "chest"].includes(this.prologue.state!.step)
+    ) {
+      const kind = this.prologue.state!.step === "guardian" ? "npc" : "chest";
+      const target = this.world.props
+        .filter((p) => p.kind === kind && !p.opened)
+        .sort((a, b) => distance(a, this.player) - distance(b, this.player))[0];
+      if (target)
+        return {
+          ...target,
+          kind: kind === "npc" ? "talk" : "interact",
+          label: kind === "npc" ? "Guardiã de Pedralta" : "Baú de suprimentos",
+          height: 85,
+        };
+    }
     if (this.exploration.campaign.rewardClaimed) return this.missionObjective();
     const prop = (
       kind: string,
@@ -1187,6 +1264,7 @@ export class Game {
           this.world.props.filter((p) => p.opened).map((p) => p.id),
           this.enemies.filter((e) => e.rewarded).map((e) => e.id),
           this.exploration,
+          this.prologue.state,
         ),
       );
       this.saveStatus = "Progresso salvo";
@@ -1201,6 +1279,12 @@ export class Game {
   }
   snapshot() {
     return {
+      prologue: {
+        state: structuredClone(this.prologue.state),
+        scene: this.prologue.cinematic.id,
+        locked: this.prologue.locked,
+        hint: this.prologue.hints.active?.id ?? null,
+      },
       region: this.world.region,
       exploration: structuredClone(this.exploration),
       objective: this.objective(),

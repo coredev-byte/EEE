@@ -1,3 +1,4 @@
+import { HINTS } from "./tutorial-hints";
 import type { Game } from "./game";
 import { missionViews, selectedMission } from "./missions";
 import {
@@ -14,6 +15,9 @@ export function missionJournal(g: Game) {
   const selected = selectedMission(g.exploration, g.quest);
   return (
     `<div class="journal-summary"><p>${g.objective()}</p><small>Escolha uma missão ativa para rastrear. As secundárias são opcionais.</small></div>` +
+    (g.prologue.state
+      ? `<article class="quest-detail"><h3>Primeiros passos em Pedralta</h3><p>${g.prologue.state.complete ? "Prólogo concluído. A jornada continua na campanha." : "A Guardiã precisa de notícias do selo."}</p><ol>${HINTS.map((h) => `<li>${g.prologue.seen(`done:${h.id}`) ? "✓" : "◇"} ${h.text}</li>`).join("")}</ol><small>Orientações registradas: ${g.prologue.state.hints.length}. Sem recompensas adicionais.</small></article>`
+      : "") +
     missionViews(g.exploration, g.quest)
       .map((v) => {
         const m = v.definition;

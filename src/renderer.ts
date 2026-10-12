@@ -1,3 +1,4 @@
+import type { CinematicFrame } from "./cinematics";
 import { Occlusion, type VisibilityTarget } from "./occlusion";
 import {
   placeObjective,
@@ -32,6 +33,7 @@ export class Renderer {
   floorOrigin: number;
   readonly floorOffsetY = TILE.height * 0.75;
   time = 0;
+  cinematic: CinematicFrame | null = null;
   hudBounds: ScreenRect[] = [];
   private occlusion: Occlusion;
   private visibility: VisibilityTarget[] = [];
@@ -112,14 +114,21 @@ export class Renderer {
     objective: Objective | null = null,
   ) {
     this.time += dt;
-    const target = iso(p),
+    const target = iso(this.cinematic?.camera ?? p),
       f = 1 - Math.exp(-dt * 7);
+    if (this.cinematic) this.camera = target;
     this.camera.x += (target.x - this.camera.x) * f;
     this.camera.y += (target.y - this.camera.y) * f;
     const c = this.ctx;
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#070d17";
     c.fillRect(0, 0, VIEW.width, VIEW.height);
+    c.save();
+    if (this.cinematic) {
+      c.translate(VIEW.width / 2, VIEW.height / 2);
+      c.scale(this.cinematic.zoom, this.cinematic.zoom);
+      c.translate(-VIEW.width / 2, -VIEW.height / 2);
+    }
     c.drawImage(
       this.floor,
       VIEW.focus.x - cameraPixels(this.camera).x - this.floorOrigin,
@@ -204,6 +213,28 @@ export class Renderer {
       c.fillStyle = t.color;
       c.fillText(t.text, s.x, s.y - ACTOR_HEIGHT.text - t.time * 25);
       c.globalAlpha = 1;
+    }
+    c.restore();
+    if (this.cinematic) {
+      const frame = this.cinematic;
+      if (frame.pulse) {
+        c.fillStyle = `rgba(137,167,244,${frame.pulse})`;
+        c.fillRect(0, 0, VIEW.width, VIEW.height);
+        const at = this.project({ x: 22, y: 7 });
+        for (let i = 0; i < 18; i++) {
+          const a = i * 2.4 + this.time * 0.5,
+            r = 18 + (i % 5) * 10;
+          c.fillStyle = "#b8cafa";
+          c.fillRect(
+            Math.round(at.x + Math.cos(a) * r),
+            Math.round(at.y - 30 + Math.sin(a) * r),
+            2,
+            2,
+          );
+        }
+      }
+      c.fillStyle = `rgba(2,5,12,${frame.fade})`;
+      c.fillRect(0, 0, VIEW.width, VIEW.height);
     }
     // Pixel-locked foreground vignette, never filtering the sprites.
     for (let i = 0; i < 5; i++) {

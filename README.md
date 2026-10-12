@@ -92,3 +92,24 @@ O áudio usa **55 arquivos locais sintetizados**, incluindo a ambiência mecâni
 A evolução estrutural está registrada em [docs/AUDITORIA_RPG.md](docs/AUDITORIA_RPG.md), com causas verificadas, sistemas preservados e critérios das próximas etapas. A primeira entrega estabelece coordenadas e pivôs compartilhados, ordem de profundidade incluindo efeitos, clique correto em tela cheia, minimapa separado e movimento com colisão em subpassos. Regiões conectadas, continuidade do capítulo II, árvore ramificada e mixer de áudio foram entregues em etapas posteriores. Variantes visuais ampliadas de equipamento, drops no chão e produção sonora final permanecem no roteiro.
 
 A capa ocupa toda a janela e tem vento nos cabelos e tecidos, brilho oscilante da lua e combates decorativos nas pontes. A música temática original de 48 segundos começa após interação (botão ♫ na capa), respeita os volumes e mute do jogo e faz transição ao iniciar a jornada. A animação pausa em abas ocultas e respeita a preferência do sistema por movimento reduzido.
+
+## Prólogo cinematográfico e tutorial narrativo
+
+Uma nova jornada começa com **O Chamado**, em cenas dirigidas no mapa real de
+Pedralta: silêncio, sinal do selo e despertar do personagem escolhido. Clique
+em **Pular cena** ou pressione Enter para concluir a cena e devolver os controles.
+Escape pausa inclusive a introdução. A preferência do sistema por movimento
+reduzido desativa pans e zooms dirigidos; o som respeita o mixer e mute existentes.
+
+O tutorial acompanha movimento, corrida, conversa com a Guardiã, exploração,
+combate, habilidades 1/2, poções, baú, mochila, diário, classe e árvore. As dicas
+são temporárias, reconhecem ações antecipadas e ficam registradas no diário J.
+Não é preciso gastar consumíveis com os recursos completos, equipar algo pior
+ou gastar pontos para conhecer a árvore. As três ameaças, o selo e a Memória de
+Kharn usam a missão e as recompensas existentes. A campanha segue até a Margem,
+a Guardiã e Ferrugem. O progresso narrativo é salvo no contrato v4; jornadas
+antigas continuam normalmente e cenas interrompidas retomam de um ponto seguro.
+
+O roteiro, os módulos, as condições de avanço, a compatibilidade e os resultados
+de testes estão em [docs/PROLOGO_IMPLEMENTACAO.md](docs/PROLOGO_IMPLEMENTACAO.md).
+O ritmo de 12–18 minutos é uma meta que ainda requer validação com jogadores.

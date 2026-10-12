@@ -8,7 +8,15 @@ async function start(page: Page, id = "guerreiro") {
   await page.getByRole("button", { name: "INICIAR JORNADA" }).click();
   if (id !== "guerreiro") await page.locator(`[data-class="${id}"]`).click();
   await page.getByRole("button", { name: "ENTRAR EM PEDRALTA →" }).click();
+  await skipScenes(page, 3);
   await expect(page.locator("#hud")).toHaveClass("hud visible");
+}
+async function skipScenes(page: Page, count = 1) {
+  for (let i = 0; i < count; i++) {
+    await expect(page.locator(".skip-cinematic")).toBeVisible();
+    await page.locator(".skip-cinematic").click();
+    await page.waitForTimeout(80);
+  }
 }
 async function aim(page: Page, p: { x: number; y: number }) {
   const s = await page.evaluate((p) => (window as any).__DZ.project(p), p);
@@ -21,6 +29,10 @@ async function aim(page: Page, p: { x: number; y: number }) {
 async function battle(page: Page, minKills = 3) {
   for (let i = 0; i < 40; i++) {
     const s = await state(page);
+    if (s.prologue.locked) {
+      await skipScenes(page);
+      continue;
+    }
     if (s.quest.kills >= minKills) return;
     expect(s.player.hp).toBeGreaterThan(0);
     const e = s.enemies
@@ -183,12 +195,19 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   await page.locator('[data-filter="all"]').click();
   await page.screenshot({ path: "artifacts/inventory.png", fullPage: true });
   await page.keyboard.press("Escape");
-  const portraitBefore = await page.locator("#portrait").evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  const portraitBefore = await page
+    .locator("#portrait")
+    .evaluate((el: HTMLCanvasElement) => el.toDataURL());
   await page.keyboard.press("c");
   await page.locator('[data-class="atirador"]').click();
   expect((await state(page)).player.classId).toBe("atirador");
-  await expect(page.locator("#portrait")).toHaveAttribute("data-class-id", "atirador");
-  const portraitAfter = await page.locator("#portrait").evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  await expect(page.locator("#portrait")).toHaveAttribute(
+    "data-class-id",
+    "atirador",
+  );
+  const portraitAfter = await page
+    .locator("#portrait")
+    .evaluate((el: HTMLCanvasElement) => el.toDataURL());
   expect(portraitAfter).not.toBe(portraitBefore);
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
@@ -197,8 +216,15 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   const s = await state(page);
   expect(s.player.equipment.weapon).toBe("raio");
   expect(s.player.classId).toBe("atirador");
-  await expect(page.locator("#portrait")).toHaveAttribute("data-class-id", "atirador");
-  expect(await page.locator("#portrait").evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(portraitAfter);
+  await expect(page.locator("#portrait")).toHaveAttribute(
+    "data-class-id",
+    "atirador",
+  );
+  expect(
+    await page
+      .locator("#portrait")
+      .evaluate((el: HTMLCanvasElement) => el.toDataURL()),
+  ).toBe(portraitAfter);
   await expect(page.locator("#class-name")).toContainText("ATIRADOR");
 });
 test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", async ({
@@ -236,6 +262,7 @@ test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", asyn
   await page.keyboard.press("Escape");
   await travel(page, { x: 22, y: 7 });
   await page.keyboard.press("f");
+  await skipScenes(page, 2);
   const completed = await state(page);
   expect(completed.quest.stage).toBe(2);
   expect(completed.player.inventory).toContain("runa");
@@ -397,7 +424,10 @@ test("Clique sem pointermove e viewport/HUD alinhados em tela cheia", async ({
     await page.locator(".close-button").click();
     const canvas = await page.locator("#game").boundingBox();
     const hud = await page.locator("#hud").boundingBox();
-    const windowSize = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    const windowSize = await page.evaluate(() => ({
+      width: innerWidth,
+      height: innerHeight,
+    }));
     expect(canvas!.x).toBeCloseTo(0, 1);
     expect(canvas!.y).toBeCloseTo(0, 1);
     expect(canvas!.width).toBeCloseTo(windowSize.width, 1);

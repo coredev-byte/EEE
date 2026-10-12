@@ -1,3 +1,5 @@
+import { PrologueUI } from "./prologue-ui";
+import { guardianPrologueLine } from "./prologue-story";
 import { missionJournal, ferrugemDialogue } from "./mission-ui";
 import { selectedMission } from "./missions";
 import { PASSAGES, passageOpen } from "./regions";
@@ -31,7 +33,13 @@ const icon = (index: number, extra = "") =>
 const button = (text: string, action: string, cls = "") =>
   `<button class="${cls}" data-action="${action}">${text}</button>`;
 const coverFrame = `<svg class="cover-frame" viewBox="0 0 420 60" preserveAspectRatio="none" aria-hidden="true"><path d="M30 7H390V53H30Z M32 9H388V51H32Z"/><path d="M4 30L12 22L20 30L12 38Z M12 26L16 30L12 34L8 30Z M20 30H30 M416 30L408 22L400 30L408 38Z M408 26L412 30L408 34L404 30Z M390 30H400"/></svg>`;
-const coverButton = (text: string, action: string, label: string, selected = false, disabled = false) =>
+const coverButton = (
+  text: string,
+  action: string,
+  label: string,
+  selected = false,
+  disabled = false,
+) =>
   `<button class="cover-action${selected ? " is-selected" : ""}" data-action="${action}" aria-label="${label}" ${disabled ? 'disabled title="Nenhuma jornada salva neste navegador"' : ""}>${coverFrame}<span>${text}</span></button>`;
 const titles: Record<string, string> = {
   inventory: "Inventário & equipamentos",
@@ -112,13 +120,18 @@ export class UI {
       if (el.dataset.panel) {
         if (game.started) this.open(el.dataset.panel);
       }
-      if (el.dataset.skill !== undefined && !game.paused)
+      if (
+        el.dataset.skill !== undefined &&
+        !game.paused &&
+        !game.prologue.locked
+      )
         game.combat.attack(game.target(), Number(el.dataset.skill));
       if (el.dataset.potion !== undefined && !game.paused)
         game.potion(Number(el.dataset.potion));
       if (el.dataset.item) {
         game.audioEvent("ui.select");
         this.selectedItem = el.dataset.item;
+        game.prologue.event("inventory-action");
         this.confirmingDiscard = false;
         this.renderPanel();
       }
@@ -149,6 +162,7 @@ export class UI {
       if (el.dataset.action) this.action(el.dataset.action);
       this.syncCoverAudio();
     });
+    const prologueUI = new PrologueUI(game);
     document.querySelector("#sound-toggle")!.addEventListener("click", () => {
       game.audio.toggle();
       this.updateSound();
@@ -158,11 +172,22 @@ export class UI {
       (e) => {
         const menu = document.querySelector(".cover-menu");
         if (menu && !this.panel && !game.started && !e.repeat) {
-          const options = Array.from(menu.querySelectorAll<HTMLButtonElement>(".cover-action:not(:disabled)"));
-          const index = Math.max(0, options.findIndex((option) => option.classList.contains("is-selected")));
+          const options = Array.from(
+            menu.querySelectorAll<HTMLButtonElement>(
+              ".cover-action:not(:disabled)",
+            ),
+          );
+          const index = Math.max(
+            0,
+            options.findIndex((option) =>
+              option.classList.contains("is-selected"),
+            ),
+          );
           let next: HTMLButtonElement | undefined;
-          if (e.key === "ArrowDown") next = options[(index + 1) % options.length];
-          if (e.key === "ArrowUp") next = options[(index + options.length - 1) % options.length];
+          if (e.key === "ArrowDown")
+            next = options[(index + 1) % options.length];
+          if (e.key === "ArrowUp")
+            next = options[(index + options.length - 1) % options.length];
           if (e.key === "Home") next = options[0];
           if (e.key === "End") next = options[options.length - 1];
           if (next || e.key === "Enter" || e.key === " ") {
@@ -171,7 +196,11 @@ export class UI {
             if (next) next.focus();
             else {
               const focused = document.activeElement;
-              if (focused instanceof HTMLButtonElement && focused.matches(".cover-audio")) focused.click();
+              if (
+                focused instanceof HTMLButtonElement &&
+                focused.matches(".cover-audio")
+              )
+                focused.click();
               else options[index]?.click();
             }
             return;
@@ -191,14 +220,19 @@ export class UI {
       true,
     );
     const selectCoverAction = (event: Event) => {
-      const target = event.target instanceof Element
-        ? event.target.closest<HTMLButtonElement>(".cover-action:not(:disabled)")
-        : null;
+      const target =
+        event.target instanceof Element
+          ? event.target.closest<HTMLButtonElement>(
+              ".cover-action:not(:disabled)",
+            )
+          : null;
       if (!target || this.panel) return;
       const menu = target.closest(".cover-menu")!;
-      menu.querySelectorAll(".cover-action").forEach((option) =>
-        option.classList.toggle("is-selected", option === target),
-      );
+      menu
+        .querySelectorAll(".cover-action")
+        .forEach((option) =>
+          option.classList.toggle("is-selected", option === target),
+        );
     };
     document.addEventListener("pointerover", selectCoverAction);
     document.addEventListener("focusin", selectCoverAction);
@@ -216,6 +250,7 @@ export class UI {
       layout.observe(document.querySelector(selector)!);
     game.onDialogue = () => this.open("dialogue");
     game.onUpdate = () => {
+      prologueUI.update();
       this.update();
       this.syncCoverAudio();
     };
@@ -270,22 +305,38 @@ export class UI {
         </div>
         <button class="cover-audio" data-action="cover-audio" aria-label="Ativar música temática" aria-pressed="false">♫ ATIVAR MÚSICA</button>
       </nav>`;
-    this.coverScene = new CoverScene(document.querySelector(".cover-scene")!, this.game.assets);
+    this.coverScene = new CoverScene(
+      document.querySelector(".cover-scene")!,
+      this.game.assets,
+    );
     this.syncCoverAudio();
   }
   private syncCoverAudio() {
     const button = document.querySelector<HTMLButtonElement>(".cover-audio");
     if (!button) return;
     const unlocked = !!this.game.audio.context;
-    const text = !unlocked ? "♫ ATIVAR MÚSICA" : this.game.audio.enabled ? "♫ MÚSICA · ON" : "♫ MÚSICA · OFF";
+    const text = !unlocked
+      ? "♫ ATIVAR MÚSICA"
+      : this.game.audio.enabled
+        ? "♫ MÚSICA · ON"
+        : "♫ MÚSICA · OFF";
     if (button.textContent === text) return;
     button.textContent = text;
-    button.setAttribute("aria-label", !unlocked || !this.game.audio.enabled ? "Ativar música temática" : "Silenciar música temática");
-    button.setAttribute("aria-pressed", String(unlocked && this.game.audio.enabled));
+    button.setAttribute(
+      "aria-label",
+      !unlocked || !this.game.audio.enabled
+        ? "Ativar música temática"
+        : "Silenciar música temática",
+    );
+    button.setAttribute(
+      "aria-pressed",
+      String(unlocked && this.game.audio.enabled),
+    );
   }
   drawPortrait() {
     const classId = this.game.player.classId;
-    const sprite = this.game.assets.images[classId === "guerreiro" ? "hero" : classId];
+    const sprite =
+      this.game.assets.images[classId === "guerreiro" ? "hero" : classId];
     const c = this.portrait.getContext("2d")!;
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#101728";
@@ -293,7 +344,10 @@ export class UI {
     c.drawImage(sprite, 24, 26, 48, 50, 0, 0, 64, 64);
     this.portraitClass = classId;
     this.portrait.dataset.classId = classId;
-    this.portrait.setAttribute("aria-label", `Busto de ${CLASSES[classId].name}`);
+    this.portrait.setAttribute(
+      "aria-label",
+      `Busto de ${CLASSES[classId].name}`,
+    );
   }
   action(action: string) {
     const g = this.game;
@@ -335,7 +389,12 @@ export class UI {
         g.audioEvent("quest.accept");
         g.save();
       }
-      g.dialogueStep = 1;
+      g.dialogueStep =
+        g.prologue.active &&
+        g.world.region === "pedralta" &&
+        !g.quest.rewardClaimed
+          ? Math.min(2, g.dialogueStep + 1)
+          : 1;
       this.renderPanel();
       return;
     }
@@ -352,6 +411,7 @@ export class UI {
           g.potion(Number(this.selectedItem.slice(7)));
       }
       if (action === "compare") {
+        if (item) g.prologue.event("inventory-action");
         g.audioEvent("equipment.compare");
         this.comparing = !this.comparing;
       }
@@ -433,6 +493,14 @@ export class UI {
   }
   open(panel: string) {
     if (this.game.started && this.game.player.hp <= 0) return;
+    if (
+      this.game.started &&
+      this.game.prologue.locked &&
+      panel !== "pause" &&
+      panel !== "settings"
+    )
+      return;
+    this.game.prologue.event(`panel:${panel}`);
     this.game.audioEvent(panel === "dialogue" ? "dialogue.open" : "ui.open");
     this.game.audio.setPaused(true);
     this.panel = panel;
@@ -525,8 +593,12 @@ export class UI {
       } else if (g.quest.rewardClaimed) {
         content = `<div class="dialogue-panel"><p>${c.rewardClaimed ? "Pedralta se lembra de seus nomes. Você devolveu à vila as memórias da Margem. Os caminhos permanecem abertos." : c.attuned.length === 3 ? "Você reuniu as três memórias. Entregue-as para que Pedralta e Kharn voltem a compartilhar a mesma história." : "O selo tornou-se uma passagem. Entre na Margem de Kharn e procure Iria, a cartógrafa, junto ao aqueduto. Ela conhece os três marcos esquecidos."}</p><div>${c.attuned.length === 3 && !c.rewardClaimed ? button("ENTREGAR AS MEMÓRIAS", "campaign-claim", "primary") : ""}${button("VOLTAR À VILA", "close", "primary")}</div></div>`;
       } else
-        content = `<div class="dialogue-panel"><p>${g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
+        content = `<div class="dialogue-panel"><p>${g.prologue.active ? guardianPrologueLine(g.dialogueStep, g.quest.kills, g.player.challenges.chests) : g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.prologue.active ? (g.dialogueStep < 2 ? button("CONTINUAR", "dialogue-next", "primary") : (!g.quest.accepted ? button("ACEITAR O CHAMADO", "dialogue-accept", "primary") : "") + button("VOLTAR À VILA", "close", "secondary")) : g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
     }
+    if (this.panel === "dialogue")
+      content =
+        `<div class="dialogue-speaker"><canvas class="dialogue-portrait" width="64" height="64" aria-label="Retrato de ${title}"></canvas><strong>${title}</strong></div>` +
+        content;
     if (this.panel === "quests") content = missionJournal(g);
     if (this.panel === "dialogue" && g.world.region === "ferrugem") {
       title =
@@ -552,6 +624,13 @@ export class UI {
       content = `<p class="pause-text">Para sair do jogo, feche esta aba.<br>Seu progresso salvo permanece neste navegador.</p>${button("VOLTAR AO MENU", "close", "primary")}`;
     this.modal.hidden = false;
     this.modal.innerHTML = `<section class="panel panel-${this.panel}" role="dialog" aria-modal="true" aria-label="${title}"><div class="panel-top"><div><small>${eyebrow}</small><h2>${title}</h2></div>${this.panel === "death" ? "" : button("×", "close", "close-button")}</div>${content}<div class="panel-footer"><span>${REGIONS[g.world.region].name.toUpperCase()} — ${REGIONS[g.world.region].subtitle.toUpperCase()}</span><span>${this.game.started ? "O MUNDO ESTÁ PAUSADO" : "ESCOLHA O SEU CAMINHO"}</span></div></section>`;
+    const portrait =
+      this.modal.querySelector<HTMLCanvasElement>(".dialogue-portrait");
+    if (portrait && g.assets.images.arcanista) {
+      const ctx = portrait.getContext("2d")!;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(g.assets.images.arcanista, 24, 26, 48, 50, 0, 0, 64, 64);
+    }
     const tree = this.modal.querySelector(".panel-skills");
     if (tree) tree.scrollTop = treeScroll;
   }
@@ -742,10 +821,17 @@ export class UI {
     const mission = selectedMission(g.exploration, g.quest);
     document.querySelector("#quest-checklist")!.innerHTML = mission
       ? mission.definition.steps
-          .map((step, i) => ({ text: step.text, done: mission.done[i], active: i === mission.stage }))
+          .map((step, i) => ({
+            text: step.text,
+            done: mission.done[i],
+            active: i === mission.stage,
+          }))
           .filter((step) => !step.active)
           .slice(0, 2)
-          .map((step) => `<span class="quest-check ${step.done ? "done" : "pending"}"><span aria-hidden="true">${step.done ? "◆" : "□"}</span>${step.text}</span>`)
+          .map(
+            (step) =>
+              `<span class="quest-check ${step.done ? "done" : "pending"}"><span aria-hidden="true">${step.done ? "◆" : "□"}</span>${step.text}</span>`,
+          )
           .join("")
       : "";
     document.querySelector("#quest-progress")!.textContent = g.exploration

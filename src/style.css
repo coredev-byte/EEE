@@ -4143,3 +4143,23 @@ h1 > span {
   .quest-name { font-size: 9px; }
   .quest-hud > #quest-objective { font-size: 8px; }
 }
+
+/* Real-time prologue: the narrative layer never intercepts world pointer input. */
+.prologue-layer { position:absolute; inset:0; z-index:18; pointer-events:none; }
+.prologue-layer[hidden], .prologue-layer [hidden] { display:none !important; }
+.prologue-layer button { pointer-events:auto; }
+.cinematic-active #hud { opacity:0; pointer-events:none; }
+#hud { transition:opacity .6s ease; }
+.cinematic-caption { position:absolute; bottom:10%; left:50%; transform:translateX(-50%); width:min(650px,85%); padding:18px 24px; text-align:center; background:rgba(3,9,20,.93); border-block:1px solid #ab8848; }
+.cinematic-caption small { display:block; color:#aa9781; margin-bottom:12px; }
+.cinematic-caption strong { color:#e2b962; font:12px "IBM Plex Mono",monospace; }
+.cinematic-caption p { color:#f0e4c9; font:18px/1.6 "IBM Plex Mono",monospace; margin:12px 0 0; }
+.skip-cinematic { position:absolute; top:24px; right:24px; color:#e7c982; background:#071020; border:1px solid #a88243; padding:12px; }
+.tutorial-hint { position:absolute; left:18px; bottom:120px; width:min(300px,calc(100% - 36px)); padding:14px 28px 14px 16px; color:#e7d9b9; background:rgba(4,11,22,.95); border:1px solid #a88243; box-shadow:0 4px 18px #0008; font:12px/1.6 "IBM Plex Mono",monospace; }
+.tutorial-hint p { margin:0; }
+.tutorial-hint button { position:absolute; right:4px; top:4px; border:0; background:transparent; color:#e7c982; font-size:18px; }
+.tutorial-focus { outline:2px solid #d5ae58; outline-offset:3px; }
+@media(max-width:650px) { .tutorial-hint { bottom:105px; width:220px; font-size:10px; } .cinematic-caption p { font-size:13px; } }
+@media(prefers-reduced-motion:reduce) { #hud { transition:none; } }
+.dialogue-speaker { display:flex; align-items:center; gap:18px; margin:0 0 18px; color:#d9bc75; font-family:"IBM Plex Mono",monospace; }
+.dialogue-portrait { width:64px; height:64px; image-rendering:pixelated; border:1px solid #9c7c43; background:#091121; }

@@ -1,3 +1,4 @@
+import { restorePrologue, type PrologueSave } from "./prologue";
 import { World } from "./world";
 import { validJournal } from "./missions";
 import {
@@ -15,6 +16,7 @@ import { createPlayer, stats, type Player, type Quest } from "./state";
 export const SAVE_KEY = "distrito-zero:v1";
 export interface Save {
   version: 4;
+  prologue: PrologueSave | null;
   exploration: Exploration;
   player: Player;
   quest: Quest;
@@ -28,9 +30,11 @@ export function serialize(
   opened: string[],
   killed: number[],
   exploration?: Exploration,
+  prologue: PrologueSave | null = null,
 ): string {
   return JSON.stringify({
     version: 4,
+    prologue,
     exploration: exploration ?? {
       ...freshExploration(),
       regions: {
@@ -253,7 +257,13 @@ export function deserialize(raw: string | null): Save | null {
       player,
       exploration.regions[exploration.region].discovered,
     );
-    return { ...s, version: 4, player, exploration };
+    return {
+      ...s,
+      version: 4,
+      player,
+      exploration,
+      prologue: restorePrologue(s.prologue),
+    };
   } catch {
     return null;
   }
