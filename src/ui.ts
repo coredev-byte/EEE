@@ -51,6 +51,7 @@ export class UI {
   lastHUD = 0;
   private hudLayoutDirty = true;
   private coverScene: CoverScene | null = null;
+  private portraitClass: ClassId | null = null;
   selectedItem = "brasa";
   inventoryFilter = "all";
   comparing = false;
@@ -65,7 +66,7 @@ export class UI {
    <header class="topbar"><a class="wordmark" href="#" aria-label="Distrito Zero">DISTRITO <span>ZER<span class="zero">O</span></span></a><span class="edition">CRÔNICAS DE PEDRALTA <i></i> CAPÍTULO I</span><nav aria-label="Menus do jogo"><button data-panel="quests">DIÁRIO <kbd>J</kbd></button><button data-panel="inventory">INVENTÁRIO <kbd>I</kbd></button><button data-panel="settings" aria-label="Configurações">SISTEMA <kbd>M</kbd></button></nav></header>
    <main><div class="scene-label"><span id="region-caption"><i class="live-dot"></i> VILA PEDRALTA</span><span>UM MUNDO EM RUÍNAS. SEU PRÓPRIO CAMINHO.</span></div>
    <section class="game-shell" aria-label="Distrito Zero, RPG de ação"><div class="game-viewport"><canvas id="game" width="${VIEW.width}" height="${VIEW.height}" tabindex="0" aria-label="Mundo do jogo: use WASD para mover, clique esquerdo para atacar e 1 a 4 para habilidades"></canvas>
-   <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas></div><span class="level-medallion" aria-label="Nível">Nv. <b id="level">1</b></span><div class="bars"><div class="bar-row"><label title="Vida">${hudIcon("life")}<span class="hud-accessible">HP</span></label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label title="Mana">${hudIcon("mana")}<span class="hud-accessible">MP</span></label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label title="Experiência">${hudIcon("xp")}<span class="hud-accessible">XP</span></label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div><nav class="hud-tools" aria-label="Acessos rápidos"><button data-panel="inventory" aria-label="Abrir inventário" title="Inventário · I">${hudIcon("inventory")}</button><button data-panel="quests" aria-label="Abrir missões" title="Missões · J">${hudIcon("quests")}</button><button data-panel="settings" aria-label="Abrir configurações" title="Configurações · M">${hudIcon("settings")}</button></nav></section>
+   <div class="hud" id="hud"><section class="player-hud"><div class="portrait-frame"><canvas id="portrait" width="64" height="64"></canvas></div><span class="level-medallion" aria-label="Nível">Nv. <b id="level">1</b></span><div class="bars"><div class="bar-row"><label title="Vida">${hudIcon("life")}<span class="hud-accessible">HP</span></label><div class="bar hp"><i id="hp-fill"></i><span id="hp-value"></span></div></div><div class="bar-row"><label title="Mana">${hudIcon("mana")}<span class="hud-accessible">MP</span></label><div class="bar mp"><i id="mp-fill"></i><span id="mp-value"></span></div></div><div class="bar-row"><label title="Experiência">${hudIcon("xp")}<span class="hud-accessible">XP</span></label><div class="bar xp"><i id="xp-fill"></i><span id="xp-value"></span></div></div></div></section>
    <div class="location"><span class="location-mark"></span> VILA PEDRALTA <span>— SETOR LESTE</span></div><button class="quest-hud" data-panel="quests"><span class="quest-name"><span class="diamond"></span> O ECO DE KHARN</span><span id="quest-objective">Encontre a entrada das ruínas</span><span class="quest-checklist" id="quest-checklist"></span><small id="quest-progress">MISSÃO PRINCIPAL</small></button>
    <section class="minimap-box"><div class="map-label">PEDRALTA <span>N</span></div><canvas id="minimap" data-shape="isometric" width="192" height="144" aria-label="Minimapa da vila"></canvas><details class="map-key"><summary aria-label="Legenda do minimapa" title="Legenda do minimapa">?</summary><div class="map-legend" aria-label="Legenda do minimapa"><strong>MINIMAPA</strong><span>${hudIcon("main")} Objetivo principal</span><span>${hudIcon("secondary")} Objetivo secundário</span><span>${hudIcon("player")} Você · posição e direção</span><span>${hudIcon("exit")} Saída / Passagem</span><span>${hudIcon("xp")} Ponto de interesse</span><span>${hudIcon("enemy")} Inimigo / Chefe</span><div class="map-coordinates" id="coordinates"></div><div class="map-connection" id="map-connection"></div></div></details></section>
    <div class="loot-notifications" id="loot-notifications" role="status" aria-label="Itens coletados"></div><div class="skillbar" id="skillbar"></div><div class="quickbar" id="quickbar"></div><div class="interact" id="interact"></div><div class="toast" role="status" id="toast"></div><div class="class-name" id="class-name"></div></div>
@@ -283,11 +284,16 @@ export class UI {
     button.setAttribute("aria-pressed", String(unlocked && this.game.audio.enabled));
   }
   drawPortrait() {
+    const classId = this.game.player.classId;
+    const sprite = this.game.assets.images[classId === "guerreiro" ? "hero" : classId];
     const c = this.portrait.getContext("2d")!;
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#101728";
     c.fillRect(0, 0, 64, 64);
-    c.drawImage(this.game.assets.images["reference-portrait"], 32, 68, 82, 82, 0, 0, 64, 64);
+    c.drawImage(sprite, 24, 26, 48, 50, 0, 0, 64, 64);
+    this.portraitClass = classId;
+    this.portrait.dataset.classId = classId;
+    this.portrait.setAttribute("aria-label", `Busto de ${CLASSES[classId].name}`);
   }
   action(action: string) {
     const g = this.game;
@@ -692,6 +698,7 @@ export class UI {
     const g = this.game,
       p = g.player,
       s = stats(p);
+    if (this.portraitClass !== p.classId) this.drawPortrait();
     for (const [key, value, max] of [
       ["hp", p.hp, s.maxHp],
       ["mp", p.mp, s.maxMp],

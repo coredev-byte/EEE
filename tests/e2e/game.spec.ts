@@ -183,9 +183,13 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   await page.locator('[data-filter="all"]').click();
   await page.screenshot({ path: "artifacts/inventory.png", fullPage: true });
   await page.keyboard.press("Escape");
+  const portraitBefore = await page.locator("#portrait").evaluate((el: HTMLCanvasElement) => el.toDataURL());
   await page.keyboard.press("c");
   await page.locator('[data-class="atirador"]').click();
   expect((await state(page)).player.classId).toBe("atirador");
+  await expect(page.locator("#portrait")).toHaveAttribute("data-class-id", "atirador");
+  const portraitAfter = await page.locator("#portrait").evaluate((el: HTMLCanvasElement) => el.toDataURL());
+  expect(portraitAfter).not.toBe(portraitBefore);
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await page.reload();
@@ -193,6 +197,8 @@ test("Inventário, comparação, equipamento, classes e persistência real", asy
   const s = await state(page);
   expect(s.player.equipment.weapon).toBe("raio");
   expect(s.player.classId).toBe("atirador");
+  await expect(page.locator("#portrait")).toHaveAttribute("data-class-id", "atirador");
+  expect(await page.locator("#portrait").evaluate((el: HTMLCanvasElement) => el.toDataURL())).toBe(portraitAfter);
   await expect(page.locator("#class-name")).toContainText("ATIRADOR");
 });
 test("Combate real, XP, desbloqueios, minimapa, baú e missão concluída", async ({
@@ -398,7 +404,9 @@ test("Clique sem pointermove e viewport/HUD alinhados em tela cheia", async ({
     expect(canvas!.height).toBeCloseTo(windowSize.height, 1);
     await expect(page.locator(".underbar")).toBeHidden();
     await expect(page.locator(".topbar")).toBeHidden();
-    await expect(page.locator("#hud kbd").first()).toBeHidden();
+    await expect(page.locator("#skillbar kbd").first()).toBeVisible();
+    await expect(page.locator("#quickbar kbd").first()).toBeVisible();
+    await expect(page.locator(".hud-tools")).toHaveCount(0);
     expect(hud!.x).toBeCloseTo(canvas!.x, 1);
     expect(hud!.y).toBeCloseTo(canvas!.y, 1);
     expect(hud!.width).toBeCloseTo(canvas!.width, 1);

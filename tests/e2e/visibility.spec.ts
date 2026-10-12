@@ -226,8 +226,8 @@ test("Movimento real atrás da casa, minimapa orientado e campanha continua pela
     path: "artifacts/objectives-hud.png",
     fullPage: true,
   });
-  for (const panel of ["inventory", "quests", "settings"]) {
-    await page.locator(`.hud-tools [data-panel="${panel}"]`).click();
+  for (const key of ["i", "j", "m"]) {
+    await page.keyboard.press(key);
     await expect(page.locator("#modal-layer")).toBeVisible();
     await page.keyboard.press("Escape");
     expect(

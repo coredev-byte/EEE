@@ -4125,7 +4125,6 @@ h1 > span {
 }
 .game-shell { aspect-ratio: auto; }
 .game-shell #game { object-fit: fill; }
-#hud kbd,
 #hud .interact,
 .inventory-close kbd,
 .item-actions kbd {

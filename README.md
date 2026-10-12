@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-O jogo e a capa ocupam toda a janela, sem cabeçalho, rodapé ou legendas de teclas na HUD. Teclado, mouse e os botões continuam funcionando; os controles podem ser consultados nas configurações.
+O jogo e a capa ocupam toda a janela, sem cabeçalho, rodapé ou instruções de movimento na tela. As teclas aparecem somente nas habilidades e utilitários. O retrato mostra o busto da classe atual e os três ícones ao lado das barras foram removidos. Teclado, mouse e os botões continuam funcionando; os controles podem ser consultados nas configurações.
 
 O Vite escuta na porta 5173. O jogo funciona inteiramente no navegador; não precisa de banco, conta, API ou credenciais. Fontes e sprites são locais. `npm run build` produz `dist/`; `npm run preview` serve esse resultado.
 
