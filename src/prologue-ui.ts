@@ -24,12 +24,15 @@ export class PrologueUI {
   }
   update() {
     const p = this.game.prologue,
-      frame = p.cinematic.frame();
+      frame = this.game.cinematic.frame();
     const showing = this.game.started && !this.game.paused;
-    this.element.hidden = !showing || !p.active;
+    this.element.hidden = !showing || (!p.active && !frame);
     document
       .querySelector(".game-shell")!
-      .classList.toggle("cinematic-active", showing && p.locked);
+      .classList.toggle(
+        "cinematic-active",
+        showing && this.game.controlsLocked,
+      );
     const caption =
         this.element.querySelector<HTMLElement>(".cinematic-caption")!,
       skip = this.element.querySelector<HTMLButtonElement>(".skip-cinematic")!,

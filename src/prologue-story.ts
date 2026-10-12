@@ -7,7 +7,12 @@ export interface Shot {
   speaker: string;
   text: string;
   pulse?: boolean;
+  pulseAt?: Point;
   fade?: boolean;
+  music?: import("./audio-catalog").MusicState;
+  actor?: import("./data").Action;
+  actorTo?: Point;
+  bossPose?: string;
 }
 export interface Scene {
   id: string;

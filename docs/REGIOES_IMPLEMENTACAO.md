@@ -1,5 +1,8 @@
 # Etapa 2 — regiões e continuidade
 
+> Continuação: o Capítulo I foi ampliado com Bizel, Ruínas Esquecidas e a luta de Kharn. Veja [a implementação atual](KHARN_BOSS_IMPLEMENTACAO.md). Este documento registra a entrega anterior.
+
+
 Pedido: [REGIOES_SOLICITADAS.md](REGIOES_SOLICITADAS.md). Base: `8db46db`. Foram lidos a auditoria estrutural, a revisão solicitada, README e os sistemas de mundo, renderização, missão, áudio, IA, HUD e save antes da implementação. O projeto foi ampliado, mantendo classes, árvore, equipamentos, combate, inventário, sprites e mixer.
 
 ## Percurso jogável

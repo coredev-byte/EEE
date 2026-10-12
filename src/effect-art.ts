@@ -1,7 +1,7 @@
 /** Reusable nearest-neighbor surface; tint retains the atlas's alpha and pixel detail. */
 let surface: HTMLCanvasElement | undefined;
 export function effectFrame(
-  atlas: HTMLImageElement,
+  atlas: CanvasImageSource,
   row: number,
   col: number,
   color?: string,

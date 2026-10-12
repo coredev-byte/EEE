@@ -1,5 +1,8 @@
 # Expansão jogável: Bairro da Ferrugem
 
+> Continuação: o Capítulo I foi ampliado com Bizel, Ruínas Esquecidas e a luta de Kharn. Veja [a implementação atual](KHARN_BOSS_IMPLEMENTACAO.md). Este documento registra a entrega anterior.
+
+
 Pedido: [EXPANSAO_SOLICITADA.md](EXPANSAO_SOLICITADA.md). Base: `119e5fd`. Foram analisados mundo, regiões, combate, IA, missões, save, áudio, oclusão, HUD e os testes existentes antes das alterações. Esta entrega usa a alternativa expressa no pedido: uma região nova completa e a arquitetura para expandir as demais.
 
 ## O que está jogável

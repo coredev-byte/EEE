@@ -5,16 +5,22 @@ export interface CinematicFrame {
   zoom: number;
   fade: number;
   pulse: number;
+  pulseAt: Point;
   speaker: string;
   text: string;
   title: string;
+  music?: import("./audio-catalog").MusicState;
+  actor?: import("./data").Action;
+  actorTo?: Point;
+  bossPose?: string;
 }
 /** Transient visual state is deliberately not saved. Interrupted shots restart safely. */
 export class Cinematics {
   scene: Scene | null = null;
   elapsed = 0;
-  start(id: string) {
-    this.scene = SCENES.find((s) => s.id === id) ?? null;
+  start(id: string | Scene) {
+    this.scene =
+      typeof id === "string" ? (SCENES.find((s) => s.id === id) ?? null) : id;
     this.elapsed = 0;
   }
   get id() {
@@ -68,9 +74,14 @@ export class Cinematics {
       zoom: reduced ? 1 : shot.zoom + (1 - shot.zoom) * returnFactor,
       fade: shot.fade ? Math.max(0, 1 - t / 2) : 0,
       pulse: shot.pulse ? (reduced ? 0.08 : 0.12 + 0.12 * Math.sin(t * 3)) : 0,
+      pulseAt: shot.pulseAt ?? shot.to,
       speaker: shot.speaker,
       text: shot.text,
       title: this.scene.title,
+      music: shot.music,
+      actor: shot.actor,
+      actorTo: shot.actorTo,
+      bossPose: shot.bossPose,
     };
   }
 }

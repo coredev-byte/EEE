@@ -1,3 +1,5 @@
+import { freshChapter, CHAPTER_SCENES } from "./chapter-data";
+import { emptyRegion } from "./regions";
 import { restorePrologue, type PrologueSave } from "./prologue";
 import { World } from "./world";
 import { validJournal } from "./missions";
@@ -69,6 +71,16 @@ export function deserialize(raw: string | null): Save | null {
         visited: old.campaign?.entered ? ["pedralta", "kharn"] : ["pedralta"],
       };
     }
+    if (
+      s.version >= 3 &&
+      s.exploration?.regions &&
+      !s.exploration.regions.ruins
+    )
+      s.exploration.regions.ruins = emptyRegion();
+    if (s.version >= 3 && s.exploration && !s.exploration.chapter)
+      s.exploration.chapter = freshChapter(
+        !!s.exploration.campaign?.rewardClaimed,
+      );
     if (s.version >= 3 && !validExploration(s.exploration, s.quest))
       return null;
     const exploration: Exploration =
@@ -323,6 +335,35 @@ function validExploration(value: unknown, quest: Quest): value is Exploration {
   if (c.rewardClaimed && c.attuned.length !== ANCHORS.length) return false;
   if (e.region === "ferrugem" && !c.rewardClaimed) return false;
   if (!validJournal(e)) return false;
+  const chapter = e.chapter;
+  if (
+    chapter &&
+    (chapter.version !== 1 ||
+      typeof chapter.legacyRoad !== "boolean" ||
+      typeof chapter.checkpoint !== "boolean" ||
+      !["ready", "intro", "fight", "ending", "cleared"].includes(
+        chapter.arena,
+      ) ||
+      !Array.isArray(chapter.scenes) ||
+      new Set(chapter.scenes).size !== chapter.scenes.length ||
+      chapter.scenes.some((id) => !CHAPTER_SCENES.includes(id)))
+  )
+    return false;
+  if (e.region === "ruins" && !e.journal.events.includes("report:lenir"))
+    return false;
+  if (
+    chapter &&
+    ["intro", "fight", "ending"].includes(chapter.arena) &&
+    !e.journal.events.includes("arena-open")
+  )
+    return false;
+  if (
+    chapter?.arena === "cleared" &&
+    !e.journal.completed.includes("shattered-seal")
+  )
+    return false;
+  if (chapter?.arena === "ending" && !e.journal.events.includes("defeat:310"))
+    return false;
   for (const id of REGION_IDS) {
     const r = e.regions[id];
     if (

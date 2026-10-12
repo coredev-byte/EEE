@@ -1,3 +1,4 @@
+import { CHAPTER_RECORDS } from "./chapter-data";
 import { HINTS } from "./tutorial-hints";
 import type { Game } from "./game";
 import { missionViews, selectedMission } from "./missions";
@@ -18,6 +19,12 @@ export function missionJournal(g: Game) {
     (g.prologue.state
       ? `<article class="quest-detail"><h3>Primeiros passos em Pedralta</h3><p>${g.prologue.state.complete ? "Prólogo concluído. A jornada continua na campanha." : "A Guardiã precisa de notícias do selo."}</p><ol>${HINTS.map((h) => `<li>${g.prologue.seen(`done:${h.id}`) ? "✓" : "◇"} ${h.text}</li>`).join("")}</ol><small>Orientações registradas: ${g.prologue.state.hints.length}. Sem recompensas adicionais.</small></article>`
       : "") +
+    `<section class="world-journal"><h3>Registros do Selo Partido</h3>${
+      Object.entries(CHAPTER_RECORDS)
+        .filter(([id]) => g.exploration.journal.events.includes(id))
+        .map(([, text]) => `<p>${text}</p>`)
+        .join("") || "<p>Nenhum registro da investigação encontrado.</p>"
+    }</section>` +
     missionViews(g.exploration, g.quest)
       .map((v) => {
         const m = v.definition;

@@ -1,3 +1,11 @@
+import { ChapterDirector } from "./chapter-runtime";
+import {
+  freshChapter,
+  ruinEnemies,
+  KHARN_ID,
+  CHAPTER_ID,
+} from "./chapter-data";
+import { updateChapterBoss } from "./chapter-boss";
 import {
   REGIONS,
   ANCHORS,
@@ -51,6 +59,15 @@ import {
 } from "./world";
 import { Prologue, freshPrologue } from "./prologue";
 export class Game {
+  chapter = new ChapterDirector(this);
+  get cinematic() {
+    return this.chapter.cinematic.id
+      ? this.chapter.cinematic
+      : this.prologue.cinematic;
+  }
+  get controlsLocked() {
+    return this.prologue.locked || !!this.chapter.cinematic.id;
+  }
   prologue = new Prologue();
   world = new World();
   exploration = freshExploration();
@@ -100,7 +117,7 @@ export class Game {
     this.combat = new Combat(this);
     this.input.onAttack = () => {
       this.audio.unlock();
-      if (!this.paused && !this.prologue.locked)
+      if (!this.paused && !this.controlsLocked)
         this.combat.attack(this.target());
     };
     this.input.onKey = (k) => this.key(k);
@@ -205,7 +222,7 @@ export class Game {
     if (!this.input.pointerActive) return undefined;
     const pointer = this.input.pointer;
     const clicked = this.enemies
-      .filter((e) => e.hp > 0)
+      .filter((e) => e.hp > 0 && !e.dormant)
       .map((e) => ({ enemy: e, screen: this.renderer.project(e) }))
       .sort(
         (a, b) =>
@@ -238,6 +255,8 @@ export class Game {
       this.prologue = new Prologue(freshPrologue());
       this.player = createPlayer(classId);
       this.exploration = freshExploration();
+      this.exploration.chapter = freshChapter();
+      this.chapter.cinematic.finish();
       this.mountRegion("pedralta");
       this.quest = { stage: 0, kills: 0, rewardClaimed: false };
       this.effects = [];
@@ -251,6 +270,7 @@ export class Game {
     this.audio.unlock();
     this.onStart();
     this.prologue.begin();
+    this.chapter.resume();
     if (this.player.hp <= 0) this.onDeath();
     else this.notify(this.objective());
     this.save();
@@ -261,7 +281,7 @@ export class Game {
       return;
     }
     if (!this.started) return;
-    if (this.prologue.locked) {
+    if (this.controlsLocked) {
       if (!this.paused && (k === "enter" || k === " ")) this.skipCinematic();
       return;
     }
@@ -287,13 +307,17 @@ export class Game {
     this.last = t;
     if (!this.paused) {
       this.time += dt;
-      if (!this.prologue.locked) this.update(dt);
+      if (!this.controlsLocked || this.player.hp <= 0) this.update(dt);
       else this.player.animTime += dt;
-      const previousScene = this.prologue.cinematic.id;
+      const previousScene = this.cinematic.id;
+      if (this.controlsLocked) {
+        this.combat.pending = null;
+      }
+      if (this.player.hp > 0) this.chapter.update(dt);
       const p = this.player,
         max = stats(p);
       this.prologue.movement(p, this.input.keys.has("shift"));
-      if (p.hp > 0)
+      if (p.hp > 0 && !this.chapter.cinematic.id)
         this.prologue.update(dt, {
           kills: this.quest.kills,
           foundSeal: this.quest.stage > 0,
@@ -309,9 +333,9 @@ export class Game {
           classes: this.prologue.seen("panel:classes"),
           tree: this.prologue.seen("panel:skills"),
         });
-      if (previousScene !== this.prologue.cinematic.id) {
+      if (previousScene !== this.cinematic.id) {
         this.input.keys.clear();
-        if (["signal", "evidence"].includes(this.prologue.cinematic.id ?? ""))
+        if (["signal", "evidence"].includes(this.cinematic.id ?? ""))
           this.audioEvent("object.portal", { position: PORTAL });
       }
       if (this.prologue.dirty) {
@@ -323,7 +347,7 @@ export class Game {
     const region =
       this.world.region === "ferrugem"
         ? "industrial"
-        : this.world.region === "kharn"
+        : this.world.region === "kharn" || this.world.region === "ruins"
           ? "ruins"
           : distance(this.player, PORTAL) < 5
             ? "ruins"
@@ -337,7 +361,7 @@ export class Game {
       ? "menu"
       : this.player.hp <= 0
         ? "defeat"
-        : this.dialogueOpen || this.prologue.locked
+        : this.dialogueOpen || this.controlsLocked
           ? "narrative"
           : this.inCombat()
             ? this.enemies.some(
@@ -353,11 +377,29 @@ export class Game {
             : this.enemies.some((e) => e.hp > 0 && distance(e, this.player) < 8)
               ? "danger"
               : "safe";
-    this.audio.scene(region, mood);
-    this.renderer.cinematic = this.prologue.cinematic.frame(
-      matchMedia("(prefers-reduced-motion: reduce)").matches,
-      this.player,
-    );
+    this.renderer.cinematic = this.started
+      ? this.cinematic.frame(
+          matchMedia("(prefers-reduced-motion: reduce)").matches,
+          this.player,
+        )
+      : null;
+    const boss = this.enemies.find((e) => e.id === KHARN_ID);
+    const score = !this.started
+      ? "menu"
+      : this.player.hp <= 0
+        ? "defeat"
+        : (this.renderer.cinematic?.music ??
+          (this.chapter.fighting
+            ? boss?.phase === 3
+              ? "boss3"
+              : boss?.phase === 2
+                ? "boss2"
+                : "boss"
+            : this.world.region === "ruins" &&
+                distance(this.player, { x: 14, y: 10 }) < 5
+              ? "threshold"
+              : mood));
+    this.audio.scene(region, score);
     this.renderer.draw(
       this.player,
       this.enemies,
@@ -365,7 +407,7 @@ export class Game {
       this.texts,
       this.projectiles,
       this.paused ? 0 : dt,
-      this.prologue.locked ? null : this.activeObjective(),
+      this.controlsLocked ? null : this.activeObjective(),
     );
     this.onUpdate();
     requestAnimationFrame((n) => this.tick(n));
@@ -443,7 +485,24 @@ export class Game {
         e.statusKinds = (this.combat.engine.statuses.get(e.id) ?? []).map(
           (s) => s.kind,
         );
-      updateEnemies(this.enemies, p, this.world, this.combat, dt, this.time);
+      if (!this.controlsLocked) {
+        for (const e of this.enemies)
+          if (["kharn", "bizel"].includes(e.appearance ?? ""))
+            updateChapterBoss(e, p, this.world, this.combat, dt, (e) =>
+              this.chapter.phase(e),
+            );
+        if (!this.controlsLocked)
+          updateEnemies(
+            this.enemies.filter(
+              (e) => !["kharn", "bizel"].includes(e.appearance ?? ""),
+            ),
+            p,
+            this.world,
+            this.combat,
+            dt,
+            this.time,
+          );
+      }
     } else {
       this.combat.pending = null;
       p.action = "dead";
@@ -456,6 +515,7 @@ export class Game {
     for (const e of this.enemies) {
       if (
         this.world.region === "pedralta" &&
+        e.id !== 300 &&
         e.hp <= 0 &&
         e.timer > 90 &&
         distance(p, e.home) > 8
@@ -500,7 +560,7 @@ export class Game {
       .filter(
         (o) =>
           !o.opened &&
-          [
+          ([
             "portal",
             "chest",
             "npc",
@@ -508,7 +568,8 @@ export class Game {
               ? ["crate", "fountain", "bench"]
               : []),
             ...(this.world.region === "kharn" ? ["statue"] : []),
-          ].includes(o.kind) &&
+          ].includes(o.kind) ||
+            !!o.interaction) &&
           (this.world.region !== "ferrugem" ||
             ["npc", "portal", "chest"].includes(o.kind) ||
             !!o.interaction),
@@ -521,14 +582,15 @@ export class Game {
       );
   }
   skipCinematic() {
-    if (!this.prologue.locked) return;
-    this.prologue.finishScene();
+    if (!this.controlsLocked) return;
+    if (this.chapter.cinematic.id) this.chapter.finishScene();
+    else this.prologue.finishScene();
     this.input.keys.clear();
     this.renderer.snap(this.player);
     this.save();
   }
   interact() {
-    if (this.prologue.locked) return false;
+    if (this.controlsLocked || this.player.hp <= 0) return false;
     const o = this.nearby();
     if (!o) {
       this.notify(
@@ -536,6 +598,8 @@ export class Game {
       );
       return false;
     }
+    const chapterInteraction = this.chapter.interact(o);
+    if (chapterInteraction !== null) return chapterInteraction;
     this.player.action = "interact";
     this.player.animTime = 0;
     if (this.world.region === "ferrugem" && o.interaction)
@@ -563,6 +627,7 @@ export class Game {
       return true;
     }
     if (o.kind === "npc") {
+      this.dialogueNPC = o.interaction ?? "guardian";
       this.dialogueOpen = true;
       this.dialogueStep = 0;
       this.onDialogue();
@@ -589,7 +654,9 @@ export class Game {
         !(this.world.region === "pedralta" && !this.quest.rewardClaimed)
       ) {
         if (!passageOpen(passage, this.exploration, this.quest.rewardClaimed)) {
-          this.notify(`${passage.name} bloqueada. ${passage.blocked}.`);
+          this.notify(
+            `${passage.name} bloqueada. ${o.blockedReason ?? passage.blocked}.`,
+          );
           return false;
         }
         return this.changeRegion(passage.destination);
@@ -630,7 +697,7 @@ export class Game {
     return true;
   }
   potion(i: number) {
-    if (this.prologue.locked) return false;
+    if (this.controlsLocked) return false;
     const p = this.player;
     if (p.hp <= 0 || p.potions[i] <= 0) return false;
     const s = stats(p);
@@ -708,6 +775,7 @@ export class Game {
   }
   respawn() {
     this.audio.reset();
+    if (this.chapter.respawn()) return;
     this.pickups = [];
     if (this.world.region !== "pedralta") {
       this.captureRegion();
@@ -760,7 +828,9 @@ export class Game {
         ? createEnemies()
         : id === "kharn"
           ? kharnEnemies()
-          : ferrugemEnemies();
+          : id === "ruins"
+            ? ruinEnemies()
+            : ferrugemEnemies();
     for (const p of this.world.props) p.opened = progress.opened.includes(p.id);
     this.syncPassages();
     this.world.applyChanges(this.exploration.changes);
@@ -779,6 +849,7 @@ export class Game {
         e.timer = 3;
       }
     }
+    this.chapter.mount();
     this.syncMissions();
     this.renderer?.makeFloor();
   }
@@ -820,6 +891,7 @@ export class Game {
       this.exploration.visited.push(id);
       this.audioEvent("area.discover");
     }
+    if (id === "ruins") this.missionEvent("enter:ruins", false);
     if (id === "ferrugem") this.missionEvent("enter:ferrugem", false);
     const r = this.exploration.regions[id];
     r.discovered = this.world.discover(this.player, r.discovered);
@@ -842,7 +914,14 @@ export class Game {
         Object.assign(prop, {
           name: p.name,
           locked: !open,
-          blockedReason: p.blocked,
+          blockedReason:
+            p.destination === "ferrugem" &&
+            this.exploration.campaign.rewardClaimed &&
+            this.exploration.chapter &&
+            !this.exploration.chapter.legacyRoad &&
+            !this.exploration.journal.completed.includes(CHAPTER_ID)
+              ? "Conclua O Selo Partido: investigue Bizel e encontre Kharn nas Ruínas Esquecidas"
+              : p.blocked,
         });
       if (
         (distance(p, this.player) < 4.5 ||
@@ -859,8 +938,11 @@ export class Game {
     return changed;
   }
   syncMissions() {
-    if (this.exploration.campaign.rewardClaimed)
+    if (this.exploration.campaign.rewardClaimed) {
+      if (this.exploration.chapter && !this.exploration.chapter.legacyRoad)
+        acceptMission(this.exploration, this.quest, CHAPTER_ID);
       acceptMission(this.exploration, this.quest, "machines");
+    }
     for (const v of missionViews(this.exploration, this.quest)) {
       if (v.status !== "ativa" || v.stage !== v.definition.steps.length)
         continue;
@@ -913,7 +995,19 @@ export class Game {
     this.save();
     return true;
   }
+  onNarrativeDefeat = (enemy: Enemy) => this.chapter.down(enemy);
   onEnemyDefeated = (enemy: Enemy) => {
+    if ([300, 301, 302].includes(enemy.id)) {
+      if (enemy.id === 300) {
+        enemy.bossAttack = undefined;
+        enemy.state = "dead";
+        enemy.timer = 3;
+      }
+      if (enemy.id === 300 && !this.exploration.bosses.includes("pedralta:300"))
+        this.exploration.bosses.push("pedralta:300");
+      this.missionEvent(`defeat:${enemy.id}`);
+      return;
+    }
     if (this.world.region !== "ferrugem") return;
     if ([203, 204].includes(enemy.id)) {
       const id = `ferrugem:${enemy.id}`;
@@ -1072,7 +1166,7 @@ export class Game {
             id: step.target,
             kind: "defeat",
             label: enemy.name ?? step.text,
-            height: enemy.boss ? 108 : 82,
+            height: enemy.appearance === "kharn" ? 170 : enemy.boss ? 108 : 82,
             category,
           }
         : null;
@@ -1125,7 +1219,12 @@ export class Game {
     ) {
       const kind = this.prologue.state!.step === "guardian" ? "npc" : "chest";
       const target = this.world.props
-        .filter((p) => p.kind === kind && !p.opened)
+        .filter(
+          (p) =>
+            p.kind === kind &&
+            !p.opened &&
+            (kind !== "npc" || p.id === "npc-10-14"),
+        )
         .sort((a, b) => distance(a, this.player) - distance(b, this.player))[0];
       if (target)
         return {
@@ -1141,7 +1240,13 @@ export class Game {
       type: Objective["kind"],
       label: string,
     ): Objective | null => {
-      const o = this.world.props.find((o) => o.kind === kind);
+      const o = this.world.props.find(
+        (o) =>
+          o.kind === kind &&
+          (kind !== "portal" ||
+            o.id ===
+              `portal-${REGIONS[this.world.region].connection.x}-${REGIONS[this.world.region].connection.y}`),
+      );
       return o
         ? {
             x: o.x,
@@ -1246,7 +1351,15 @@ export class Game {
       if (previous) {
         let version = 0;
         try {
-          version = JSON.parse(previous).version;
+          const parsed = JSON.parse(previous);
+          version = parsed.version;
+          if (
+            version === 4 &&
+            (!parsed.exploration?.chapter ||
+              !parsed.exploration?.regions?.ruins) &&
+            !localStorage.getItem(`${SAVE_KEY}:backup:chapter-I`)
+          )
+            localStorage.setItem(`${SAVE_KEY}:backup:chapter-I`, previous);
         } catch {
           /* A corrupt old save must not prevent starting a new journey. */
         }
@@ -1279,6 +1392,11 @@ export class Game {
   }
   snapshot() {
     return {
+      chapter: {
+        state: structuredClone(this.exploration.chapter),
+        scene: this.chapter.cinematic.id,
+        fighting: this.chapter.fighting,
+      },
       prologue: {
         state: structuredClone(this.prologue.state),
         scene: this.prologue.cinematic.id,

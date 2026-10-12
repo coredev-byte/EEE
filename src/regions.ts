@@ -1,11 +1,18 @@
+import type { ChapterState } from "./chapter-data";
 import type { Point } from "./spatial";
 import type { Enemy } from "./state";
-export type RegionId = "pedralta" | "kharn" | "ferrugem";
-export const REGION_IDS: RegionId[] = ["pedralta", "kharn", "ferrugem"];
+export type RegionId = "pedralta" | "kharn" | "ferrugem" | "ruins";
+export const REGION_IDS: RegionId[] = [
+  "pedralta",
+  "kharn",
+  "ferrugem",
+  "ruins",
+];
 // Future districts are world metadata, never selectable empty maps.
 export const WORLD_DISTRICTS = [
   { id: "pedralta", name: "Vila Pedralta", playable: true },
-  { id: "kharn", name: "Ruínas Esquecidas · Margem de Kharn", playable: true },
+  { id: "kharn", name: "Margem de Kharn", playable: true },
+  { id: "ruins", name: "Ruínas Esquecidas", playable: true },
   { id: "ferrugem", name: "Bairro da Ferrugem", playable: true },
   { id: "veu", name: "Jardim do Véu", playable: false },
   { id: "afogada", name: "Cidade Afogada", playable: false },
@@ -33,6 +40,16 @@ export const REGIONS = {
     connection: { x: 4, y: 22 },
     destination: "pedralta" as RegionId,
   },
+  ruins: {
+    name: "Ruínas Esquecidas",
+    short: "RUÍNAS",
+    subtitle: "Salão do Selo Partido",
+    size: 28,
+    spawn: { x: 14, y: 24 },
+    arrival: { x: 14, y: 24 },
+    connection: { x: 14, y: 25 },
+    destination: "kharn" as RegionId,
+  },
   ferrugem: {
     name: "Bairro da Ferrugem",
     short: "FERRUGEM",
@@ -50,10 +67,32 @@ export interface Passage extends Point {
   destination: RegionId;
   arrival: Point;
   name: string;
-  requirement: "seal" | "memories";
+  requirement: "seal" | "memories" | "ruins";
   blocked: string;
 }
 export const PASSAGES: Passage[] = [
+  {
+    id: "portal-25-6",
+    region: "kharn",
+    destination: "ruins",
+    x: 25,
+    y: 6,
+    arrival: { x: 14, y: 24 },
+    name: "Entrada das Ruínas Esquecidas",
+    requirement: "ruins",
+    blocked: "Investigue as marcas de Bizel com Lenir em Pedralta",
+  },
+  {
+    id: "portal-14-25",
+    region: "ruins",
+    destination: "kharn",
+    x: 14,
+    y: 25,
+    arrival: { x: 24, y: 6 },
+    name: "Retorno à Margem",
+    requirement: "ruins",
+    blocked: "Encontre o caminho com Lenir",
+  },
   {
     id: "portal-22-7",
     region: "pedralta",
@@ -105,6 +144,15 @@ export function passageOpen(
   exploration: Exploration,
   seal: boolean,
 ) {
+  if (p.requirement === "ruins")
+    return exploration.journal.events.includes("report:lenir");
+  if (
+    p.destination === "ferrugem" &&
+    exploration.chapter &&
+    !exploration.chapter.legacyRoad &&
+    !exploration.journal.completed.includes("shattered-seal")
+  )
+    return false;
   return p.requirement === "seal" ? seal : exploration.campaign.rewardClaimed;
 }
 export const ANCHORS = [
@@ -131,6 +179,7 @@ export interface RegionProgress {
   encounters: Encounter[];
 }
 export interface Exploration {
+  chapter?: ChapterState;
   region: RegionId;
   campaign: Campaign;
   regions: Record<RegionId, RegionProgress>;
@@ -164,6 +213,7 @@ export const freshExploration = (): Exploration => ({
     pedralta: emptyRegion(),
     kharn: emptyRegion(),
     ferrugem: emptyRegion(),
+    ruins: emptyRegion(),
   },
   visited: ["pedralta"],
   knownPassages: [],

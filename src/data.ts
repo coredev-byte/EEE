@@ -1,6 +1,11 @@
 export type ClassId = "guerreiro" | "arcanista" | "assassino" | "atirador";
 export type SkillKind =
-  "slash" | "projectile" | "nova" | "dash" | "guard" | "heal";
+  | "slash"
+  | "projectile"
+  | "nova"
+  | "dash"
+  | "guard"
+  | "heal";
 export interface Skill {
   id: string;
   name: string;
@@ -307,6 +312,19 @@ export interface Item {
 }
 export const ITEMS: Item[] = [
   {
+    id: "selo-vigia",
+    name: "Selo do Vigia",
+    slot: "accessory",
+    rarity: "Rara",
+    description:
+      "Um fragmento do juramento gravado em pedra. Kharn permanece junto ao selo.",
+    attack: 2,
+    defense: 3,
+    hp: 24,
+    icon: 8,
+    element: "steel",
+  },
+  {
     id: "anel-cobre",
     name: "Anel das Caldeiras",
     slot: "accessory",
@@ -407,7 +425,13 @@ export const ITEMS: Item[] = [
 export const DIRS = ["front", "right", "back", "left"] as const;
 export type Direction = (typeof DIRS)[number];
 export type Action =
-  "idle" | "walk" | "attack" | "hurt" | "cast" | "interact" | "dead";
+  | "idle"
+  | "walk"
+  | "attack"
+  | "hurt"
+  | "cast"
+  | "interact"
+  | "dead";
 export const ANIMATIONS: Record<
   Action,
   { frames: number[]; duration: number; loop: boolean }

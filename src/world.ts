@@ -1,3 +1,4 @@
+import { ruinsFloor, ruinProps } from "./ruins-map";
 import { REGIONS, type RegionId } from "./regions";
 import { COLLISION, playableBounds, type Point } from "./spatial";
 export { iso, uniso } from "./spatial";
@@ -52,6 +53,7 @@ export class World {
     return REGIONS[this.region].size;
   }
   props: Prop[] = [];
+  arenaSealed = false;
   constructor(region: RegionId = "pedralta") {
     this.setRegion(region);
   }
@@ -87,7 +89,9 @@ export class World {
         [this.size - 1.3, i],
       ])
         add(region === "kharn" ? "rock" : "wall", x, y, 1, true, 0.48);
+    if (region === "ruins") { this.props = ruinProps(); this.arenaSealed=false; return; }
     if (region === "kharn") {
+      add("portal",25,6,1.4,false);
       add("portal", 4, 22, 1.9, false);
       add("portal", 24, 18, 1.4, false);
       add("npc", 6, 20, 0.72, false);
@@ -154,6 +158,8 @@ export class World {
         add("barrel", x, y, 0.75, true, 0.35);
       add("chest", 9, 14, 0.8, false);
       add("chest", 24, 8, 0.8, false);
+      // Clear the old dead tree at the new monumental entrance.
+      this.props=this.props.filter(o=>o.kind==="portal" || !(o.x===25 && o.y===6));
       return;
     }
     if (region === "ferrugem") {
@@ -262,6 +268,10 @@ export class World {
       add(kind, x, y, 2.1, true, 1.55);
     add("portal", 22, 7, 1.9, false);
     add("npc", 10, 14, 0.72, false);
+    add("npc",11,15,.72,false);
+    Object.assign(this.props.at(-1)!,{name:"LENIR · INVESTIGADORA",interaction:"lenir"});
+    add("crate",12,17,.7,false);Object.assign(this.props.at(-1)!,{name:"Registro chamuscado",interaction:"ash-record"});
+    add("crate",22,19,.7,false);Object.assign(this.props.at(-1)!,{name:"Mapa de Bizel",interaction:"bizel-record"});
     for (const [x, y] of [
       [3, 5],
       [3, 12],
@@ -357,7 +367,7 @@ export class World {
     let changed = false;
     for (const p of this.props) {
       if (!p.lock) continue;
-      const solid = !changes.includes(p.lock);
+      const solid = !changes.includes(p.lock) || (this.arenaSealed && p.lock === "prism-violet");
       if (p.solid !== solid) {
         p.solid = solid;
         p.opened = !solid;
@@ -390,6 +400,7 @@ export class World {
     return true;
   }
   tile(x: number, y: number) {
+    if(this.region === "ruins") return ruinsFloor(x,y) || (x===9 && y>=16 && y<=20) ? 2 : 7;
     if (x === 0 || y === 0 || x === this.size - 1 || y === this.size - 1)
       return 7;
     if (this.region === "ferrugem") {
@@ -422,6 +433,11 @@ export class World {
   blocked(p: Point, r: number = COLLISION.player, terrain = true) {
     const { min, max } = playableBounds(this.size);
     if (p.x < min || p.y < min || p.x > max || p.y > max) return true;
+    if (terrain && this.region === "ruins") {
+      const x=Math.floor(p.x),y=Math.floor(p.y);
+      for(let yy=y-1;yy<=y+1;yy++)for(let xx=x-1;xx<=x+1;xx++)
+        if(this.tile(xx,yy)===7 && this.hitsProp({x:xx+.5,y:yy+.5,footprint:{halfX:.5,halfY:.5}} as Prop,p,r))return true;
+    }
     if (terrain && this.region === "kharn" && Math.abs(p.x - 14) < 0.5 + r) {
       for (let y = Math.round(p.y) - 1; y <= Math.round(p.y) + 1; y++)
         if (

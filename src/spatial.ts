@@ -11,6 +11,8 @@ export const VIEW = {
 export const TILE = { width: 80, height: 40 } as const;
 export const FRAMES = {
   character: { width: 96, height: 112, pivot: { x: 48, y: 108 } },
+  guardian: { width: 256, height: 224, pivot: { x: 128, y: 188 } },
+  chapterCharacter: { width: 96, height: 96, pivot: { x: 48, y: 92 } },
   prop: { width: 128, height: 160, pivot: { x: 64, y: 156 } },
   effect: { width: 128, height: 128, pivot: { x: 64, y: 64 } },
 } as const;
@@ -76,7 +78,13 @@ export function minimapPoint(
     y: padding + ((p.y + 0.5) * (height - padding * 2)) / size,
   };
 }
-export function minimapIsoPoint(p: Point, size: number, width: number, height: number, padding = 7): Point {
+export function minimapIsoPoint(
+  p: Point,
+  size: number,
+  width: number,
+  height: number,
+  padding = 7,
+): Point {
   const cellX = (width - padding * 2) / (size * 2);
   const cellY = (height - padding * 2) / (size * 2);
   return {

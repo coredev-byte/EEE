@@ -1,3 +1,4 @@
+import { paintChapterEnemy, paintTelegraph, paintRune } from "./chapter-art";
 import type { CinematicFrame } from "./cinematics";
 import { Occlusion, type VisibilityTarget } from "./occlusion";
 import {
@@ -84,6 +85,16 @@ export class Renderer {
           TILE.width,
           TILE.height,
         );
+        if (this.world.region === "ruins") {
+          c.fillStyle =
+            this.world.tile(x, y) === 7 ? "#080a23" : "rgba(52,35,94,.35)";
+          c.beginPath();
+          c.moveTo(sx, sy - TILE.height / 2);
+          c.lineTo(sx + TILE.width / 2, sy);
+          c.lineTo(sx, sy + TILE.height / 2);
+          c.lineTo(sx - TILE.width / 2, sy);
+          c.fill();
+        }
         if (this.world.region === "ferrugem") {
           c.fillStyle = "rgba(112,58,26,.22)";
           c.beginPath();
@@ -150,7 +161,7 @@ export class Renderer {
           id: `enemy:${e.id}`,
           foot: this.project(e),
           depth: e.x + e.y,
-          height: e.type === "wolf" ? 40 : 76,
+          height: e.appearance === "kharn" ? 160 : e.type === "wolf" ? 40 : 76,
           width: e.type === "wolf" ? 48 : 26,
         });
     if (objective && !this.visibility.some((t) => t.id === objective.id))
@@ -174,15 +185,30 @@ export class Renderer {
           height: o.kind === "npc" ? 64 : 40,
           width: 30,
         });
+    for (const e of enemies)
+      if (e.bossAttack && !e.dormant)
+        paintTelegraph(c, e.bossAttack, (p) => this.project(p));
     const entries: WorldDraw[] = this.world.props.map((prop) => ({
       point: prop,
       layer: 1,
       draw: () => this.prop(prop, p),
     }));
     for (const enemy of enemies)
-      if (enemy.hp > 0 || enemy.timer < 2.5)
+      if (
+        !enemy.dormant &&
+        (enemy.hp > 0 || enemy.timer < 2.5 || enemy.appearance === "kharn")
+      )
         entries.push({ point: enemy, layer: 1, draw: () => this.enemy(enemy) });
-    entries.push({ point: p, layer: 1, draw: () => this.player(p) });
+    entries.push({
+      point: p,
+      layer: 1,
+      draw: () =>
+        this.player(
+          this.cinematic?.actor && p.hp > 0
+            ? { ...p, action: this.cinematic.actor }
+            : p,
+        ),
+    });
     for (const projectile of projectiles)
       entries.push({
         point: projectile,
@@ -220,7 +246,11 @@ export class Renderer {
       if (frame.pulse) {
         c.fillStyle = `rgba(137,167,244,${frame.pulse})`;
         c.fillRect(0, 0, VIEW.width, VIEW.height);
-        const at = this.project({ x: 22, y: 7 });
+        const base = this.project(frame.pulseAt);
+        const at = {
+          x: VIEW.width / 2 + (base.x - VIEW.width / 2) * frame.zoom,
+          y: VIEW.height / 2 + (base.y - VIEW.height / 2) * frame.zoom,
+        };
         for (let i = 0; i < 18; i++) {
           const a = i * 2.4 + this.time * 0.5,
             r = 18 + (i % 5) * 10;
@@ -396,9 +426,10 @@ export class Renderer {
   }
   enemy(e: Enemy) {
     const s = this.project(e);
-    this.shadow(s, e.type === "wolf" ? 19 : 15);
+    this.shadow(s, e.appearance === "kharn" ? 30 : e.type === "wolf" ? 19 : 15);
     const c = this.ctx;
-    if (e.hp <= 0) c.globalAlpha = Math.max(0, 1 - (e.timer - 1) / 1.5);
+    if (e.hp <= 0 && e.appearance !== "kharn")
+      c.globalAlpha = Math.max(0, 1 - (e.timer - 1) / 1.5);
     let col = 0;
     if (e.state === "dead") col = 5;
     else if (e.state === "hurt") col = e.type === "wolf" ? 4 : 2;
@@ -407,7 +438,53 @@ export class Renderer {
         e.type === "wolf" ? (e.timer < 0.25 ? 2 : 3) : e.timer < 0.25 ? 3 : 4;
     else if (e.state === "chase" || e.state === "patrol")
       col = 1 + (Math.floor(e.animTime * 6) % 2);
-    if (e.appearance === "machine") this.machine(e, s);
+    if (e.appearance === "kharn") {
+      const col =
+        e.hp <= 0 || this.cinematic?.bossPose === "kneel"
+          ? 7
+          : this.cinematic?.bossPose
+            ? 4
+            : e.state === "attack"
+              ? e.bossAttack && e.bossAttack.remaining < 0.2
+                ? 5
+                : 4
+              : e.state === "recover"
+                ? 6
+                : e.state === "chase"
+                  ? 2 + (Math.floor(e.animTime * 5) % 2)
+                  : Math.floor(e.animTime * 2) % 2;
+      this.assets.draw(
+        c,
+        "kharn",
+        col,
+        (e.phase ?? 1) - 1,
+        256,
+        224,
+        s.x,
+        s.y,
+        1.1,
+        e.direction === "left",
+      );
+    } else if (["bizel", "sentinel"].includes(e.appearance ?? "")) {
+      const col =
+        e.state === "attack"
+          ? 4 + (Math.floor(e.animTime * 6) % 2)
+          : e.hp <= 0
+            ? 7
+            : Math.floor(e.animTime * 6) % 4;
+      this.assets.draw(
+        c,
+        "chapter-enemies",
+        col,
+        e.appearance === "sentinel" ? 1 : 0,
+        96,
+        96,
+        s.x,
+        s.y,
+        1,
+        e.direction === "left",
+      );
+    } else if (e.appearance === "machine") this.machine(e, s);
     else
       this.assets.draw(
         c,
@@ -441,24 +518,27 @@ export class Renderer {
         c.fillStyle = statusColors[kind];
         c.fillRect(s.x - 14 + i * 6, s.y - (e.type === "wolf" ? 50 : 81), 4, 4);
       }
-      c.fillStyle = "#080b12";
-      c.fillRect(s.x - 19, s.y - (e.type === "wolf" ? 43 : 74), 38, 6);
-      c.fillStyle = "#724452";
-      c.fillRect(s.x - 18, s.y - (e.type === "wolf" ? 42 : 73), 36, 4);
-      c.fillStyle = "#cc5362";
-      c.fillRect(
-        s.x - 18,
-        s.y - (e.type === "wolf" ? 42 : 73),
-        Math.round((36 * e.hp) / e.maxHp),
-        3,
-      );
-      if (e.state === "alert") {
+      if (e.appearance !== "kharn") {
+        c.fillStyle = "#080b12";
+        c.fillRect(s.x - 19, s.y - (e.type === "wolf" ? 43 : 74), 38, 6);
+        c.fillStyle = "#724452";
+        c.fillRect(s.x - 18, s.y - (e.type === "wolf" ? 42 : 73), 36, 4);
+        c.fillStyle = "#cc5362";
+        c.fillRect(
+          s.x - 18,
+          s.y - (e.type === "wolf" ? 42 : 73),
+          Math.round((36 * e.hp) / e.maxHp),
+          3,
+        );
+      }
+      if (e.state === "alert" && e.appearance !== "kharn") {
         c.fillStyle = "#edca80";
         c.font = "bold 14px monospace";
         c.fillText("!", s.x, s.y - 85);
       }
       if (
         e.name &&
+        e.appearance !== "kharn" &&
         (e.boss || e.optional || distance(e, this.cameraPoint()) < 8)
       ) {
         c.fillStyle = e.boss ? "#efb06a" : "#b5c1ca";
@@ -516,9 +596,53 @@ export class Renderer {
   }
   prop(o: Prop, p: Player) {
     const s = this.project(o);
+    if (this.world.region === "ruins" && o.kind === "statue" && o.interaction) {
+      paintRune(
+        this.ctx,
+        s,
+        o.interaction === "prism-blue" ? "#73ddfa" : "#b19afc",
+        o.interaction === "fragment" ? 55 : 35,
+      );
+    }
     const frame = o.kind === "npc" ? FRAMES.character : FRAMES.prop;
     if (!onScreen(spriteBounds(s, frame, o.scale))) return;
     const c = this.ctx;
+    if (
+      this.world.region === "ruins" &&
+      ["statue", "portal", "wall", "fountain", "bench"].includes(o.kind)
+    ) {
+      const col =
+        o.kind === "portal"
+          ? 3
+          : o.kind === "wall"
+            ? 4
+            : o.kind === "fountain"
+              ? 6
+              : o.kind === "bench"
+                ? 7
+                : o.interaction === "fragment"
+                  ? 5
+                  : o.interaction === "prism-blue"
+                    ? 1
+                    : o.interaction === "prism-violet"
+                      ? 2
+                      : 0;
+      if (o.lock && o.opened) c.globalAlpha = 0.16;
+      this.occlusion.draw(
+        c,
+        o.id,
+        "ruin-props",
+        col,
+        s,
+        o.scale,
+        o.x + o.y,
+        this.visibility,
+        this.frameDt,
+      );
+      c.globalAlpha = 1;
+      this.propCaption(o, p, s);
+      return;
+    }
     const objectIndex: Partial<Record<Prop["kind"], number>> = {
       bench: 0,
       fence: 1,
@@ -630,7 +754,15 @@ export class Renderer {
     this.propCaption(o, p, s);
   }
   propCaption(o: Prop, p: Player, s: Point) {
-    if (!o.name || distance(o, p) > 5 || (o.opened && !o.lock)) return;
+    if (
+      this.cinematic ||
+      !o.name ||
+      distance(o, p) > 2.5 ||
+      (o.opened && !o.lock)
+    )
+      return;
+    if (["wall", "lantern", "statue"].includes(o.kind) && !o.interaction)
+      return;
     const c = this.ctx;
     c.font = "9px monospace";
     c.textAlign = "center";

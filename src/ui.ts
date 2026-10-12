@@ -1,3 +1,4 @@
+import { ChapterUI } from "./chapter-ui";
 import { PrologueUI } from "./prologue-ui";
 import { guardianPrologueLine } from "./prologue-story";
 import { missionJournal, ferrugemDialogue } from "./mission-ui";
@@ -123,7 +124,7 @@ export class UI {
       if (
         el.dataset.skill !== undefined &&
         !game.paused &&
-        !game.prologue.locked
+        !game.controlsLocked
       )
         game.combat.attack(game.target(), Number(el.dataset.skill));
       if (el.dataset.potion !== undefined && !game.paused)
@@ -163,6 +164,7 @@ export class UI {
       this.syncCoverAudio();
     });
     const prologueUI = new PrologueUI(game);
+    const chapterUI = new ChapterUI(game);
     document.querySelector("#sound-toggle")!.addEventListener("click", () => {
       game.audio.toggle();
       this.updateSound();
@@ -251,6 +253,7 @@ export class UI {
     game.onDialogue = () => this.open("dialogue");
     game.onUpdate = () => {
       prologueUI.update();
+      chapterUI.update();
       this.update();
       this.syncCoverAudio();
     };
@@ -495,7 +498,7 @@ export class UI {
     if (this.game.started && this.game.player.hp <= 0) return;
     if (
       this.game.started &&
-      this.game.prologue.locked &&
+      this.game.controlsLocked &&
       panel !== "pause" &&
       panel !== "settings"
     )
@@ -595,6 +598,15 @@ export class UI {
       } else
         content = `<div class="dialogue-panel"><p>${g.prologue.active ? guardianPrologueLine(g.dialogueStep, g.quest.kills, g.player.challenges.chests) : g.dialogueStep === 0 ? "Pedralta guarda mais do que ruínas. Há algo vivo sob as pedras." : `Kharn aguarda a nordeste. Vença três ameaças antes de atravessar o selo. ${Math.min(3, g.quest.kills)}/3 ameaças silenciadas.`}</p><div>${g.prologue.active ? (g.dialogueStep < 2 ? button("CONTINUAR", "dialogue-next", "primary") : (!g.quest.accepted ? button("ACEITAR O CHAMADO", "dialogue-accept", "primary") : "") + button("VOLTAR À VILA", "close", "secondary")) : g.dialogueStep === 0 ? button("O QUE DEVO FAZER?", "dialogue-next", "secondary") + button(g.quest.accepted ? "MOSTRAR O CAMINHO" : "ACEITAR O CHAMADO", "dialogue-accept", "primary") : button("VOLTAR À VILA", "close", "primary")}</div></div>`;
     }
+    if (this.panel === "dialogue" && g.chapter.dialogue()) {
+      title =
+        g.world.region === "kharn"
+          ? "Iria · cartógrafa da Margem"
+          : g.dialogueNPC === "lenir"
+            ? "Lenir · investigadora de Pedralta"
+            : "Guardiã do Eco";
+      content = `<div class="dialogue-panel"><p>${g.chapter.dialogue()}</p>${button("VOLTAR À EXPLORAÇÃO", "close", "primary")}</div>`;
+    }
     if (this.panel === "dialogue")
       content =
         `<div class="dialogue-speaker"><canvas class="dialogue-portrait" width="64" height="64" aria-label="Retrato de ${title}"></canvas><strong>${title}</strong></div>` +
@@ -617,7 +629,7 @@ export class UI {
     if (this.panel === "death") {
       title = "A noite venceu. Por enquanto.";
       eyebrow = "VOCÊ FOI DERROTADO";
-      content = `<p class="pause-text">Pedralta ainda guarda o seu nome.<br>Retorne à vila. O custo do despertar é de 25 moedas.</p><div class="pause-actions">${button("DESPERTAR EM PEDRALTA", "respawn", "primary")}${button("MENU PRINCIPAL", "menu", "text-button")}</div>`;
+      content = `<p class="pause-text">${g.world.region === "ruins" && g.chapter.state.checkpoint ? "A fonte do salão ainda responde.<br>Retorne ao ponto de preparação. O guardião estará pronto para outra tentativa." : "Pedralta ainda guarda o seu nome.<br>Retorne à vila."} O custo do despertar é de 25 moedas.</p><div class="pause-actions">${button(g.world.region === "ruins" && g.chapter.state.checkpoint ? "DESPERTAR NA FONTE DAS RUÍNAS" : "DESPERTAR EM PEDRALTA", "respawn", "primary")}${button("MENU PRINCIPAL", "menu", "text-button")}</div>`;
     }
     if (this.panel === "help") content = this.helpContent();
     if (this.panel === "exit")

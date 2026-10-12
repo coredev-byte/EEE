@@ -429,7 +429,12 @@ export class AudioEngine {
     const c = this.context;
     const targets: Record<string, number> = {
       machinery: this.region === "industrial" ? 0.25 : 0,
-      wind: this.region === "ruins" ? 0.3 : 0.2,
+      wind:
+        this.music === "threshold" || this.music === "silence"
+          ? 0.06
+          : this.region === "ruins"
+            ? 0.3
+            : 0.2,
       water:
         this.region === "village"
           ? 0.16
@@ -507,7 +512,9 @@ export class AudioEngine {
       errors: [...this.errors],
       effects: this.voices.size,
       loops: this.loops.size,
-      loopLevels: Object.fromEntries(Array.from(this.loops, ([id, voice]) => [id, voice.gain.gain.value])),
+      loopLevels: Object.fromEntries(
+        Array.from(this.loops, ([id, voice]) => [id, voice.gain.gain.value]),
+      ),
       region: this.region,
       music: this.music,
       transport: this.transport,

@@ -31,7 +31,8 @@ export function drawMinimap(
     cellX = (canvas.width - padding * 2) / world.size / (isometric ? 2 : 1),
     cellY = (canvas.height - padding * 2) / world.size / (isometric ? 2 : 1);
   const point = (p: { x: number; y: number }) =>
-    isometric ? minimapIsoPoint(p, world.size, canvas.width, canvas.height, padding)
+    isometric
+      ? minimapIsoPoint(p, world.size, canvas.width, canvas.height, padding)
       : minimapPoint(p, world.size, canvas.width, canvas.height, padding);
   const marker = (p: { x: number; y: number }, size: number, color: string) => {
     const at = point(p);
@@ -119,10 +120,33 @@ export function drawMinimap(
     )
       continue;
     if (isometric && assets) {
-      const columns: Record<string, number> = { house: 0, ruinHouse: 1, portal: 2, wall: 3, tree: 4, deadTree: 5, pine: 6, rock: 7, lantern: 8, barrel: 9, crate: 10, chest: 11 };
+      const columns: Record<string, number> = {
+        house: 0,
+        ruinHouse: 1,
+        portal: 2,
+        wall: 3,
+        tree: 4,
+        deadTree: 5,
+        pine: 6,
+        rock: 7,
+        lantern: 8,
+        barrel: 9,
+        crate: 10,
+        chest: 11,
+      };
       if (prop.kind in columns) {
         const at = point(prop);
-        assets.draw(ctx, "props", columns[prop.kind], 0, 128, 160, at.x, at.y, prop.scale * cellX / 40);
+        assets.draw(
+          ctx,
+          "props",
+          columns[prop.kind],
+          0,
+          128,
+          160,
+          at.x,
+          at.y,
+          (prop.scale * cellX) / 40,
+        );
       }
     }
     const color =
@@ -146,6 +170,7 @@ export function drawMinimap(
   for (const enemy of enemies)
     if (
       enemy.hp > 0 &&
+      !enemy.dormant &&
       (enemy.statusKinds?.includes("mark") ||
         distance(enemy, player) <
           (player.classId === "atirador" && has(player, 2, 1) ? 12 : 6))
@@ -232,7 +257,12 @@ export function drawMinimap(
   const [dx, dy] = vectors[player.direction];
   ctx.save();
   ctx.translate(Math.round(at.x), Math.round(at.y));
-  ctx.rotate(Math.atan2((isometric ? dx + dy : dy) * cellY, (isometric ? dx - dy : dx) * cellX));
+  ctx.rotate(
+    Math.atan2(
+      (isometric ? dx + dy : dy) * cellY,
+      (isometric ? dx - dy : dx) * cellX,
+    ),
+  );
   ctx.fillStyle = "#35bddb";
   ctx.strokeStyle = "#090f19";
   ctx.lineWidth = 1;

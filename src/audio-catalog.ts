@@ -9,6 +9,10 @@ export type MusicState =
   | "combat"
   | "elite"
   | "boss"
+  | "boss2"
+  | "boss3"
+  | "threshold"
+  | "silence"
   | "victory"
   | "defeat"
   | "narrative";
@@ -459,6 +463,10 @@ export const MUSIC_LEVELS: Record<MusicState, [number, number, number]> = {
   danger: [0.6, 0.2, 0.2],
   combat: [0.5, 0.65, 0.35],
   elite: [0.5, 0.85, 0.4],
+  silence: [0, 0, 0],
+  threshold: [0.12, 0, 0.08],
+  boss2: [0.55, 0.8, 0.65],
+  boss3: [0.5, 1, 0.8],
   boss: [0.6, 1, 0.5],
   victory: [0.5, 0.15, 0.6],
   defeat: [0.25, 0, 0.08],

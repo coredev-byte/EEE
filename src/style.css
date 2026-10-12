@@ -4163,3 +4163,20 @@ h1 > span {
 @media(prefers-reduced-motion:reduce) { #hud { transition:none; } }
 .dialogue-speaker { display:flex; align-items:center; gap:18px; margin:0 0 18px; color:#d9bc75; font-family:"IBM Plex Mono",monospace; }
 .dialogue-portrait { width:64px; height:64px; image-rendering:pixelated; border:1px solid #9c7c43; background:#091121; }
+.boss-hud { position:absolute; top:20px; left:50%; transform:translateX(-50%); width:min(360px,28vw); padding:12px 18px; background:rgba(5,9,23,.94); border:1px solid #ae8e59; text-align:center; color:#ddd1b5; animation:boss-enter .7s ease; }
+.boss-hud[hidden] { display:none!important; }
+.boss-hud strong { display:block; color:#e5c581; font:16px "Press Start 2P",monospace; letter-spacing:4px; }
+.boss-hud small { display:block; margin:8px 0; color:#b5a4cf; font:10px "IBM Plex Mono",monospace; }
+.boss-life { height:13px; background:#26182e; border:1px solid #93806a; position:relative; overflow:hidden; }
+.boss-life i { display:block; height:100%; background:linear-gradient(#b56392,#644070); transition:width .2s; }
+.boss-life span { position:absolute; inset:0; font:10px monospace; }
+.boss-hud p { margin:8px 0 0; font:10px "IBM Plex Mono",monospace; }
+.boss-active .player-hud { transform:scale(.72); transform-origin:top left; }
+.boss-active .quest-hud { display:none; }
+.boss-hit .boss-life { animation:boss-damage .3s; }
+@keyframes boss-enter { from { opacity:0; margin-top:-20px; } to { opacity:1; margin-top:0; } }
+@keyframes boss-damage { 50% { border-color:#d7fafa; } }
+@media(max-width:650px) { .boss-hud { top:155px; width:200px; padding:9px; } .boss-hud strong { font-size:12px; } }
+@media(prefers-reduced-motion:reduce) { .boss-hud,.boss-hit .boss-life { animation:none; } .boss-life i { transition:none; } }
+.arena-prompt { position:absolute; left:50%; bottom:110px; transform:translateX(-50%); padding:14px 24px; border:1px solid #b9a069; background:#080e24ee; color:#ead2a2; font:12px "IBM Plex Mono",monospace; pointer-events:auto; }
+.arena-prompt[hidden] { display:none!important; }

@@ -13,6 +13,7 @@ export function updateEnemies(
   time: number,
 ) {
   for (const e of enemies) {
+    if (e.dormant) continue;
     e.timer += dt;
     e.animTime += dt;
     if (e.hp <= 0) {

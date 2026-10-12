@@ -1,3 +1,4 @@
+import { CHAPTER_REQUIREMENTS, CHAPTER_ID } from "./chapter-data";
 import type { Exploration, RegionId } from "./regions";
 import type { Quest } from "./state";
 import type { ObjectiveKind } from "./objectives";
@@ -98,6 +99,145 @@ export const MISSIONS: MissionDefinition[] = [
       ),
     ],
     reward: { xp: 300, coins: 180, item: "amuleto" },
+  },
+  {
+    id: "shattered-seal",
+    name: "O Selo Partido",
+    description: "Investigue Bizel e alcance o guardião das Ruínas Esquecidas.",
+    context:
+      "As memórias da Margem revelam uma entrada isolada. Lenir reconhece marcas dos ataques; o caminho até as Ruínas Esquecidas precisa ser investigado.",
+    origin: "pedralta",
+    starter: "Lenir · investigadora",
+    chapter: "I · O Selo Partido",
+    main: true,
+    prerequisites: ["memories"],
+    steps: [
+      step(
+        "Converse com Lenir em Pedralta",
+        ["talk:lenir"],
+        "npc-11-15",
+        "talk",
+        "pedralta",
+      ),
+      step(
+        "Leia o registro chamuscado na vila",
+        ["ash-record"],
+        "crate-12-17",
+        "investigate",
+        "pedralta",
+      ),
+      step(
+        "Mostre as marcas à Guardiã",
+        ["talk:witness"],
+        "npc-10-14",
+        "talk",
+        "pedralta",
+      ),
+      step(
+        "Enfrente Bizel na trilha leste",
+        ["defeat:300"],
+        "enemy:300",
+        "defeat",
+        "pedralta",
+      ),
+      step(
+        "Leia o mapa deixado por Bizel",
+        ["bizel-record"],
+        "crate-22-19",
+        "investigate",
+        "pedralta",
+      ),
+      step(
+        "Leve o mapa a Lenir",
+        ["report:lenir"],
+        "npc-11-15",
+        "talk",
+        "pedralta",
+      ),
+      step(
+        "Entre nas Ruínas Esquecidas ao norte da Margem",
+        ["enter:ruins"],
+        "portal-25-6",
+        "reach",
+        "kharn",
+      ),
+      step(
+        "Leia a inscrição do vestíbulo",
+        ["ruins-record"],
+        "statue-12-23",
+        "investigate",
+        "ruins",
+      ),
+      step(
+        "Silencie o vigia do Prisma Azul",
+        ["defeat:301"],
+        "enemy:301",
+        "defeat",
+        "ruins",
+      ),
+      step(
+        "Restaure o Prisma Azul",
+        ["prism-blue"],
+        "statue-5-20",
+        "interact",
+        "ruins",
+      ),
+      step(
+        "Leia o registro dos condutores",
+        ["oath"],
+        "crate-6-21",
+        "investigate",
+        "ruins",
+      ),
+      step(
+        "Silencie o vigia do Prisma Violeta",
+        ["defeat:302"],
+        "enemy:302",
+        "defeat",
+        "ruins",
+      ),
+      step(
+        "Restaure o Prisma Violeta",
+        ["prism-violet"],
+        "statue-23-15",
+        "interact",
+        "ruins",
+      ),
+      step(
+        "Investigue o registro do Núcleo",
+        ["core-record"],
+        "crate-22-16",
+        "investigate",
+        "ruins",
+      ),
+      step(
+        "Prepare-se na fonte e confirme a entrada do salão",
+        ["arena-open"],
+        "bench-14-11",
+        "interact",
+        "ruins",
+      ),
+      step(
+        "Enfrente Kharn, o guardião",
+        ["defeat:310"],
+        "enemy:310",
+        "defeat",
+        "ruins",
+      ),
+      step(
+        "Descubra o que Kharn protegia",
+        ["kharn-revelation"],
+        "statue-14-3",
+        "investigate",
+        "ruins",
+      ),
+    ],
+    reward: {
+      xp: 520,
+      coins: 220,
+      item: "selo-vigia",
+      consequence: "chapter-clear",
+    },
   },
   {
     id: "machines",
@@ -236,6 +376,24 @@ export const MISSIONS: MissionDefinition[] = [
   },
 ];
 export const EVENT_IDS = [
+  "talk:lenir",
+  "ash-record",
+  "talk:witness",
+  "defeat:300",
+  "bizel-record",
+  "report:lenir",
+  "enter:ruins",
+  "ruins-record",
+  "defeat:301",
+  "defeat:302",
+  "prism-blue",
+  "oath",
+  "prism-violet",
+  "core-record",
+  "arena-open",
+  "defeat:310",
+  "kharn-revelation",
+  "ruins-shortcut",
   "enter:ferrugem",
   "talk:elcio",
   "gear",
@@ -266,6 +424,8 @@ export function missionViews(e: Exploration, q: Quest): MissionView[] {
   if (q.rewardClaimed) completed.add("eco");
   if (e.campaign.rewardClaimed) completed.add("memories");
   return MISSIONS.map((definition) => {
+    if (definition.id === "machines" && e.chapter && !e.chapter.legacyRoad)
+      definition = { ...definition, prerequisites: ["memories", CHAPTER_ID] };
     let done = definition.steps.map((s) =>
       s.events.every((id) => e.journal.events.includes(id)),
     );
@@ -315,7 +475,14 @@ export function selectedMission(
       (v) => v.definition.id === e.journal.tracked && v.status === "ativa",
     ) ??
     views.find(
-      (v) => v.definition.main && ["ativa", "disponível"].includes(v.status),
+      (v) =>
+        v.definition.main &&
+        ["ativa", "disponível"].includes(v.status) &&
+        !(
+          v.definition.id === "shattered-seal" &&
+          (e.chapter?.legacyRoad ?? true) &&
+          v.status === "disponível"
+        ),
     )
   );
 }
@@ -375,16 +542,53 @@ export function validJournal(e: Exploration) {
   )
     return false;
   if (j.events.includes("bridge") && !j.events.includes("crank")) return false;
-  if (e.bosses.some((id) => !["ferrugem:203", "ferrugem:204"].includes(id)))
-    return false;
   if (
-    e.changes.some(
+    e.bosses.some(
       (id) =>
-        !["pump", "bridge", "merchant", "furnace-safe", "nara-safe"].includes(
+        !["ferrugem:203", "ferrugem:204", "pedralta:300", "ruins:310"].includes(
           id,
         ),
     )
   )
     return false;
+  if (
+    e.changes.some(
+      (id) =>
+        ![
+          "pump",
+          "bridge",
+          "merchant",
+          "furnace-safe",
+          "nara-safe",
+          "prism-blue",
+          "prism-violet",
+          "ruins-shortcut",
+          "chapter-clear",
+        ].includes(id),
+    )
+  )
+    return false;
+  if (
+    e.changes.includes("chapter-clear") &&
+    !j.completed.includes("shattered-seal")
+  )
+    return false;
+  if (
+    j.events.includes("prism-blue") &&
+    !["ruins-record", "defeat:301"].every((id) => j.events.includes(id))
+  )
+    return false;
+  if (
+    j.events.includes("prism-violet") &&
+    !["oath", "prism-blue", "defeat:302"].every((id) => j.events.includes(id))
+  )
+    return false;
+  if (j.events.includes("kharn-revelation") && !j.events.includes("defeat:310"))
+    return false;
+  for (const [event, needs] of Object.entries(CHAPTER_REQUIREMENTS))
+    if (j.events.includes(event) && !needs.every((id) => j.events.includes(id)))
+      return false;
+  for (const change of ["prism-blue", "prism-violet", "ruins-shortcut"])
+    if (e.changes.includes(change) && !j.events.includes(change)) return false;
   return true;
 }

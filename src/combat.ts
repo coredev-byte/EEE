@@ -27,6 +27,7 @@ export interface CombatContext {
   audioEvent?: (event: AudioEvent, cue?: AudioCue) => boolean;
   pickup?: (id: string, count?: number) => void;
   onEnemyDefeated?: (enemy: Enemy) => void;
+  onNarrativeDefeat?: (enemy: Enemy) => boolean;
   audioSustain?: (owner: string, cue: AudioCue) => void;
   audioStopOwner?: (owner: string) => void;
   sound: (kind: "attack" | "hit" | "magic" | "death") => void;
@@ -410,17 +411,31 @@ export class Combat {
     periodic = false,
     critical = false,
   ) {
-    if (e.hp <= 0) return;
+    if (e.hp <= 0 || e.dormant) return;
     const c = this.ctx;
     this.engine.ensure();
-    const damage = Math.round(
+    let damage = Math.round(
       periodic ? amount : this.engine.amplify(e, amount, source),
     );
-    e.hp = Math.max(0, e.hp - damage);
-    e.state = e.hp ? "hurt" : "dead";
+    const beforeHp = e.hp;
+    if (e.appearance === "kharn") {
+      const floor =
+        (e.phase ?? 1) === 1
+          ? Math.ceil(e.maxHp * 0.65)
+          : (e.phase ?? 1) === 2
+            ? Math.ceil(e.maxHp * 0.3)
+            : 0;
+      e.hp = Math.max(floor, e.hp - damage);
+    } else e.hp = Math.max(0, e.hp - damage);
+    damage = beforeHp - e.hp;
+    if (damage <= 0) return;
+    if (e.appearance !== "kharn" && e.appearance !== "bizel")
+      e.state = e.hp ? "hurt" : "dead";
     e.lostSight = 0;
-    e.timer = 0;
-    e.animTime = 0;
+    if (!["kharn", "bizel"].includes(e.appearance ?? "")) {
+      e.timer = 0;
+      e.animTime = 0;
+    }
     c.texts.push({ x: e.x, y: e.y, text: String(damage), color, time: 0 });
     this.effect("impact", e, color, 0.65, 0.32);
     this.hitSerial++;
@@ -431,10 +446,12 @@ export class Combat {
         material: e.type === "bandit" ? "metal" : "flesh",
       });
     const away = normalize({ x: e.x - c.player.x, y: e.y - c.player.y });
-    c.world.move(e, { x: away.x * 0.15, y: away.y * 0.15 });
+    if (!["kharn", "bizel"].includes(e.appearance ?? ""))
+      c.world.move(e, { x: away.x * 0.15, y: away.y * 0.15 });
     if (!periodic) this.engine.afterHit(e, damage, source);
     if (!e.hp && !e.rewarded) {
       if (periodic) this.engine.killed(e);
+      if (c.onNarrativeDefeat?.(e)) return;
       e.rewarded = true;
       if (c.world.region === "pedralta") c.quest.kills++;
       c.player.coins += e.type === "wolf" ? 12 : 20;

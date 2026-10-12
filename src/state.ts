@@ -34,7 +34,10 @@ export interface Player extends Point {
   challenges: { kills: number; chests: number; seal: boolean };
 }
 export interface Enemy extends Point {
-  appearance?: "machine";
+  appearance?: "machine" | "kharn" | "bizel" | "sentinel";
+  bossAttack?: import("./chapter-boss").BossAttack;
+  bossCycle?: number;
+  dormant?: boolean;
   name?: string;
   boss?: boolean;
   optional?: boolean;

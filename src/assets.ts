@@ -1,6 +1,7 @@
+import { normalizeChapterAtlas } from "./chapter-atlas";
 import { framePivot } from "./spatial";
 export class Assets {
-  images: Record<string, HTMLImageElement> = {};
+  images: Record<string, HTMLImageElement | HTMLCanvasElement> = {};
   async load() {
     await Promise.all(
       Object.entries({
@@ -12,6 +13,9 @@ export class Assets {
         "assassino-directions": "characters/assassino-directions.png",
         "atirador-directions": "characters/atirador-directions.png",
         enemies: "enemies/enemies.png",
+        kharn: "enemies/kharn.png",
+        "chapter-enemies": "enemies/chapter-enemies.png",
+        "ruin-props": "scenery/ruins-objects.png",
         props: "scenery/props.png",
         tiles: "scenery/tiles.png",
         icons: "icons/icons.png",
@@ -24,7 +28,7 @@ export class Assets {
         const im = new Image();
         im.src = `/assets/${path}`;
         await im.decode();
-        this.images[name] = im;
+        this.images[name] = normalizeChapterAtlas(name, im);
       }),
     );
   }
