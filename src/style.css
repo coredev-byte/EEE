@@ -1,3 +1,10 @@
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/press-start-2p-latin-400-normal.woff2") format("woff2");
+}
 :root {
   font-family: "IBM Plex Mono", monospace;
   color: #c0c7d8;
@@ -674,36 +681,79 @@ footer b {
   position: relative;
   width: min(100cqw, calc(100cqh * 16 / 9));
   aspect-ratio: 16 / 9;
+  container-type: inline-size;
 }
 .cover-art {
   display: block;
   width: 100%;
   height: 100%;
 }
-.cover-action {
+.cover-actions {
   position: absolute;
-  left: 40%;
-  width: 21%;
-  height: 5%;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 2px;
+  top: 51.5%;
+  left: 38.5%;
+  width: 24%;
+  display: grid;
+  gap: 0.4cqw;
 }
-.cover-action:not(:disabled):hover,
+.cover-action {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: #a2abc1;
+  font-family: "Press Start 2P", "IBM Plex Mono", monospace;
+  font-weight: 400;
+  font-size: 1.15cqw;
+  letter-spacing: 0.04cqw;
+  line-height: 1;
+  text-shadow: 0 2px 1px #020713;
+  transition: color 120ms ease, filter 120ms ease;
+}
+.cover-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #dda72e;
+  stroke-width: 1.3;
+  opacity: 0.32;
+  pointer-events: none;
+  transition: opacity 120ms ease, filter 120ms ease;
+}
+.cover-action > span {
+  pointer-events: none;
+}
+.cover-action.is-selected:not(:disabled) {
+  color: #ffe49a;
+}
+.cover-action.is-selected:not(:disabled) .cover-frame {
+  opacity: 1;
+  filter: drop-shadow(0 0 3px #ffbd3555);
+}
 .cover-action:focus-visible {
-  background: #e8ac2520;
-  border-color: #d6a22b;
-  outline: 2px solid #f6cf75;
+  outline: 1px solid #fff1ba;
   outline-offset: 2px;
+}
+.cover-action:not(:disabled):active {
+  filter: brightness(1.3);
 }
 .cover-action:disabled {
   cursor: not-allowed;
-  background: #080f2580;
+  color: #59657d;
 }
-.cover-continue { top: 51.5%; }
-.cover-new { top: 57%; }
-.cover-settings { top: 62.5%; }
-.cover-exit { top: 68%; }
+.cover-action:disabled .cover-frame {
+  opacity: 0.15;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-action,
+  .cover-frame {
+    transition: none;
+  }
+}
 .menu-layer:has(.main-menu) {
   background: linear-gradient(
     90deg,

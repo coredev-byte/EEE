@@ -29,6 +29,9 @@ const icon = (index: number, extra = "") =>
   `<span class="item-icon ${extra}" style="background-position:-${index * 48}px 0" aria-hidden="true"></span>`;
 const button = (text: string, action: string, cls = "") =>
   `<button class="${cls}" data-action="${action}">${text}</button>`;
+const coverFrame = `<svg class="cover-frame" viewBox="0 0 420 60" preserveAspectRatio="none" aria-hidden="true"><path d="M30 7H390V53H30Z M32 9H388V51H32Z"/><path d="M4 30L12 22L20 30L12 38Z M12 26L16 30L12 34L8 30Z M20 30H30 M416 30L408 22L400 30L408 38Z M408 26L412 30L408 34L404 30Z M390 30H400"/></svg>`;
+const coverButton = (text: string, action: string, label: string, selected = false, disabled = false) =>
+  `<button class="cover-action${selected ? " is-selected" : ""}" data-action="${action}" aria-label="${label}" ${disabled ? 'disabled title="Nenhuma jornada salva neste navegador"' : ""}>${coverFrame}<span>${text}</span></button>`;
 const titles: Record<string, string> = {
   inventory: "Inventário & equipamentos",
   skills: "Árvore de habilidades",
@@ -143,6 +146,23 @@ export class UI {
     window.addEventListener(
       "keydown",
       (e) => {
+        const menu = document.querySelector(".cover-menu");
+        if (menu && !this.panel && !game.started && !e.repeat) {
+          const options = Array.from(menu.querySelectorAll<HTMLButtonElement>(".cover-action:not(:disabled)"));
+          const index = Math.max(0, options.findIndex((option) => option.classList.contains("is-selected")));
+          let next: HTMLButtonElement | undefined;
+          if (e.key === "ArrowDown") next = options[(index + 1) % options.length];
+          if (e.key === "ArrowUp") next = options[(index + options.length - 1) % options.length];
+          if (e.key === "Home") next = options[0];
+          if (e.key === "End") next = options[options.length - 1];
+          if (next || e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (next) next.focus();
+            else options[index]?.click();
+            return;
+          }
+        }
         if (!["inventory", "equipment"].includes(this.panel) || e.repeat)
           return;
         const action = { e: "equip-selected", c: "compare", r: "discard" }[
@@ -156,6 +176,18 @@ export class UI {
       },
       true,
     );
+    const selectCoverAction = (event: Event) => {
+      const target = event.target instanceof Element
+        ? event.target.closest<HTMLButtonElement>(".cover-action:not(:disabled)")
+        : null;
+      if (!target || this.panel) return;
+      const menu = target.closest(".cover-menu")!;
+      menu.querySelectorAll(".cover-action").forEach((option) =>
+        option.classList.toggle("is-selected", option === target),
+      );
+    };
+    document.addEventListener("pointerover", selectCoverAction);
+    document.addEventListener("focusin", selectCoverAction);
     const layout = new ResizeObserver(() => {
       this.hudLayoutDirty = true;
       this.layoutInventory();
@@ -203,11 +235,13 @@ export class UI {
     document.querySelector("#hud")!.classList.remove("visible");
     document.querySelector("#menu-layer")!.innerHTML =
       `<nav class="cover-menu" aria-label="Menu principal de Distrito Zero">
-        <img class="cover-art" src="/assets/interface/Design%20sem%20nome.jpg" alt="Distrito Zero: cidade em ruínas sob o luar, iluminada por lanternas" width="1920" height="1080" fetchpriority="high">
-        <button class="cover-action cover-continue" data-action="continue" aria-label="CONTINUAR JORNADA" ${saved ? "" : 'disabled title="Nenhuma jornada salva neste navegador"'}></button>
-        <button class="cover-action cover-new" data-action="new" aria-label="${saved ? "NOVA JORNADA" : "INICIAR JORNADA"}"></button>
-        <button class="cover-action cover-settings" data-action="cover-settings" aria-label="CONFIGURAÇÕES"></button>
-        <button class="cover-action cover-exit" data-action="exit" aria-label="SAIR"></button>
+        <img class="cover-art" src="/assets/interface/distrito-zero-cover.png" alt="Distrito Zero: cidade em ruínas sob o luar, iluminada por lanternas" width="1672" height="941" fetchpriority="high">
+        <div class="cover-actions">
+          ${coverButton("CONTINUAR", "continue", "CONTINUAR JORNADA", !!saved, !saved)}
+          ${coverButton("NOVO JOGO", "new", saved ? "NOVA JORNADA" : "INICIAR JORNADA", !saved)}
+          ${coverButton("CONFIGURAÇÕES", "cover-settings", "CONFIGURAÇÕES")}
+          ${coverButton("SAIR", "exit", "SAIR")}
+        </div>
       </nav>`;
   }
   drawPortrait() {
