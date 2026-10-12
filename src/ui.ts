@@ -778,10 +778,10 @@ export class UI {
         ].map((selector) => {
           const b = document.querySelector(selector)!.getBoundingClientRect();
           return {
-            x: ((b.left - viewport.left) * VIEW.width) / viewport.width,
-            y: ((b.top - viewport.top) * VIEW.height) / viewport.height,
-            width: (b.width * VIEW.width) / viewport.width,
-            height: (b.height * VIEW.height) / viewport.height,
+            x: ((b.left - viewport.left) * this.game.renderer.view.width) / viewport.width,
+            y: ((b.top - viewport.top) * this.game.renderer.view.height) / viewport.height,
+            width: (b.width * this.game.renderer.view.width) / viewport.width,
+            height: (b.height * this.game.renderer.view.height) / viewport.height,
           };
         });
         this.hudLayoutDirty = false;

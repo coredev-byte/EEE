@@ -54,8 +54,8 @@ test("Árvore: requisitos exatos, prévia sem gasto, habilidade equipada causa q
   const at = await page.evaluate((e) => (window as any).__DZ.project(e), enemy),
     box = await page.locator("#game").boundingBox();
   await page.mouse.move(
-    box!.x + (at.x * box!.width) / 960,
-    box!.y + ((at.y - 28) * box!.height) / 540,
+    box!.x + (at.x * box!.width) / (await page.locator("#game").evaluate((c: HTMLCanvasElement) => c.width)),
+    box!.y + ((at.y - 28) * box!.height) / (await page.locator("#game").evaluate((c: HTMLCanvasElement) => c.height)),
   );
   await page.keyboard.press("3");
   await expect

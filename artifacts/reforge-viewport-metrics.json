@@ -1,0 +1,74 @@
+[
+  {
+    "version": "antes",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "file": "reforge-antes-1440x1000.png",
+    "metrics": {
+      "logicalWidth": 960,
+      "logicalHeight": 540,
+      "cssWidth": 1440,
+      "cssHeight": 1000,
+      "scaleX": 1.5,
+      "scaleY": 1.8518518518518519,
+      "smoothing": false
+    },
+    "errors": []
+  },
+  {
+    "version": "antes",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "file": "reforge-antes-390x844.png",
+    "metrics": {
+      "logicalWidth": 960,
+      "logicalHeight": 540,
+      "cssWidth": 390,
+      "cssHeight": 844,
+      "scaleX": 0.40625,
+      "scaleY": 1.5629629629629629,
+      "smoothing": false
+    },
+    "errors": []
+  },
+  {
+    "version": "depois",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "file": "reforge-depois-1440x1000.png",
+    "metrics": {
+      "logicalWidth": 1440,
+      "logicalHeight": 1000,
+      "cssWidth": 1440,
+      "cssHeight": 1000,
+      "scaleX": 1,
+      "scaleY": 1,
+      "smoothing": false
+    },
+    "errors": []
+  },
+  {
+    "version": "depois",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "file": "reforge-depois-390x844.png",
+    "metrics": {
+      "logicalWidth": 390,
+      "logicalHeight": 844,
+      "cssWidth": 390,
+      "cssHeight": 844,
+      "scaleX": 1,
+      "scaleY": 1,
+      "smoothing": false
+    },
+    "errors": []
+  }
+]

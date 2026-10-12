@@ -38,5 +38,1471 @@
     "source-5.png",
     "source-6.png"
   ],
-  "processing": "nearest-neighbor; chromakey; connected character silhouettes; transparent 2px frame gutters; feet-aligned pivots"
+  "processing": "nearest-neighbor; chromakey; connected character silhouettes; transparent 2px frame gutters; feet-aligned pivots",
+  "schemaVersion": 1,
+  "logicalBase": [
+    960,
+    540
+  ],
+  "assets": {
+    "hero": {
+      "path": "characters/hero.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        448
+      ],
+      "sha256": "f807c7e38f5105715bf3cd85fbdd2bf64ce3ad21e905fda5bc90b1b273ee1c13",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "right",
+        "back",
+        "left"
+      ],
+      "animations": {
+        "front-idle": {
+          "frames": [
+            0,
+            1
+          ],
+          "duration": 1.1,
+          "loop": true
+        },
+        "front-walk": {
+          "frames": [
+            2,
+            3,
+            4,
+            5
+          ],
+          "duration": 0.52,
+          "loop": true
+        },
+        "front-attack": {
+          "frames": [
+            6,
+            7,
+            8
+          ],
+          "duration": 0.48,
+          "loop": false
+        },
+        "front-hurt": {
+          "frames": [
+            9
+          ],
+          "duration": 0.24,
+          "loop": false
+        },
+        "front-cast": {
+          "frames": [
+            6,
+            10,
+            8
+          ],
+          "duration": 0.55,
+          "loop": false
+        },
+        "front-interact": {
+          "frames": [
+            10,
+            8
+          ],
+          "duration": 0.5,
+          "loop": false
+        },
+        "front-dead": {
+          "frames": [
+            9,
+            11
+          ],
+          "duration": 0.7,
+          "loop": false
+        },
+        "right-idle": {
+          "frames": [
+            12,
+            13
+          ],
+          "duration": 1.1,
+          "loop": true
+        },
+        "right-walk": {
+          "frames": [
+            14,
+            15,
+            16,
+            17
+          ],
+          "duration": 0.52,
+          "loop": true
+        },
+        "right-attack": {
+          "frames": [
+            18,
+            19,
+            20
+          ],
+          "duration": 0.48,
+          "loop": false
+        },
+        "right-hurt": {
+          "frames": [
+            21
+          ],
+          "duration": 0.24,
+          "loop": false
+        },
+        "right-cast": {
+          "frames": [
+            18,
+            22,
+            20
+          ],
+          "duration": 0.55,
+          "loop": false
+        },
+        "right-interact": {
+          "frames": [
+            22,
+            20
+          ],
+          "duration": 0.5,
+          "loop": false
+        },
+        "right-dead": {
+          "frames": [
+            21,
+            23
+          ],
+          "duration": 0.7,
+          "loop": false
+        },
+        "back-idle": {
+          "frames": [
+            24,
+            25
+          ],
+          "duration": 1.1,
+          "loop": true
+        },
+        "back-walk": {
+          "frames": [
+            26,
+            27,
+            28,
+            29
+          ],
+          "duration": 0.52,
+          "loop": true
+        },
+        "back-attack": {
+          "frames": [
+            30,
+            31,
+            32
+          ],
+          "duration": 0.48,
+          "loop": false
+        },
+        "back-hurt": {
+          "frames": [
+            33
+          ],
+          "duration": 0.24,
+          "loop": false
+        },
+        "back-cast": {
+          "frames": [
+            30,
+            34,
+            32
+          ],
+          "duration": 0.55,
+          "loop": false
+        },
+        "back-interact": {
+          "frames": [
+            34,
+            32
+          ],
+          "duration": 0.5,
+          "loop": false
+        },
+        "back-dead": {
+          "frames": [
+            33,
+            35
+          ],
+          "duration": 0.7,
+          "loop": false
+        },
+        "left-idle": {
+          "frames": [
+            36,
+            37
+          ],
+          "duration": 1.1,
+          "loop": true
+        },
+        "left-walk": {
+          "frames": [
+            38,
+            39,
+            40,
+            41
+          ],
+          "duration": 0.52,
+          "loop": true
+        },
+        "left-attack": {
+          "frames": [
+            42,
+            43,
+            44
+          ],
+          "duration": 0.48,
+          "loop": false
+        },
+        "left-hurt": {
+          "frames": [
+            45
+          ],
+          "duration": 0.24,
+          "loop": false
+        },
+        "left-cast": {
+          "frames": [
+            42,
+            46,
+            44
+          ],
+          "duration": 0.55,
+          "loop": false
+        },
+        "left-interact": {
+          "frames": [
+            46,
+            44
+          ],
+          "duration": 0.5,
+          "loop": false
+        },
+        "left-dead": {
+          "frames": [
+            45,
+            47
+          ],
+          "duration": 0.7,
+          "loop": false
+        }
+      },
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "arcanista": {
+      "path": "characters/arcanista.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        112
+      ],
+      "sha256": "74cf8c5e6a5cf610e07aa161d1b7e2a4926d0de0b6edd9f82066a0223437c943",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "left"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Legacy class strip used for left locomotion. Other directions and combat use separate sheets. Artistic pose/orientation review remains pending."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "assassino": {
+      "path": "characters/assassino.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        112
+      ],
+      "sha256": "a08583b3bbd5cd4869233330f3019105ee850cb1acc691472108a03372d38bdc",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "left"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Legacy class strip used for left locomotion. Other directions and combat use separate sheets. Artistic pose/orientation review remains pending."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "atirador": {
+      "path": "characters/atirador.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        112
+      ],
+      "sha256": "254d14d62630734ad2e0e7a0f0ea9ce8bb21055ae335e4b1d62c34e59963805a",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "left"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Legacy class strip used for left locomotion. Other directions and combat use separate sheets. Artistic pose/orientation review remains pending."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "arcanista-directions": {
+      "path": "characters/arcanista-directions.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        112
+      ],
+      "sha256": "c84c710c0352efce162c94c4d6e056058ee74423898924fbd457e5d81be5360f",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "back",
+        "right"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Direction groups are front (0–3), back (4–7), right (8–11); left locomotion uses the class strip. Reforge artistic review pending."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "assassino-directions": {
+      "path": "characters/assassino-directions.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        112
+      ],
+      "sha256": "dd6c1dbd3d8fbcb7de0757a70f3cfa4ee777dd9fbe2d65b5d7d1c89b567515dc",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "back",
+        "right"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Direction groups are front (0–3), back (4–7), right (8–11); left locomotion uses the class strip. Reforge artistic review pending."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "atirador-directions": {
+      "path": "characters/atirador-directions.png",
+      "runtime": true,
+      "sourceSize": [
+        1152,
+        112
+      ],
+      "sha256": "724fcb857038f0a25852c98fb21862353104cba46a119c03a45f53e5fd810301",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "back",
+        "right"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Direction groups are front (0–3), back (4–7), right (8–11); left locomotion uses the class strip. Reforge artistic review pending."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "enemies": {
+      "path": "enemies/enemies.png",
+      "runtime": true,
+      "sourceSize": [
+        576,
+        224
+      ],
+      "sha256": "c8780f638a897e2564ac58e3f596a07f5782361bef82d219bc063cf5097f5a2e",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "kharn": {
+      "path": "enemies/kharn.png",
+      "runtime": true,
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sha256": "171e7382dc30a8d1f5abe617bc6d24e833edcd1e86710066307809c06c21c0ed",
+      "material": "legacy-illustration",
+      "frame": {
+        "size": [
+          2172,
+          724
+        ],
+        "pivot": [
+          1086,
+          724
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "reconstruction-required",
+        "note": "Reforge artistic review pending"
+      },
+      "normalization": {
+        "cell": [
+          320,
+          256
+        ],
+        "pivot": [
+          160,
+          220
+        ],
+        "columns": 8,
+        "rects": [
+          [
+            13,
+            49,
+            255,
+            201
+          ],
+          [
+            273,
+            48,
+            239,
+            202
+          ],
+          [
+            524,
+            51,
+            280,
+            204
+          ],
+          [
+            808,
+            52,
+            265,
+            201
+          ],
+          [
+            1116,
+            11,
+            202,
+            241
+          ],
+          [
+            1325,
+            57,
+            316,
+            204
+          ],
+          [
+            1643,
+            49,
+            256,
+            206
+          ],
+          [
+            1889,
+            86,
+            269,
+            187
+          ],
+          [
+            13,
+            277,
+            255,
+            203
+          ],
+          [
+            273,
+            276,
+            239,
+            204
+          ],
+          [
+            524,
+            277,
+            280,
+            207
+          ],
+          [
+            809,
+            276,
+            265,
+            206
+          ],
+          [
+            1116,
+            253,
+            198,
+            227
+          ],
+          [
+            1324,
+            289,
+            317,
+            200
+          ],
+          [
+            1643,
+            276,
+            257,
+            208
+          ],
+          [
+            1889,
+            321,
+            269,
+            183
+          ],
+          [
+            13,
+            505,
+            254,
+            201
+          ],
+          [
+            273,
+            504,
+            239,
+            202
+          ],
+          [
+            524,
+            505,
+            281,
+            205
+          ],
+          [
+            808,
+            503,
+            265,
+            204
+          ],
+          [
+            1115,
+            481,
+            200,
+            229
+          ],
+          [
+            1325,
+            515,
+            316,
+            200
+          ],
+          [
+            1644,
+            504,
+            255,
+            206
+          ],
+          [
+            1889,
+            547,
+            269,
+            177
+          ]
+        ],
+        "scales": [
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72,
+          0.72
+        ],
+        "footXs": [
+          178,
+          426,
+          703,
+          982,
+          1222,
+          1522,
+          1811,
+          2088
+        ],
+        "footYs": [
+          [
+            248,
+            248,
+            252,
+            251,
+            248,
+            256,
+            252,
+            260
+          ],
+          [
+            477,
+            477,
+            480,
+            479,
+            477,
+            485,
+            480,
+            496
+          ],
+          [
+            704,
+            704,
+            708,
+            706,
+            708,
+            711,
+            708,
+            718
+          ]
+        ]
+      }
+    },
+    "chapter-enemies": {
+      "path": "enemies/chapter-enemies.png",
+      "runtime": true,
+      "sourceSize": [
+        768,
+        192
+      ],
+      "sha256": "6c4c840901cd2c68c51b0284f9dfd81dc61edcf3103f15c097f9f39f9cb6e8d1",
+      "material": "legacy-illustration",
+      "frame": {
+        "size": [
+          96,
+          96
+        ],
+        "pivot": [
+          48,
+          92
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "reconstruction-required",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "ruin-props": {
+      "path": "scenery/ruins-objects.png",
+      "runtime": true,
+      "sourceSize": [
+        2170,
+        725
+      ],
+      "sha256": "be078ea02bc13bff10e086f3fe5991a56d555a778cc5a132e1c69d5d7c8752ec",
+      "material": "legacy-illustration",
+      "frame": {
+        "size": [
+          2170,
+          725
+        ],
+        "pivot": [
+          1085,
+          725
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "reconstruction-required",
+        "note": "Reforge artistic review pending"
+      },
+      "normalization": {
+        "cell": [
+          128,
+          160
+        ],
+        "pivot": [
+          64,
+          156
+        ],
+        "columns": 8,
+        "rects": [
+          [
+            40,
+            247,
+            197,
+            310
+          ],
+          [
+            296,
+            281,
+            227,
+            296
+          ],
+          [
+            564,
+            281,
+            226,
+            297
+          ],
+          [
+            832,
+            207,
+            236,
+            370
+          ],
+          [
+            1123,
+            337,
+            198,
+            222
+          ],
+          [
+            1380,
+            331,
+            228,
+            245
+          ],
+          [
+            1656,
+            376,
+            214,
+            203
+          ],
+          [
+            1924,
+            393,
+            219,
+            175
+          ]
+        ],
+        "scales": [
+          0.44,
+          0.4,
+          0.4,
+          0.4,
+          0.4,
+          0.4,
+          0.36,
+          0.32
+        ]
+      }
+    },
+    "dialogue-reference": {
+      "path": "interface/Diálogo nas Ruínas de Pedralta.png",
+      "runtime": true,
+      "sourceSize": [
+        1672,
+        941
+      ],
+      "sha256": "c8dd2497152441ddc397541ecb045de9e81f5942f283fd933f47e1d9ba1df861",
+      "material": "legacy-illustration",
+      "frame": {
+        "size": [
+          1672,
+          941
+        ],
+        "pivot": [
+          836,
+          941
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "reconstruction-required",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "props": {
+      "path": "scenery/props.png",
+      "runtime": true,
+      "sourceSize": [
+        1536,
+        160
+      ],
+      "sha256": "afcf34cecf8c9fd4f096455a44f2a20255c4e72ffbb9ebeeea587df1b8f53e53",
+      "material": "native",
+      "frame": {
+        "size": [
+          128,
+          160
+        ],
+        "pivot": [
+          64,
+          156
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "tiles": {
+      "path": "scenery/tiles.png",
+      "runtime": true,
+      "sourceSize": [
+        960,
+        40
+      ],
+      "sha256": "20f8126ecb4e1c6475093ec28fd3d0e56718e0d11bbcdccc4647e9383c2ddbef",
+      "material": "native",
+      "frame": {
+        "size": [
+          80,
+          40
+        ],
+        "pivot": [
+          40,
+          20
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "icons": {
+      "path": "icons/icons.png",
+      "runtime": true,
+      "sourceSize": [
+        576,
+        48
+      ],
+      "sha256": "864ac73dc9b3a0fb5a2c02fa3c7ecdf22c2152d66ef14d4e6a43a2c3e49a2ad9",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "effects": {
+      "path": "effects/effects.png",
+      "runtime": true,
+      "sourceSize": [
+        1024,
+        768
+      ],
+      "sha256": "575fd831b1af77323169e2d76a0b2896eb2ba89ca6559327afd61927520d7c1a",
+      "material": "native",
+      "frame": {
+        "size": [
+          128,
+          128
+        ],
+        "pivot": [
+          64,
+          64
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "objects": {
+      "path": "objects/objects.png",
+      "runtime": true,
+      "sourceSize": [
+        512,
+        160
+      ],
+      "sha256": "840f614884448feb245bdd8c3c1fa8077351615a2f25d14add12d05e296a3348",
+      "material": "native",
+      "frame": {
+        "size": [
+          128,
+          160
+        ],
+        "pivot": [
+          64,
+          156
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "arcanista-combat": {
+      "path": "characters/arcanista-combat.png",
+      "runtime": true,
+      "sourceSize": [
+        576,
+        448
+      ],
+      "sha256": "a697350299e6b5f8aaeae00b7c499aa7942d816e9068373a10e71aadabf06364",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "right",
+        "back",
+        "left"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "assassino-combat": {
+      "path": "characters/assassino-combat.png",
+      "runtime": true,
+      "sourceSize": [
+        576,
+        448
+      ],
+      "sha256": "a8f2c265640f8428de72b99580936d1a2ea5694b34ca9409efc05c2b08f49b7e",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "right",
+        "back",
+        "left"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "atirador-combat": {
+      "path": "characters/atirador-combat.png",
+      "runtime": true,
+      "sourceSize": [
+        576,
+        448
+      ],
+      "sha256": "ae36c5de77b799089d8dfe1c05dbaf0dcd8346421640014cbb9f8139da7fdada",
+      "material": "native",
+      "frame": {
+        "size": [
+          96,
+          112
+        ],
+        "pivot": [
+          48,
+          108
+        ],
+        "gutter": 2
+      },
+      "directions": [
+        "front",
+        "right",
+        "back",
+        "left"
+      ],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c",
+        "note": "Existing artwork preserved. Palette/layout compliance does not establish artistic approval."
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "dialogue-frame": {
+      "path": "interface/dialogue-frame.png",
+      "runtime": false,
+      "sourceSize": [
+        2172,
+        724
+      ],
+      "sha256": "f6ffce19cb42fcb1ddfb83f9acc297bdfc0403fea6e0c37d1dd8aef983d46b47",
+      "material": "legacy-illustration",
+      "frame": {
+        "size": [
+          2172,
+          724
+        ],
+        "pivot": [
+          0,
+          0
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "reconstruction-required",
+        "note": "Native ornament reconstruction pending"
+      }
+    },
+    "weapons-fire": {
+      "path": "weapons/fire.png",
+      "runtime": false,
+      "sourceSize": [
+        48,
+        48
+      ],
+      "sha256": "df448012cc651c42cf5ca9a0a08fde91f581d66ff4f4cc439a9f934a5fef0b84",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "weapons-lightning": {
+      "path": "weapons/lightning.png",
+      "runtime": false,
+      "sourceSize": [
+        48,
+        48
+      ],
+      "sha256": "1e7dd24d9c63b43e75ed6a9660cde793bf19b536d85f829d363530ee6b666f19",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "weapons-runic": {
+      "path": "weapons/runic.png",
+      "runtime": false,
+      "sourceSize": [
+        48,
+        48
+      ],
+      "sha256": "0073118e310c5a458f3512655cc24cecdd53c0b7e3172df57a9ed5f99345727f",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "weapons-steel": {
+      "path": "weapons/steel.png",
+      "runtime": false,
+      "sourceSize": [
+        48,
+        48
+      ],
+      "sha256": "4da83afb0073e5cf0d5df89d12f3e7ea05b8fd8694b0f921180da7d1ad0431d6",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "equipment-amulet": {
+      "path": "equipment/amulet.png",
+      "runtime": false,
+      "sourceSize": [
+        48,
+        48
+      ],
+      "sha256": "f9315e98ebad59ef9dbf777c46dce655b93d22c13088cb05e9837fb5e7c6b5da",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "equipment-breastplate": {
+      "path": "equipment/breastplate.png",
+      "runtime": false,
+      "sourceSize": [
+        48,
+        48
+      ],
+      "sha256": "d9210dc02f8e0f6a8347ddffef0a8cc62db44143d4ff38d120d083495ca5b06c",
+      "material": "native",
+      "frame": {
+        "size": [
+          48,
+          48
+        ],
+        "pivot": [
+          24,
+          24
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    },
+    "interface-portrait": {
+      "path": "interface/portrait.png",
+      "runtime": false,
+      "sourceSize": [
+        64,
+        64
+      ],
+      "sha256": "d935a75ad7c53c59833161ba3be1fead6b4401ed86b0cb36b6804eb29e51f724",
+      "material": "native",
+      "frame": {
+        "size": [
+          64,
+          64
+        ],
+        "pivot": [
+          32,
+          32
+        ],
+        "gutter": 0
+      },
+      "directions": [],
+      "animations": {},
+      "provenance": {
+        "kind": "existing-repository-art",
+        "baseCommit": "04f54905f877f21c08f4463d7c2bf4c6dd738e1c"
+      },
+      "review": {
+        "status": "technical-only",
+        "note": "Reforge artistic review pending"
+      }
+    }
+  }
 }

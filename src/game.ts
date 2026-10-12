@@ -1,3 +1,4 @@
+import { observeViewport } from "./viewport";
 import { ChapterDirector } from "./chapter-runtime";
 import {
   freshChapter,
@@ -59,6 +60,7 @@ import {
 } from "./world";
 import { Prologue, freshPrologue } from "./prologue";
 export class Game {
+  combatClock = () => performance.now() / 1000;
   chapter = new ChapterDirector(this);
   get cinematic() {
     return this.chapter.cinematic.id
@@ -124,6 +126,8 @@ export class Game {
   }
   async init() {
     this.canvas = document.querySelector<HTMLCanvasElement>("#game")!;
+    const stopViewport = observeViewport(this.canvas);
+    window.addEventListener("pagehide", event => { if (!event.persisted) stopViewport(); });
     this.bindInput(this.canvas);
     this.audio.prepare();
     await this.assets.load();
@@ -1440,6 +1444,7 @@ export class Game {
       projectiles: this.projectiles.length,
       effects: this.effects.length,
       saveStatus: this.saveStatus,
+      viewport: { ...this.renderer.view },
       camera: { ...this.renderer.camera },
     };
   }

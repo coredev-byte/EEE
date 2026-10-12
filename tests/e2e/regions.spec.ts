@@ -19,9 +19,11 @@ test("Save legado: campanha completa, Kharn explorável, recarga, retorno e reco
   await expect.poll(async () => (await state(page)).region).toBe("kharn");
   const foot = await page.evaluate(() => {
     const dz = (window as any).__DZ;
-    return dz.project(dz.snapshot().player);
+    const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
+    return { position: dz.project(dz.snapshot().player),
+      expected: { x: canvas.width / 2, y: canvas.height / 2 + 15 } };
   });
-  expect(foot).toEqual({ x: 480, y: 285 });
+  expect(foot.position).toEqual(foot.expected);
   expect((await state(page)).player.inventory).toEqual(before.inventory);
   expect((await state(page)).player.trees).toEqual(before.trees);
   await expect(page.locator(".location")).toContainText("MARGEM DE KHARN");

@@ -39,28 +39,29 @@ export const cameraPixels = (camera: Point): Point => ({
   x: Math.round(camera.x),
   y: Math.round(camera.y),
 });
-export function worldToScreen(p: Point, camera: Point): Point {
+export function worldToScreen(p: Point, camera: Point, view: { width: number; height: number; focus: Point } = VIEW): Point {
   const projected = iso(p),
     offset = cameraPixels(camera);
   return {
-    x: Math.round(projected.x - offset.x + VIEW.focus.x),
-    y: Math.round(projected.y - offset.y + VIEW.focus.y),
+    x: Math.round(projected.x - offset.x + view.focus.x),
+    y: Math.round(projected.y - offset.y + view.focus.y),
   };
 }
-export function screenToWorld(p: Point, camera: Point): Point {
+export function screenToWorld(p: Point, camera: Point, view: { width: number; height: number; focus: Point } = VIEW): Point {
   const offset = cameraPixels(camera);
   return uniso({
-    x: p.x + offset.x - VIEW.focus.x,
-    y: p.y + offset.y - VIEW.focus.y,
+    x: p.x + offset.x - view.focus.x,
+    y: p.y + offset.y - view.focus.y,
   });
 }
 export function clientToScreen(
   p: Point,
   rect: { left: number; top: number; width: number; height: number },
+  view: { width: number; height: number } = VIEW,
 ): Point {
   return {
-    x: ((p.x - rect.left) * VIEW.width) / rect.width,
-    y: ((p.y - rect.top) * VIEW.height) / rect.height,
+    x: ((p.x - rect.left) * view.width) / rect.width,
+    y: ((p.y - rect.top) * view.height) / rect.height,
   };
 }
 export function playableBounds(size: number) {
@@ -119,12 +120,12 @@ export function onScreen(bounds: {
   y: number;
   width: number;
   height: number;
-}) {
+}, view: { width: number; height: number } = VIEW) {
   return (
     bounds.x + bounds.width >= 0 &&
     bounds.y + bounds.height >= 0 &&
-    bounds.x <= VIEW.width &&
-    bounds.y <= VIEW.height
+    bounds.x <= view.width &&
+    bounds.y <= view.height
   );
 }
 

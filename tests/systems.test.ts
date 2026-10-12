@@ -26,6 +26,25 @@ function context(): CombatContext {
     sound: () => {},
   };
 }
+it("attack windup does not count the frame time before input or advance faster than its clock", () => {
+  const ctx = context();
+  ctx.enemies = [];
+  let clock = 10;
+  ctx.combatClock = () => clock;
+  const combat = new Combat(ctx);
+  expect(combat.attack()).toBe(true);
+  clock += 0.005;
+  combat.update(0.04);
+  expect(combat.pending!.time).toBeCloseTo(0.005);
+  expect(combat.pending!.done).toBe(false);
+  clock += 0.1;
+  combat.update(0.1);
+  expect(combat.pending!.done).toBe(false);
+  clock += 0.06;
+  combat.update(0.06);
+  expect(combat.pending!.done).toBe(true);
+  expect(combat.pending!.time).toBeCloseTo(0.165);
+});
 describe("Mundo e animações", () => {
   it("projeção isométrica reversível", () => {
     for (const p of [

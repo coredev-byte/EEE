@@ -22,6 +22,7 @@ export interface CombatContext {
   projectiles: Projectile[];
   quest: Quest;
   world: World;
+  combatClock?: () => number;
   notify: (text: string) => void;
   skillHeld?: (id: string) => boolean;
   audioEvent?: (event: AudioEvent, cue?: AudioCue) => boolean;
@@ -34,6 +35,7 @@ export interface CombatContext {
 }
 export interface PendingAttack {
   time: number;
+  clock?: number;
   done: boolean;
   duration: number;
   skill: Skill;
@@ -118,6 +120,7 @@ export class Combat {
       (p.classId === "assassino" ? 0.36 : 0.5) * this.engine.attackSpeed();
     this.pending = {
       time: 0,
+      clock: this.ctx.combatClock?.(),
       done: false,
       skill: s,
       aim,
@@ -129,9 +132,17 @@ export class Combat {
   update(dt: number) {
     const p = this.ctx.player;
     this.engine.update(dt);
-    p.attackTimer = Math.max(0, p.attackTimer - dt);
+    let attackDt = dt;
+    if (this.pending?.clock !== undefined && this.ctx.combatClock) {
+      const now = this.ctx.combatClock();
+      // Input can arrive between frames. Never count time before the click,
+      // or advance the windup faster than the monotonic clock under frame jitter.
+      attackDt = Math.min(dt, Math.max(0, now - this.pending.clock));
+      this.pending.clock = now;
+    }
+    p.attackTimer = Math.max(0, p.attackTimer - attackDt);
     if (this.pending) {
-      this.pending.time += dt;
+      this.pending.time += attackDt;
       const node = NODE_BY_ID.get(this.pending.skill.id),
         channel = node?.mechanic === "channel";
       const ready = channel

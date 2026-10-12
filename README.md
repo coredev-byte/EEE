@@ -74,6 +74,13 @@ As novas referências de diálogo, Kharn e mapa foram aplicadas às conversas e 
 
 ## Validar
 
+A Operação Reforge está em implementação por etapas. A auditoria e o pipeline
+de assets já foram adicionados, e o Canvas agora preserva a proporção dos pixels
+em toda a janela. A reconstrução artística, loot físico, equipamentos visuais,
+combos e mundo contínuo ainda estão pendentes. Veja o estado real e a retomada
+em [REFORGE_IMPLEMENTACAO.md](docs/REFORGE_IMPLEMENTACAO.md) e os comandos offline
+em [REFORGE_PIPELINE.md](docs/REFORGE_PIPELINE.md).
+
 ```sh
 npm test
 npm run build

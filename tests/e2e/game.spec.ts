@@ -22,8 +22,8 @@ async function aim(page: Page, p: { x: number; y: number }) {
   const s = await page.evaluate((p) => (window as any).__DZ.project(p), p);
   const box = await page.locator("#game").boundingBox();
   await page.mouse.move(
-    box!.x + (s.x * box!.width) / 960,
-    box!.y + ((s.y - 20) * box!.height) / 540,
+    box!.x + (s.x * box!.width) / (await page.locator("#game").evaluate((c: HTMLCanvasElement) => c.width)),
+    box!.y + ((s.y - 20) * box!.height) / (await page.locator("#game").evaluate((c: HTMLCanvasElement) => c.height)),
   );
 }
 async function battle(page: Page, minKills = 3) {
@@ -432,6 +432,12 @@ test("Clique sem pointermove e viewport/HUD alinhados em tela cheia", async ({
     expect(canvas!.y).toBeCloseTo(0, 1);
     expect(canvas!.width).toBeCloseTo(windowSize.width, 1);
     expect(canvas!.height).toBeCloseTo(windowSize.height, 1);
+    const pixels = await page.locator("#game").evaluate((c: HTMLCanvasElement) => ({
+      width: c.width, height: c.height,
+      smoothing: c.getContext("2d")!.imageSmoothingEnabled,
+    }));
+    expect(canvas!.width / pixels.width).toBeCloseTo(canvas!.height / pixels.height, 2);
+    expect(pixels.smoothing).toBe(false);
     await expect(page.locator(".underbar")).toBeHidden();
     await expect(page.locator(".topbar")).toBeHidden();
     await expect(page.locator("#skillbar kbd").first()).toBeVisible();
@@ -446,8 +452,8 @@ test("Clique sem pointermove e viewport/HUD alinhados em tela cheia", async ({
         new PointerEvent("pointerdown", {
           button: 0,
           bubbles: true,
-          clientX: box.x + (box.width * 680) / 960,
-          clientY: box.y + (box.height * 257) / 540,
+          clientX: box.x + box.width * ((el as HTMLCanvasElement).width / 2 + 200) / (el as HTMLCanvasElement).width,
+          clientY: box.y + box.height * ((el as HTMLCanvasElement).height / 2 - 13) / (el as HTMLCanvasElement).height,
         }),
       );
     }, canvas!);

@@ -4,6 +4,7 @@ import { syncPoints } from "../../src/skills";
 import { serialize, SAVE_KEY } from "../../src/save";
 import { World, distance } from "../../src/world";
 import { findPath } from "../../src/navigation";
+import { COLLISION } from "../../src/spatial";
 export async function state(page: Page) {
   return page.evaluate(() => (window as any).__DZ.snapshot());
 }
@@ -40,8 +41,8 @@ export async function aim(page: Page, p: { x: number; y: number }) {
   const at = await page.evaluate((p) => (window as any).__DZ.project(p), p),
     box = (await page.locator("#game").boundingBox())!;
   await page.mouse.move(
-    box.x + (at.x * box.width) / 960,
-    box.y + ((at.y - 28) * box.height) / 540,
+    box.x + (at.x * box.width) / (await page.locator("#game").evaluate((c: HTMLCanvasElement) => c.width)),
+    box.y + ((at.y - 28) * box.height) / (await page.locator("#game").evaluate((c: HTMLCanvasElement) => c.height)),
   );
 }
 export async function sustain(page: Page) {
@@ -57,7 +58,19 @@ export async function travel(page: Page, target: { x: number; y: number }) {
   const initial = await state(page),
     world = new World(initial.region);
   world.applyChanges(initial.exploration.changes);
-  const planned = findPath(world, initial.player, target, 0.45);
+  if (distance(initial.player, target) < 0.16) {
+    expect(world.blocked(initial.player)).toBe(false);
+    return;
+  }
+  const planned = findPath(world, initial.player, target, COLLISION.player);
+  if (!planned.length) {
+    // A collision-safe goal can already be under the player, especially near
+    // an interactable after knockback. An unreachable distant goal still fails.
+    expect(distance(initial.player, target), `already arrived at ${target.x},${target.y}`)
+      .toBeLessThan(1.5);
+    expect(world.blocked(initial.player)).toBe(false);
+    return;
+  }
   const route: { x: number; y: number }[] = [];
   let from = initial.player;
   for (const next of planned) {
@@ -96,6 +109,7 @@ export async function travel(page: Page, target: { x: number; y: number }) {
       if (i === 149) throw Error(`Movement stuck near ${next.x},${next.y}`);
     }
   }
+  expect(distance((await state(page)).player, target)).toBeLessThan(1.5);
 }
 export async function clearGuardian(page: Page, id: number) {
   for (let i = 0; i < 40; i++) {

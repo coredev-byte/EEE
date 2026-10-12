@@ -22,6 +22,7 @@ export class Input {
       this.pointer = clientToScreen(
         { x: e.clientX, y: e.clientY },
         canvas.getBoundingClientRect(),
+        canvas,
       );
       this.pointerActive = true;
     };

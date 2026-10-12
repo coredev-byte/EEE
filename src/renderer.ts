@@ -1,3 +1,4 @@
+import { canvasViewport } from "./viewport";
 import { paintRuinsFloor } from "./ruins-scenery";
 import { paintChapterEnemy, paintTelegraph, paintRune } from "./chapter-art";
 import type { CinematicFrame } from "./cinematics";
@@ -11,7 +12,6 @@ import {
 import { effectFrame } from "./effect-art";
 import { NODE_BY_ID, profile } from "./skills";
 import {
-  VIEW,
   PROP_HEIGHT,
   spriteBounds,
   onScreen,
@@ -101,11 +101,12 @@ export class Renderer {
         }
       }
   }
+  get view() { return canvasViewport(this.canvas); }
   project(p: Point): Point {
-    return worldToScreen(p, this.camera);
+    return worldToScreen(p, this.camera, this.view);
   }
   worldAt(screen: Point): Point {
-    return screenToWorld(screen, this.camera);
+    return screenToWorld(screen, this.camera, this.view);
   }
   snap(p: Point) {
     this.camera = iso(p);
@@ -128,17 +129,17 @@ export class Renderer {
     const c = this.ctx;
     c.imageSmoothingEnabled = false;
     c.fillStyle = "#070d17";
-    c.fillRect(0, 0, VIEW.width, VIEW.height);
+    c.fillRect(0, 0, this.view.width, this.view.height);
     c.save();
     if (this.cinematic) {
-      c.translate(VIEW.width / 2, VIEW.height / 2);
+      c.translate(this.view.width / 2, this.view.height / 2);
       c.scale(this.cinematic.zoom, this.cinematic.zoom);
-      c.translate(-VIEW.width / 2, -VIEW.height / 2);
+      c.translate(-this.view.width / 2, -this.view.height / 2);
     }
     c.drawImage(
       this.floor,
-      VIEW.focus.x - cameraPixels(this.camera).x - this.floorOrigin,
-      VIEW.focus.y - cameraPixels(this.camera).y - this.floorOffsetY,
+      this.view.focus.x - cameraPixels(this.camera).x - this.floorOrigin,
+      this.view.focus.y - cameraPixels(this.camera).y - this.floorOffsetY,
     );
     this.frameDt = dt;
     this.visibility = [
@@ -240,11 +241,11 @@ export class Renderer {
       const frame = this.cinematic;
       if (frame.pulse) {
         c.fillStyle = `rgba(137,167,244,${frame.pulse})`;
-        c.fillRect(0, 0, VIEW.width, VIEW.height);
+        c.fillRect(0, 0, this.view.width, this.view.height);
         const base = this.project(frame.pulseAt);
         const at = {
-          x: VIEW.width / 2 + (base.x - VIEW.width / 2) * frame.zoom,
-          y: VIEW.height / 2 + (base.y - VIEW.height / 2) * frame.zoom,
+          x: this.view.width / 2 + (base.x - this.view.width / 2) * frame.zoom,
+          y: this.view.height / 2 + (base.y - this.view.height / 2) * frame.zoom,
         };
         for (let i = 0; i < 18; i++) {
           const a = i * 2.4 + this.time * 0.5,
@@ -259,16 +260,16 @@ export class Renderer {
         }
       }
       c.fillStyle = `rgba(2,5,12,${frame.fade})`;
-      c.fillRect(0, 0, VIEW.width, VIEW.height);
+      c.fillRect(0, 0, this.view.width, this.view.height);
     }
     // Pixel-locked foreground vignette, never filtering the sprites.
     for (let i = 0; i < 5; i++) {
       c.fillStyle = `rgba(2,5,12,${0.13 - i * 0.018})`;
       const edge = 12 + i * 8;
-      c.fillRect(0, 0, VIEW.width, edge);
-      c.fillRect(0, VIEW.height - edge, VIEW.width, edge);
-      c.fillRect(0, edge, edge, VIEW.height - edge * 2);
-      c.fillRect(VIEW.width - edge, edge, edge, VIEW.height - edge * 2);
+      c.fillRect(0, 0, this.view.width, edge);
+      c.fillRect(0, this.view.height - edge, this.view.width, edge);
+      c.fillRect(0, edge, edge, this.view.height - edge * 2);
+      c.fillRect(this.view.width - edge, edge, edge, this.view.height - edge * 2);
     }
     if (objective) this.goal(objective, p);
   }
@@ -544,7 +545,7 @@ export class Renderer {
     }
   }
   cameraPoint() {
-    return this.worldAt({ x: 480, y: 285 });
+    return this.worldAt(this.view.focus);
   }
   machine(e: Enemy, s: Point) {
     const c = this.ctx;
@@ -600,7 +601,7 @@ export class Renderer {
       );
     }
     const frame = o.kind === "npc" ? FRAMES.character : FRAMES.prop;
-    if (!onScreen(spriteBounds(s, frame, o.scale))) return;
+    if (!onScreen(spriteBounds(s, frame, o.scale), this.view)) return;
     const c = this.ctx;
     if (
       this.world.region === "ruins" &&
@@ -773,7 +774,7 @@ export class Renderer {
   goal(goal: Objective, player: Player) {
     const foot = this.project(goal),
       head = { x: foot.x, y: foot.y - goal.height };
-    const at = placeObjective(head, VIEW.width, VIEW.height, this.hudBounds);
+    const at = placeObjective(head, this.view.width, this.view.height, this.hudBounds);
     const c = this.ctx;
     c.save();
     c.fillStyle = "rgba(4,10,18,.9)";
@@ -802,7 +803,7 @@ export class Renderer {
       const width = c.measureText(goal.label).width + 16;
       const x = Math.max(
         width / 2 + 4,
-        Math.min(VIEW.width - width / 2 - 4, at.x),
+        Math.min(this.view.width - width / 2 - 4, at.x),
       );
       c.fillRect(x - width / 2, at.y + 17, width, 20);
       c.fillStyle = "#f4d698";
@@ -813,7 +814,7 @@ export class Renderer {
   lanternLight(o: Prop) {
     const s = this.project(o),
       c = this.ctx;
-    if (s.x < -80 || s.x > VIEW.width + 80) return;
+    if (s.x < -80 || s.x > this.view.width + 80) return;
     const flicker = Math.floor(this.time * 8) % 3;
     for (let ring = 5; ring > 0; ring--) {
       c.fillStyle = `rgba(228,138,55,${0.009 + 0.006 * (6 - ring)})`;

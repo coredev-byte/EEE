@@ -1,34 +1,15 @@
 import { normalizeChapterAtlas } from "./chapter-atlas";
 import { framePivot } from "./spatial";
+import { RUNTIME_ASSETS, assertSourceDimensions } from "./asset-registry";
 export class Assets {
   images: Record<string, HTMLImageElement | HTMLCanvasElement> = {};
   async load() {
     await Promise.all(
-      Object.entries({
-        hero: "characters/hero.png",
-        arcanista: "characters/arcanista.png",
-        assassino: "characters/assassino.png",
-        atirador: "characters/atirador.png",
-        "arcanista-directions": "characters/arcanista-directions.png",
-        "assassino-directions": "characters/assassino-directions.png",
-        "atirador-directions": "characters/atirador-directions.png",
-        enemies: "enemies/enemies.png",
-        kharn: "enemies/kharn.png",
-        "chapter-enemies": "enemies/chapter-enemies.png",
-        "ruin-props": "scenery/ruins-objects.png",
-        "dialogue-reference": "interface/Diálogo nas Ruínas de Pedralta.png",
-        props: "scenery/props.png",
-        tiles: "scenery/tiles.png",
-        icons: "icons/icons.png",
-        effects: "effects/effects.png",
-        objects: "objects/objects.png",
-        "arcanista-combat": "characters/arcanista-combat.png",
-        "assassino-combat": "characters/assassino-combat.png",
-        "atirador-combat": "characters/atirador-combat.png",
-      }).map(async ([name, path]) => {
+      RUNTIME_ASSETS.map(async ({ name, path }) => {
         const im = new Image();
         im.src = `/assets/${path}`;
         await im.decode();
+        assertSourceDimensions(name, im.naturalWidth, im.naturalHeight);
         this.images[name] = normalizeChapterAtlas(name, im);
       }),
     );

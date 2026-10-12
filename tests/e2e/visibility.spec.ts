@@ -272,7 +272,8 @@ test("Objetivo no mundo e minimapa usa o alvo real, inclusive fora da tela e em 
     const dz = (window as any).__DZ,
       goal = dz.snapshot().activeObjective,
       foot = dz.project(goal);
-    const viewport = document.querySelector("#game")!.getBoundingClientRect();
+    const gameCanvas = document.querySelector<HTMLCanvasElement>("#game")!;
+    const viewport = gameCanvas.getBoundingClientRect();
     const blockers = [
       ".player-hud",
       ".location",
@@ -281,16 +282,16 @@ test("Objetivo no mundo e minimapa usa o alvo real, inclusive fora da tela e em 
     ].map((selector) => {
       const b = document.querySelector(selector)!.getBoundingClientRect();
       return {
-        x: ((b.left - viewport.left) * 960) / viewport.width,
-        y: ((b.top - viewport.top) * 540) / viewport.height,
-        width: (b.width * 960) / viewport.width,
-        height: (b.height * 540) / viewport.height,
+        x: ((b.left - viewport.left) * gameCanvas.width) / viewport.width,
+        y: ((b.top - viewport.top) * gameCanvas.height) / viewport.height,
+        width: (b.width * gameCanvas.width) / viewport.width,
+        height: (b.height * gameCanvas.height) / viewport.height,
       };
     });
     const at = placeObjective(
       { x: foot.x, y: foot.y - goal.height },
-      960,
-      540,
+      gameCanvas.width,
+      gameCanvas.height,
       blockers,
     );
     const overlaps = blockers.some(
@@ -314,6 +315,14 @@ test("Objetivo no mundo e minimapa usa o alvo real, inclusive fora da tela e em 
       if (d[i] === 232 && d[i + 1] === 189 && d[i + 2] === 104) gold++;
     return { outside: at.outside, gold, overlaps };
   };
+  // The expanded desktop viewport can now show this target. Test the actual
+  // marker there, then resize to force the same objective offscreen.
+  const visible = await page.evaluate(inspectArrow);
+  expect(visible.outside).toBe(false);
+  expect(visible.overlaps).toBe(false);
+  expect(visible.gold).toBeGreaterThan(0);
+  await page.setViewportSize({ width: 800, height: 680 });
+  await page.waitForTimeout(300);
   const arrow = await page.evaluate(inspectArrow);
   expect(arrow.outside).toBe(true);
   expect(arrow.overlaps).toBe(false);
